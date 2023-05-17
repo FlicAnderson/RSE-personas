@@ -43,6 +43,7 @@
     - evidence of roxygen  
     - docstrings  
     - comments in functions  
+    - examples of use of function documented w/in function  
     - docs/ folder  
     - repo wiki  
     - functions contain help()/--help info equiv  
@@ -66,7 +67,7 @@
     - function doesn't contain HUGE nLOC of non-function-call code 
       - (ie big function chunks should call OTHER functions, 
         rather than lots of NEW non-function code) 
-    - lack of repeating code / copypasta from elsewhere/'code repeats'  
+    - lack of repeating code / copypasta from elsewhere/'code repeats' 
 
  - packages / envs are managed and versioned  
     - use of {packrat} / {renv} / etc packages for managing packages and dependencies  
@@ -108,4 +109,5 @@
  - functions have explicit returns  
     - uses return in python  
     - use return() in R  
-    - especially use return() 'if returning early' (e.g. for errors / conditional situations)  
+    - especially use return() 'if returning early' (e.g. for errors / conditional situations)
+
