@@ -26,9 +26,13 @@
  - PRs checked with regression testing before merge
 
 ### SE TECHS: Testing  
-
+- unit testing  
+    - test unit of behaviour, not unit of implementation. (e.g. test 'data -> plot' rather than 'data' and 'plot')  
 - assertions used  
-- off-the-shelf unit testing library
+- test coverage  
+    test coverage should be high - 
+- off-the-shelf unit testing library  
+- small testable units, with integration tests and functional tests to check everything works together  
 
 ### SE TECHS: Version Control  
 - version control is used  (e.g. git repos)
@@ -49,13 +53,16 @@
     - functions contain help()/--help info equiv  
     - sphinx / knitr / RMarkdown rendering from webhooks etc   
     - has a vignette or tutorial or demo or similar  
+    - function may have a class (functionname).doc in python  
+    - code documentation is TRUE and accurate  
     
  - use of asserts / testing expectations  
     - use of {testthat}  
     - stopifnot() 
     - stop()  
     - tryCatch()  
-    - testing input data types
+    - testing input data types  
+    - test the code YOU write, not other people's code (eg don't test external libraries unless TOTALLY necessary)  
 
  - external code use is explicit  
     - package::function() syntax in R  
@@ -68,6 +75,13 @@
       - (ie big function chunks should call OTHER functions, 
         rather than lots of NEW non-function code) 
     - lack of repeating code / copypasta from elsewhere/'code repeats' 
+    - each function does ONE task  
+    - "low coupling and high cohesion" - unrelated parts don't mix; related parts can talk easily  
+    - function is short (not more than 20-30 lines of code max)  
+    - (modules are ~500 lines max length)
+    - code may use pipes / chaining operators and functions to combine smaller functions  
+    - logic is broken out into separate functions (rather than mixing long code with lots of logic - harder to test/understand side-effects)  
+    - evidence of refactoring  (might have mentions of )
 
  - packages / envs are managed and versioned  
     - use of {packrat} / {renv} / etc packages for managing packages and dependencies  
@@ -77,6 +91,7 @@
     - docker files  
     - singularity files  
     - conda env files  
+    - 'globals are bad'  
 
  - software is itself packaged  
     - DESCRIPTION folder  
@@ -93,7 +108,11 @@
     - lists linters in package dependencies or includes them in conda envs etc  
     - details on how to follow repo/project style in docs  
     - code in repo is stylistically consistent to itself  
-    - correct assignment operator (e.g. <- not = in R)  
+    - correct assignment operator (e.g. <- not = in R)   
+    - indentation is consistent  
+    - not too many levels of indentation (e.g no more than 1 or 2 levels in) aaro readability 
+    - style guide (PEP8 for python)
+    - 
 
  - use of user-defined non-default error messages / user-friendly error handling   
     - message() used  
@@ -109,5 +128,49 @@
  - functions have explicit returns  
     - uses return in python  
     - use return() in R  
-    - especially use return() 'if returning early' (e.g. for errors / conditional situations)
+    - especially use return() 'if returning early' (e.g. for errors / conditional situations)   
+    - avoid multiple return statements w/in the same function body (e.g. R doesn't allow this I think...)
 
+
+- YAGNI: You Ain't Gonna Need It  
+    - commented out code should be removed 
+    - code that doesn't run / for future cases should be removed  
+    - code is bad. Try to have as little as possible. (less maintenance, potential for error) - means high LOC isn't a great metric for 'good big project' as REALLY GOOD projects shouldn't have HUGE codebases... :D  
+
+- DRY: Don't Repeat Yourself (or others)  
+    - use existing types and methods, it's likely they'll be faster than writing your own  
+    - (it's ok to repeat yourself a bit in tests tbh - tests are used individually rather than being part of a system you're trying to build)   
+
+
+
+ - (from SWEBOK: Construction) SOFTWARE CONSTRUCTION FUNDAMENTAL: minimizing complexity  
+    - writing simple code  
+    - using standards  
+    - modular design  
+    - etc.  
+
+ - (from SWEBOK: Construction) SOFTWARE CONSTRUCTION FUNDAMENTAL: anticipating change  
+    - expecting changes in codebase and environment 
+    - build extensible software  
+
+ - (from SWEBOK: Construction) SOFTWARE CONSTRUCTION FUNDAMENTAL: constructing for verification  
+    - building for maximum bug find/fixability  
+    - following coding standards  
+    - code reviews  
+    - unit tetsing  
+    - automated testing  
+    - avoiding/restricting complex/hard to understand language structures etc  
+
+ - (from SWEBOK: Construction) SOFTWARE CONSTRUCTION FUNDAMENTAL: reuse  
+    - using existing libraries    
+    - using existing modules  
+    - using other code or 'commercial off-the-shelf' bits    
+    - 'construction FOR reuse'  
+    - 'construction WITH reuse'  
+
+ - (from SWEBOK: Construction) SOFTWARE CONSTRUCTION FUNDAMENTAL: standards in construction  
+    - applying dev standards (may be internal or external)  
+    - language choice  
+    - usage standards  
+    - 'communication standards' - e.g. doc formats/contents  
+    - languages ()
