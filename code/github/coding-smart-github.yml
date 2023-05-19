@@ -21,13 +21,14 @@ dependencies:
   - brotli-bin=1.0.9=h5eee18b_7
   - brotlipy=0.7.0=py310h7f8727e_1002
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2022.12.7=ha878542_0
-  - certifi=2022.12.7=pyhd8ed1ab_0
+  - ca-certificates=2023.01.10=h06a4308_0
+  - certifi=2023.5.7=py310h06a4308_0
   - cffi=1.15.1=py310h5eee18b_3
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - colorama=0.4.6=pyhd8ed1ab_0
   - comm=0.1.2=py310h06a4308_0
   - contourpy=1.0.5=py310hdb19cb5_0
+  - coverage=7.2.2=py310h5eee18b_0
   - cryptography=39.0.1=py310h9ce1e76_0
   - cycler=0.11.0=pyhd3eb1b0_0
   - dbus=1.13.18=hb2f20db_0
@@ -36,6 +37,7 @@ dependencies:
   - defusedxml=0.7.1=pyhd3eb1b0_0
   - deprecated=1.2.13=py310h06a4308_0
   - entrypoints=0.4=py310h06a4308_0
+  - exceptiongroup=1.0.4=py310h06a4308_0
   - executing=0.8.3=pyhd3eb1b0_0
   - expat=2.4.9=h6a678d5_0
   - flit-core=3.6.0=pyhd3eb1b0_0
@@ -48,6 +50,7 @@ dependencies:
   - gstreamer=1.14.1=h5eee18b_1
   - icu=58.2=he6710b0_3
   - idna=3.4=py310h06a4308_0
+  - iniconfig=1.1.1=pyhd3eb1b0_0
   - intel-openmp=2021.4.0=h06a4308_3561
   - ipykernel=6.19.2=py310h2f386ee_0
   - ipython=8.10.0=py310h06a4308_0
@@ -134,6 +137,7 @@ dependencies:
   - pillow=9.4.0=py310h6a678d5_0
   - pip=23.0.1=py310h06a4308_0
   - platformdirs=2.5.2=py310h06a4308_0
+  - pluggy=1.0.0=py310h06a4308_1
   - ply=3.11=py310h06a4308_0
   - pooch=1.4.0=pyhd3eb1b0_0
   - prometheus_client=0.14.1=py310h06a4308_0
@@ -142,6 +146,7 @@ dependencies:
   - psutil=5.9.0=py310h5eee18b_0
   - ptyprocess=0.7.0=pyhd3eb1b0_2
   - pure_eval=0.2.2=pyhd3eb1b0_0
+  - py=1.11.0=pyhd3eb1b0_0
   - pycparser=2.21=pyhd3eb1b0_0
   - pygithub=1.55=pyhd3eb1b0_1
   - pygments=2.11.2=pyhd3eb1b0_0
@@ -152,6 +157,8 @@ dependencies:
   - pyqt=5.15.7=py310h6a678d5_1
   - pyrsistent=0.18.0=py310h7f8727e_0
   - pysocks=1.7.1=py310h06a4308_0
+  - pytest=7.3.1=py310h06a4308_0
+  - pytest-cov=4.0.0=py310h06a4308_0
   - python=3.10.9=h7a1cb2a_1
   - python-dateutil=2.8.2=pyhd3eb1b0_0
   - python-fastjsonschema=2.16.2=py310h06a4308_0
