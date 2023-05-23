@@ -2,7 +2,7 @@
 
 import pytest
 
-from githubanalysis import repo_name_clean
+from githubanalysis.repo_name_clean import repo_name_clean
 
 def test_repo_name_clean_notstr():
     # Arrange
