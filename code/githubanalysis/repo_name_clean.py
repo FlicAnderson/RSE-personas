@@ -22,7 +22,6 @@ def repo_name_clean(repo_url):
     """
 
 # TODO: change non-string input -> TypeErrors
-# TODO: comma/semi-colon input -> ValueErrors instead of assertions?
 
 # TODO: is it worth setting a default value for testing? e.g. repo_url = 'https://github.com/testperson/testrepo'
 # TODO: how can I handle commandline input? e.g. sys.argv[1]/[1:]
@@ -33,8 +32,10 @@ def repo_name_clean(repo_url):
 
     if isinstance(repo_url, str):
 
-        assert "," not in repo_url, 'Input contains commas - ensure input is string of ONE repo only.'
-        assert ";" not in repo_url, 'Input contains semicolons - ensure input is string of ONE repo only.'
+        if "," in repo_url:
+            raise ValueError('Input contains commas - ensure input is string of ONE repo only.')
+        if ";" in repo_url:
+            raise ValueError('Input contains semicolons - ensure input is string of ONE repo only.')
 
         try:
             repo_url = (repo_url.split("https://github.com/"))[1]
