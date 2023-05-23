@@ -77,7 +77,6 @@ platformdirs==2.5.2
 pluggy==1.0.0
 ply==3.11
 pooch==1.4.0
-project-code==1.0
 prometheus-client==0.14.1
 prompt-toolkit==3.0.36
 psutil==5.9.0
