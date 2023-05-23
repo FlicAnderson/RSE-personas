@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.10"]
 
     steps:
     # check out latest code from repo
@@ -38,10 +38,14 @@ jobs:
         python -m pip install flake8 pytest pytest-cov setuptools
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     # set up code as package
-    #- name: Set up code as package project-code 
-    #  run: |
-    #    python setup.py build
-    #    python setup.py install
+    - name: Set up code as package project-code 
+      run: |
+        python setup.py build
+        python setup.py install
+    # check whether setup.py has installed my packages ok 
+    - name: list packages installed
+      run: |
+        python -m pip list
     # run linter 
     - name: Lint with flake8
       run: |
