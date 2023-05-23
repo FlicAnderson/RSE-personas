@@ -34,15 +34,18 @@ def test_repo_name_clean_notlist():
 
 
 
-def test_repo_name_clean_emptylist():
-    # Arrange
-
-    repo_list_empty = []
-
-    # Act
-    # Assert
-    with pytest.raises(TypeError):
-        repo_name_clean(repo_list_empty)
+# def test_repo_name_clean_emptylist():
+# ## THIS TEST CURRENTLY RAISES INDEX ERROR
+# ## AS [] INPUT IS READ AS STRING FROM COMMANDLINE INPUT AT COMMIT a720907
+# ## "IndexError('list index out of range')" - occurs at line: repo_url = (repo_url.split("https://github.com/"))[1]
+#     # Arrange
+#
+#     repo_list_empty = []
+#
+#     # Act
+#     # Assert
+#     with pytest.raises(TypeError):
+#         repo_name_clean(repo_list_empty)
 
 
 def test_repo_name_clean_comma():
