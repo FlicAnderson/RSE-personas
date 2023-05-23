@@ -31,6 +31,14 @@ jobs:
     # display which version of python is being used.
     - name: Display Python version
       run: python -c "import sys; print(sys.version)"
+    # set up a cache to store downloaded assets 
+    - uses: actions/cache@v3
+      id: cache
+      with: 
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.*') }}
+        restore-keys: | 
+          ${{ runner.os }}-pip-
     # install packages and dependencies with pip  
     - name: Install dependencies
       run: |
