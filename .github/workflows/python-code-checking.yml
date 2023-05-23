@@ -35,9 +35,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
         python -m pip install flake8 pytest pytest-cov setuptools
         python -m pip install -e .
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     # set up code as package
     #- name: Set up code as package project-code 
     #  run: |
