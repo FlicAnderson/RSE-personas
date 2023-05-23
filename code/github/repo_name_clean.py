@@ -1,7 +1,6 @@
 """Cleaning github repository names and urls of github repos."""
 
 import sys
-import string
 
 def repo_name_clean(repo_url):
     """
@@ -49,10 +48,6 @@ def repo_name_clean(repo_url):
         return repo_name
 
 
-def main():
-    #print(sys.argv) # TODO: remove this once debugged and running at commandline
-    repo_name_clean(repo_name)
 
 
-if __name__ == "__main__":
-    main()
+
