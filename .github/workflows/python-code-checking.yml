@@ -40,8 +40,7 @@ jobs:
     # set up code as package
     - name: Set up code as package project-code 
       run: |
-        python setup.py build
-        python setup.py install
+        python pip install -e .
     # check whether setup.py has installed my packages ok 
     - name: list packages installed
       run: |
