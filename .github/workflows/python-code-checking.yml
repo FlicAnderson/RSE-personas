@@ -45,7 +45,7 @@ jobs:
     # check whether setup.py has installed my packages ok 
     - name: list packages installed
       run: |
-        python -m pip list
+        python -m pip freeze --all
     # run linter 
     - name: Lint with flake8
       run: |
