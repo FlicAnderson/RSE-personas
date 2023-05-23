@@ -92,6 +92,7 @@
     - singularity files  
     - conda env files  
     - 'globals are bad'  
+    - ROpenci / sim communities may have a specific 'way' of managing 
 
  - software is itself packaged  
     - DESCRIPTION folder  
