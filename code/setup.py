@@ -1,8 +1,12 @@
 from setuptools import setup, find_packages
 
-setup(name='project-code', version='1.0', packages=find_packages())
+setup(
+    name='githubanalysis',
+    version='1.0',
+    description='Code for analysing research software github repositories',
+    author='Flic Anderson',
+    packages=find_packages(),
+    package_dir={'githubanalysis': './githubanalysis'}
+)
 
-
-# todo install setuptools (DONE)
-# todo update condaenv.yml
-# todo follow https://stackoverflow.com/a/50194143
+# via https://stackoverflow.com/a/50194143
