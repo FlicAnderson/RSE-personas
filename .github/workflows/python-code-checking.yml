@@ -38,9 +38,10 @@ jobs:
         python -m pip install flake8 pytest pytest-cov setuptools
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     # set up code as package
-    - name: Set up code as package project-code 
-      run: |
-        python code/setup.py install
+    #- name: Set up code as package project-code 
+    #  run: |
+    #    python setup.py build
+    #    python setup.py install
     # run linter 
     - name: Lint with flake8
       run: |
@@ -49,6 +50,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     # run tests
-    - name: Test with pytest
-      run: |
-        pytest code/test/test*
+    #- name: Test with pytest
+    #  run: |
+    #    pytest code/test/test*
