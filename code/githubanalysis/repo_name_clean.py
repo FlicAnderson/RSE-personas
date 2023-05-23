@@ -12,12 +12,17 @@ def repo_name_clean(repo_url):
 
     Examples:
     ----------
-
+    # from within python:
     >>> repo_name_clean("https://github.com/riboviz/riboviz")
     'riboviz/riboviz'
 
     >>> repo_name_clean("https://github.com/FlicAnderson/20230215-JournalClub-BestPractices/")
     'FlicAnderson/20230215-JournalClub-BestPractices'
+
+    # to run from terminal @ coding-smart/code:
+    $ python githubanalysis/clean_data.py https://github.com/riboviz/riboviz/
+    riboviz/riboviz
+
 
     """
 
