@@ -21,14 +21,14 @@ def repo_name_clean(repo_url):
 
     """
 
-# TODO: change non-string input -> TypeErrors
-
 # TODO: is it worth setting a default value for testing? e.g. repo_url = 'https://github.com/testperson/testrepo'
 # TODO: how can I handle commandline input? e.g. sys.argv[1]/[1:]
 
     if isinstance(repo_url, list):
-        assert isinstance(repo_url,
-                          str), 'Ensure input url is a string. If list of repos, use list comprension e.g. `[repo_name_clean(x) for x in repo_list]`.'
+        raise TypeError('Ensure input url is a string. If list of repos, use list comprension e.g. `[repo_name_clean(x) for x in repo_list]`.')
+
+    if isinstance(repo_url, int):
+        raise TypeError('Ensure input url is a string.')
 
     if isinstance(repo_url, str):
 
