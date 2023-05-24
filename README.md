@@ -1,6 +1,8 @@
 # coding-smart
 PhD research software research code. 
 
+[![python-code-checking](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml/badge.svg)](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml)
+
 
 ## Filesystem  
 
