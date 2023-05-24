@@ -27,6 +27,7 @@ entrypoints==0.4
 exceptiongroup==1.0.4
 executing==0.8.3
 fastjsonschema==2.16.2
+flake8==6.0.0
 flit_core==3.6.0
 fonttools==4.25.0
 idna==3.4
@@ -54,6 +55,7 @@ lxml==4.9.1
 MarkupSafe==2.1.1
 matplotlib==3.7.0
 matplotlib-inline==0.1.6
+mccabe==0.7.0
 mistune==0.8.4
 munkres==1.1.4
 nbclassic==0.5.2
@@ -83,7 +85,9 @@ psutil==5.9.0
 ptyprocess==0.7.0
 pure-eval==0.2.2
 py==1.11.0
+pycodestyle==2.10.0
 pycparser==2.21
+pyflakes==3.0.1
 PyGithub==1.55
 Pygments==2.11.2
 PyJWT==2.4.0
