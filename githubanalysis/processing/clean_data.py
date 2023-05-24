@@ -1,7 +1,11 @@
 """Data cleaning workflow for github repo analysis."""
 
 import sys
+#from github import Github
+#import githubanalysis.processing.setup_github_auth as ghauth
+import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.repo_name_clean as name_clean
+#import githubanalysis.processing.get_all_pages_issues as getpagesissues
 
 # data cleaning stuff:
     # handle github url input (read in from file? / github API call?)
@@ -10,8 +14,18 @@ import githubanalysis.repo_name_clean as name_clean
     # pass clean data to analysis script
 
 def main():
+
+# ghlink = ghauth.setup_github_auth()
+
+# read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
+
+# ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
+
     repo_name = sys.argv[1] # TODO: remove this once using read-in data instead of commandline
     name_clean.repo_name_clean(repo_name)
+
+# getpagesissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
+
 
 # this bit
 if __name__ == "__main__":
