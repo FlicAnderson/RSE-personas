@@ -5,13 +5,16 @@ PhD research software research code.
 ## Filesystem  
 
 Within `coding-smart` repo, the key folders are:  
- - `code` - this will contain data processing and analysis code for the project   
- - `data` - this will contain raw, cleaned and analysed data for the project   
- - `images` - will hold analysis result visualisations and other relevant images    
+ - `githubanalysis` - holds the `githubanalysis` python module code for getting, processing, analysing and visualizing github repository info.  
+ - `tests` - contains `{pytest}` test code for testing project code.     
+ - `data` - this will contain raw, cleaned and analysed data for the project.   
+ - `images` - will hold analysis result visualisations and other relevant images.
 
-The main folders within `code/` are:  
- - `githubanalysis` - holds code for getting, processing, analysing and visualizing github repository info  
- - `test` - contains `{pytest}` test code for testing project code  
+Within `githubanalysis` folder, subfolders will hold submodules of python code with different goals: 
+ - `processing` - subpackage of code relating to getting, cleaning and preparing data for analysis.    
+ - `analysis` - subpackage of code for data analysis.  
+ - `visualisation` - subpackage of code for data viz.
+
 
 ## Environment  
 
