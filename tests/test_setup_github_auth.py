@@ -40,5 +40,13 @@ def test_per_page_default100():
 
 
 
+def test_per_page_exceed100():
+    # test per_page attribute value max is 100 in GH API, so don't accept this!
+
+    with pytest.raises(ValueError):
+        setup_github_auth.setup_github_auth(per_page=150)
+
+
+
 #def test_ghlink_class:
     # test that ghlink has right class ? github.MainClass.Github
