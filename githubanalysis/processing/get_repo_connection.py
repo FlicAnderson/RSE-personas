@@ -1,7 +1,7 @@
 """ Set up Github API connection for given github repository."""
 
 from github import Github
-# todo NEEDS set up access token separately (see above!)
+import githubanalysis.processing.setup_github_auth as ghauth
 
 def get_repo_connection(repo_name):
     """Create connection to github repository and get details
@@ -21,11 +21,12 @@ def get_repo_connection(repo_name):
     Repository(full_name="riboviz/riboviz")
     """
 
-    # g = Github(access_token)  # this access token setup line is required, plus extra setup code elsewhere above.
+    # this access token authentication setup line is required
+    ghlink = ghauth.setup_github_auth(configfilepath='../config.cfg')
 
-    # check input
+    # check repo_name input validity
 
     # try to set up connection
-    repo_connection = g.get_repo(repo_name)
+    repo_connection = ghlink.get_repo(repo_name)
 
     return repo_connection
