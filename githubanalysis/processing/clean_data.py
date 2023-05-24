@@ -1,7 +1,7 @@
 """Data cleaning workflow for github repo analysis."""
 
 import sys
-import repo_name_clean as name_clean
+import githubanalysis.repo_name_clean as name_clean
 
 # data cleaning stuff:
     # handle github url input (read in from file? / github API call?)

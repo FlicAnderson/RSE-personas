@@ -18,7 +18,7 @@ def repo_name_clean(repo_url):
     'FlicAnderson/20230215-JournalClub-BestPractices'
 
     # to run from terminal @ coding-smart/code:
-    $ python githubanalysis/clean_data.py https://github.com/riboviz/riboviz/
+    $ python githubanalysis/processing/clean_data.py https://github.com/riboviz/riboviz/
     riboviz/riboviz
     """
 
