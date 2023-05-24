@@ -5,7 +5,7 @@ from pathlib import Path
 from github import Github
 
 
-def setup_github_auth(configfilepath = '../config', per_page=100):
+def setup_github_auth(configfilepath = 'githubanalysis/config.cfg', per_page=100):
     """
     Authenticates with Github API using user-generated config.cfg file contents; sets per_page to 100 items.
     :param configfilepath: file path of config.cfg file. Default='../config'.
@@ -26,8 +26,8 @@ def setup_github_auth(configfilepath = '../config', per_page=100):
 
     # check config filepath input (using separate variable to avoid overwriting it as pathlib Path type)
     pathchecker = Path(configfilepath)
-    if pathchecker.exists() == False:
-        raise OSError('Config file does not exist at that path.')
+    if (pathchecker.exists() == False):
+        raise OSError('Config file does not exist at path:', configfilepath)
 
     # read config file and pull out access token details
     config = configparser.ConfigParser()
