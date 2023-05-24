@@ -21,8 +21,8 @@ def get_repo_connection(repo_name):
     Repository(full_name="riboviz/riboviz")
     """
 
-    # this access token authentication setup line is required
-    ghlink = ghauth.setup_github_auth(configfilepath='../config.cfg')
+    # this access token authentication setup line is required; use defaults configfilepath & per_page=100
+    ghlink = ghauth.setup_github_auth()
 
     # check repo_name input validity
 
