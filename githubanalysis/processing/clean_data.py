@@ -2,7 +2,7 @@
 
 import sys
 #from github import Github
-#import githubanalysis.processing.setup_github_auth as ghauth
+import githubanalysis.processing.setup_github_auth as ghauth
 import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.repo_name_clean as name_clean
 #import githubanalysis.processing.get_all_pages_issues as getpagesissues
@@ -15,14 +15,14 @@ import githubanalysis.repo_name_clean as name_clean
 
 def main():
 
-# ghlink = ghauth.setup_github_auth()
-
 # read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
 
-# ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
-
     repo_name = sys.argv[1] # TODO: remove this once using read-in data instead of commandline
-    name_clean.repo_name_clean(repo_name)
+    repo_name = name_clean.repo_name_clean(repo_name)
+    print(repo_name)
+
+    ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
+    # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
 # getpagesissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
 
