@@ -40,6 +40,7 @@ dependencies:
   - exceptiongroup=1.0.4=py310h06a4308_0
   - executing=0.8.3=pyhd3eb1b0_0
   - expat=2.4.9=h6a678d5_0
+  - flake8=6.0.0=py310h06a4308_0
   - flit-core=3.6.0=pyhd3eb1b0_0
   - fontconfig=2.14.1=h52c9d5c_1
   - fonttools=4.25.0=pyhd3eb1b0_0
@@ -107,6 +108,7 @@ dependencies:
   - matplotlib=3.7.0=py310h06a4308_0
   - matplotlib-base=3.7.0=py310h1128e8f_0
   - matplotlib-inline=0.1.6=py310h06a4308_0
+  - mccabe=0.7.0=pyhd3eb1b0_0
   - mistune=0.8.4=py310h7f8727e_1000
   - mkl=2021.4.0=h06a4308_640
   - mkl-service=2.4.0=py310h7f8727e_0
@@ -147,7 +149,9 @@ dependencies:
   - ptyprocess=0.7.0=pyhd3eb1b0_2
   - pure_eval=0.2.2=pyhd3eb1b0_0
   - py=1.11.0=pyhd3eb1b0_0
+  - pycodestyle=2.10.0=py310h06a4308_0
   - pycparser=2.21=pyhd3eb1b0_0
+  - pyflakes=3.0.1=py310h06a4308_0
   - pygithub=1.55=pyhd3eb1b0_1
   - pygments=2.11.2=pyhd3eb1b0_0
   - pyjwt=2.4.0=py310h06a4308_0
@@ -174,7 +178,7 @@ dependencies:
   - scikit-learn=1.2.1=py310h6a678d5_0
   - scipy=1.10.0=py310hd5efca6_1
   - send2trash=1.8.0=pyhd3eb1b0_1
-  - setuptools=65.6.3=py310h06a4308_0
+  - setuptools=66.0.0=py310h06a4308_0
   - sip=6.6.2=py310h6a678d5_0
   - six=1.16.0=pyhd3eb1b0_1
   - sniffio=1.2.0=py310h06a4308_1
