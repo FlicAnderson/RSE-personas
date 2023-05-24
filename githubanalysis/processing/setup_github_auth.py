@@ -33,7 +33,10 @@ def setup_github_auth(configfilepath = 'githubanalysis/config.cfg', per_page=100
     config = configparser.ConfigParser()
     config.read(configfilepath)
     config.sections()
-    access_token = config['ACCESS']['token']
+    try:
+        access_token = config['ACCESS']['token']
+    except:
+        raise KeyError('Config file access token info not correct somehow.')
 
     try:
         ghlink = Github(
