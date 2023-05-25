@@ -2,9 +2,8 @@
 
 import sys
 #from github import Github
-import githubanalysis.processing.setup_github_auth as ghauth
 import githubanalysis.processing.get_repo_connection as ghconnect
-import githubanalysis.repo_name_clean as name_clean
+import githubanalysis.processing.repo_name_clean as name_clean
 #import githubanalysis.processing.get_all_pages_issues as getpagesissues
 
 # data cleaning stuff:
