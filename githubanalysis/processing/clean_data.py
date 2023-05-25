@@ -4,7 +4,7 @@ import sys
 #from github import Github
 import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.processing.repo_name_clean as name_clean
-#import githubanalysis.processing.get_all_pages_issues as getpagesissues
+#import githubanalysis.processing.get_all_pages_issues as getallissues
 
 # data cleaning stuff:
     # handle github url input (read in from file? / github API call?)
@@ -23,7 +23,15 @@ def main():
     ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
     # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
-# getpagesissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
+# ISSUES DATA:
+
+    #all_issues = getallissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
+
+    # issues_json_to_df(all_issues)
+
+# OTHER DATA (e.g. COMMITS, METRICS):
+
+    # other bits.
 
 
 # this bit
