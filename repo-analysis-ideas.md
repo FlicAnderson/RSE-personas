@@ -175,3 +175,33 @@
     - usage standards  
     - 'communication standards' - e.g. doc formats/contents  
     - languages ()
+
+## Ideas to investigate: 
+
+Come up with hypotheses, and then visualise these kinds of things to see whether there's other sources of info to verify this (e.g. ask folks). 
+e.g. "if there's lots of opening/closing of issue tickets, but few code-based commits (e.g. low additions/deletions), does this show that a repo is in maintenance mode?" 
+then write code to get the rates of open/close or addition/deletions across a certain window of time, then apply code to a repo in known mode (e.g. 'maintenance mode'), and see if it detects it.
+
+Easy Qs:  
+
+Q: does repo use issue tracking in github? (should be easy to determine)  
+A: cannot use `has_issues` boolean, as this merely shows whether issues are enabled (for example https://github.com/FlicAnderson/20230215-JournalClub-BestPractices/issues has never had any issues, but `has_issues` returns True because they are enabled in repo settings. See: [repos parameter docs](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28)). 
+Instead must try something else.  
+
+Q: is issue tracking used by all devs in team? (cf issue authors and commit authors?)   
+
+Q: is issue tracking currently stagnant or active? (slightly more detailed than 'is/is not used', but might look at rate of closing/opening within N time period)  
+
+Q: are all issues closed by the opening author? (if not a 1-person dev team, if all issues are closed by the person who opens them is that a project management choice? Or is there no cross-working by devs?)  
+
+Q: are issues always assigned to a dev? (is there a field for assignment/responsibility?)  
+
+Medium Qs:  
+Q: at which stage of the sw lifecycle / sw project is issue tracking used? (perhaps could look at additions/deletions in commits over time? e.g. frequent commits possibly = construction, lots of churn in code = construction, less churn = maintenance?, lots of issue tickets but no commits = design / requirements / project mgmt / end of support?)  
+
+Q: Are PRs linked to issues? (if PRs are listed amongst issue tickets in GH api, need separate PR field to distinguish. How could I find linking info? How are links recorded in the GH system?)  
+Q: how does issue ticket open/closing/progress relate to development surges/effort? (again, addition/deletions in commits cf. issue dates - how would I deal with dev-breaks like 'christmas hols' rather than 'end of project' or 'prolonged lull in development'?)  
+
+Hard Qs:  
+Q: does repo use non-GH methods of tracking issues? (harder to identify)   
+Q: what kinds of information are held in issues? (this could be things like 'code approaches tried', links to similar issues which may have the same root or could all be fixed in the same development sweep, does issue discussion include code, how many people are involved in issue ticket discussion)  
