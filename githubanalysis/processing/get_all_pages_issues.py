@@ -1,5 +1,5 @@
 """ Get all data from all pages of issues for a github repo."""
-
+import pandas as pd
 import requests
 
 
@@ -37,7 +37,7 @@ def get_all_pages_issues(repo_name, per_pg=100):
 
     links = requests.get(url=urlparam, params={'per_page' : per_pg}).links
 
-    # ERROR if there's no 'last'.
+    # ERROR if there's no 'last'. In this case, just take
     # figure out how many pages there are.
     last_pg = links['last']['url'].split("&page=")[1] # pull off the number of last page
     # last_pg should be number (convert from returned string I guess?)
@@ -54,24 +54,20 @@ def get_all_pages_issues(repo_name, per_pg=100):
         # counter = i
         if i == 0:
             print("first run", url_num, ":", len(tmp_pg_results), type(tmp_pg_results))
-            store_pgs = tmp_pg_results.append()  # for first set, create store_pgs
+            store_pgs.extend(tmp_pg_results)  # for first set, create store_pgs
         else:
             print("subsequent", url_num, ":", len(tmp_pg_results), type(tmp_pg_results))
-            store_pgs = store_pgs.append(tmp_pg_results)  # for subsequent sets, extend (add to) store_pgs
-        #    counter += 1
-        # print(len(tmp_pg_results))
-        # store_pgs = store_pgs.append(tmp_pg_results)
+            store_pgs.extend(tmp_pg_results)  # for subsequent sets, extend (add to) store_pgs
 
-    return (len(store_pgs))
+    # store_pgs holds items in list.
+      # Can pull items out using indices e.g. url of 'first' issue: store_pgs[0]['url']
 
-    # pull next pg
-    #tmp_pg_results = requests.get(next_pg)
-    #store_pg = tmp_pg_results.json()    # do I need to use json.dumps() here to convert to python dicts for concat/expanding??
+    print("Total responses:", len(store_pgs))
+
+    issue_pgs_df = pd.DataFrame(store_pgs)
+    return (issue_pgs_df)
+
+    # relevant fields: 'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
+    # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url', 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
 
     # todo: add optional informative message about how many issues, pages etc?
-    # return ###
-
-
-
-    #issues_info = requests.get((url = f'https://api.github.com/repos/{repo_name}/issues'), params = {f'per_page': {per_page}}')
-    # get_last_page_links a = requests.get(url=f'https://api.github.com/repos/{username}/{repo_name}/issues', params={'per_page': 100}).links
