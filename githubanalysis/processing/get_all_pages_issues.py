@@ -14,7 +14,7 @@ def get_all_pages_issues(repo_name, per_pg=100, issue_state='all', verbose=True)
     :type str:
     :param verbose: whether to print out issue data dimensions and counts. Default: True
     :type bool:
-    :returns: `all_issues` pd.DataFrame containing 30 fields per issue for given repo `repo_name`.  
+    :returns: `all_issues` pd.DataFrame containing 30 fields per issue for given repo `repo_name`.
     :type DataFrame:
 
     Examples:
@@ -51,16 +51,16 @@ def get_all_pages_issues(repo_name, per_pg=100, issue_state='all', verbose=True)
     # store_pgs holds items in list.
       # Can pull items out using indices e.g. url of 'first' issue: store_pgs[0]['url']
 
-    if verbose = True:
+    if verbose:
         print("Total responses:", len(store_pgs))
 
     all_issues = pd.DataFrame(store_pgs)
 
-    if verbose = True:
+    if verbose:
         print("Shape of data:", all_issues.shape)
         print("Issue state counts:", all_issues.state.value_counts())
 
-    return (issue_pgs_df)
+    return (all_issues)
 
     # relevant fields: 'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
     # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url', 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
