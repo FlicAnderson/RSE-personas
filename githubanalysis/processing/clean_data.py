@@ -1,10 +1,10 @@
-"""Data cleaning workflow for github repo analysis."""
+"""Data cleaning workflow for GitHub repo analysis."""
 
 import sys
-#from github import Github
+#from GitHub import GitHub
 import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.processing.repo_name_clean as name_clean
-#import githubanalysis.processing.get_all_pages_issues as getallissues
+import githubanalysis.processing.get_all_pages_issues as getallissues
 
 # data cleaning stuff:
     # handle github url input (read in from file? / github API call?)
@@ -18,14 +18,17 @@ def main():
 
     repo_name = sys.argv[1] # TODO: remove this once using read-in data instead of commandline
     repo_name = name_clean.repo_name_clean(repo_name)
-    print(repo_name)
+    #print(repo_name)
 
-    ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
+    #ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
     # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
 # ISSUES DATA:
 
-    #all_issues = getallissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
+    all_issues = getallissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
+        # verbose = true by default, prints number of issues.
+        # issue_state = 'all' by default (open and closed issues gathered)
+        # 'per_pgs' = 100 by default.
 
     # issues_json_to_df(all_issues)
 
