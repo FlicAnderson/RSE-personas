@@ -73,3 +73,73 @@ TOTAL                                  17      7    59%
 =========================================== 4 passed in 0.03s ===========================================
 ```
 
+## Possible Functions Required: 
+
+#### General / Utility: 
+- [ ] Parse list of urls to pull out repositories  
+- [x] Clean repo url to get repo_name [repo_name_clean()](githubanalysis/processing/repo_name_clean.py)  
+- [x] Authenticate to GitHub API using access token [setup_github_auth()](githubanalysis/processing/setup_github_auth.py)  
+- [x] Connect to repo x through github api [get_repo_connection()](githubanalysis/processing/get_repo_connection.py)  
+- [ ] RUN DATA PROCESSING WORKFLOW [clean_data.py](githubanalysis/processing/clean_data.py)  
+
+#### Issue Ticket Usage:  
+- [ ] Check for issue ticket use at repo X   
+- [x] Get all issue ticket info from repo X  [get_all_pages_issues()](githubanalysis/processing/get_all_pages_issues.py)
+- [x] Get (number of) open issues from repo X (printed by get_all_pages_issues())
+- [x] Get (number of) closed issues from repo X  (printed by get_all_pages_issues())
+- [ ] Get issue X ticket author  
+- [ ] Get assigned dev for issue X 
+- [ ] Get closing author of issue X 
+- [ ] Get issue X discussion  
+- [ ] Calculate linked issues to issue X   
+- [ ] Calculate time to close issue X  
+- [ ] Calculate number of ticket authors in repo X   
+- [ ] Calculate measure of issue ticket creation frequency     
+- [ ] Calculate measure of issue ticket closure frequency     
+- [ ] Plot average time to close issues in list   
+- [ ] Plot number of issue ticket authors over time  
+- [ ] Plot issue ticket creation over time for repo   
+- [ ] Plot issue ticket closure over time  
+
+#### Pull Requests:
+- [ ] Check for PR usage at repo X  
+- [ ] Get PRs for repo X  
+- [ ] Get linked issues / PRs for issue X    
+- [ ] Check PR code reviewed before merge  
+- [ ] Count PR reviews assigned to each repo dev  
+- [ ] Check PR link to branches  
+- [ ] Check for pre-merge testing  
+
+#### Commits:
+- [ ] Calculate number of devs (committers) in repo X  
+- 
+
+#### Testing:  
+- [ ] Check for 'tests' folder / 'test_*' / '*_test' file structure in repo X  
+- [ ] Check for test package imports in repo X
+- [ ] Check for 'regression' tests in repo X
+- [ ] Check for 'unit' tests in repo X 
+- [ ] Check for 'assertions' in repo X 
+- [ ] Check for 'test coverage' calculation in repo X 
+
+#### Code Documentation:  
+
+
+#### Automation:  
+
+
+
+
+
+
+## Concepts to Identify & Describe: 
+
+Concepts: 
+ - 'repo'  
+ - 'PR' - (?)branched code tagged for checking before merge to main code  
+ - 'code reviewer' - someone who marks PR as checked/approved before merge (?probably should not be the author of the PR?)
+ - 'dev' - someone who commits to the repo  
+ - 'main dev' - someone who may review PRs to code, contributes significant proportion of code commits, merges branches, 
+ - 'project member' - someone who touches the repo (e.g. adds issue but does not commit, is listed as repo team member, may have various admin levels?; could include project management or PI who is not actively invovled in day to day?)   
+
+Need to figure out how I can differentiate between devs and main devs, also things like "do documentation-only commits count as development for the purposes of assigning 'main dev' role?" 
