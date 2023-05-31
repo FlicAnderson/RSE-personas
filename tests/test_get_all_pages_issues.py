@@ -34,12 +34,15 @@ import githubanalysis.processing.get_all_pages_issues as issuepages
 # def test_all_issues_count():
     # confirm count of all issues is correct
 
+
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 # def test_imp_issues_params():
     # confirm useful parameters are being returned in df:  'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
     # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url', 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
 
 
-# validate json returned?
-# check json input contains content?
-# check for specific fields being there?
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+# def test_validate_json():
+    # validate json returned?
+    # check json input contains content?
+    # check for specific fields being there?
