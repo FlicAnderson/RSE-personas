@@ -1,40 +1,44 @@
 """Data cleaning workflow for GitHub repo analysis."""
 
 import sys
-#from GitHub import GitHub
-import githubanalysis.processing.get_repo_connection as ghconnect
+
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.processing.write_out_repo_data as writeout
 
-# data cleaning stuff:
-    # handle github url input (read in from file? / github API call?)
-    # loop over github urls using repo_name_clean() to do cleaning
-    # save clean data out
-    # pass clean data to analysis script
 
 def main():
+    """
+    data cleaning stuff:
+        handle GitHub url input (read in from file? / GitHub API call?)
+        loop over GitHub urls using repo_name_clean() to do cleaning
+        save clean data out
+        pass clean data to analysis script
+    """
 
 # read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
 
-    repo_name = sys.argv[1] # TODO: remove this once using read-in data instead of commandline
+    repo_name = sys.argv[1]  # TODO: remove this once using read-in data instead of commandline
     repo_name = name_clean.repo_name_clean(repo_name)
-    #print(repo_name)
 
-    #ghconnect.get_repo_connection(repo_name)  # create gh repo object to given repo
-    # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
 # ISSUES DATA:
 
-    all_issues = getallissues.get_all_pages_issues(repo_name) # get all issues from all pages for given repo
-        # verbose = true by default, prints number of issues.
-        # issue_state = 'all' by default (open and closed issues gathered)
-        # 'per_pgs' = 100 by default.
+    all_issues = getallissues.get_all_pages_issues(
+        repo_name,
+        config_path='githubanalysis/config.cfg',
+        per_pg=100,
+        issue_state='all',
+        verbose=True
+    )  # get all issues from all pages for given repo
 
-    writeout.write_out_repo_data(repo_data_df=all_issues, repo_name=repo_name, filename='all_issues', write_out_as='json')
+    writeout.write_out_repo_data(
+        repo_data_df=all_issues,
+        repo_name=repo_name,
+        filename='all_issues',
+        write_out_as='json'
+    )  # write out issues data to file
 
-
-    # issues_json_to_df(all_issues)
 
 # OTHER DATA (e.g. COMMITS, METRICS):
 
@@ -44,4 +48,3 @@ def main():
 # this bit
 if __name__ == "__main__":
     main()
-
