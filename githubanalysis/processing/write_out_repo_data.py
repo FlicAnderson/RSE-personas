@@ -1,5 +1,7 @@
 """ Takes pd.DataFrame repo dataset (e.g. issues data) and writes out to file. ."""
 import pandas as pd
+from pandas.errors import EmptyDataError
+import pathlib
 import json
 
 
@@ -25,6 +27,8 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     :type: str
     :param verbose: whether to print out file information. Default: True
     :type: bool
+    :returns write_out_filepath: This is the path and filename to which the file has been written out.
+    :type: str/path
 
     Examples:
     ----------
@@ -34,6 +38,9 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     # verify input is df
     if not isinstance(repo_data_df, pd.DataFrame):
         raise TypeError('Ensure input data is pd.DataFrame format.')
+
+    if repo_data_df.empty is True:
+        raise EmptyDataError('There is no data in dataframe repo_data_df.')
 
     # check there's a repo_name
     if repo_name is None:
@@ -45,16 +52,21 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
         # check it's not empty
         # check it's valid and exists.
 
+    # create filename from repo_name
+    write_out_filename = f'{filename}__{repo_name.replace("/", "_")}'
+    print(write_out_filename)
+
     # which method:
     if write_out_as not in ('json', 'csv'):
         raise ValueError('write_out_as must be one of "csv" or "json".')
 
-    if write_out_as is 'json':
-        # create filename from repo_name
-        write_out_filename = f'{filename}__{repo_name.replace("/", "_")}'
-        print(write_out_filename)
+    #if write_out_as is 'json':
 
         #repo_data_df.to_json(path_or_buf=write_out_location, orient=write_orientation)
 
         #if verbose:
         #    print(f'file saved out as: {filename} at {write_out_location}')
+
+
+
+    return(write_out_filepath)
