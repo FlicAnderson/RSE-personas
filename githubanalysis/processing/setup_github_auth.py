@@ -1,19 +1,19 @@
-""" Set up authenticated access to github."""
+""" Set up authenticated access to GitHub."""
 
 import configparser
 from pathlib import Path
 from github import Github
 
 
-def setup_github_auth(configfilepath = 'githubanalysis/config.cfg', per_page=100):
+def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100):
     """
     Authenticates with Github API using user-generated config.cfg file contents; sets per_page to 100 items.
-    :param configfilepath: file path of config.cfg file. Default='../config'.
-    :type str:
-    :param per_page: number of items per page. Default=100, overwrites Github default 30.
-    :type int:
+    :param config_path: file path of config.cfg file. Default='githubanalysis/config.cfg'.
+    :type: str
+    :param per_pg: number of items per page in paginated API requests. Default=100, overwrites GitHub default 30.
+    :type: int
     :returns: `ghlink`
-    :type github.MainClass.Github:
+    :type: github.MainClass.Github
 
     Examples:
     ----------
@@ -21,17 +21,17 @@ def setup_github_auth(configfilepath = 'githubanalysis/config.cfg', per_page=100
     """
 
     # ensure arguments are valid
-    if per_page > 100:
+    if per_pg > 100:
         raise ValueError('GH API maximum per_page value is 100.')
 
     # check config filepath input (using separate variable to avoid overwriting it as pathlib Path type)
-    pathchecker = Path(configfilepath)
-    if (pathchecker.exists() == False):
-        raise OSError('Config file does not exist at path:', configfilepath)
+    pathchecker = Path(config_path)
+    if pathchecker.exists() is False:
+        raise OSError('Config file does not exist at path:', config_path)
 
     # read config file and pull out access token details
     config = configparser.ConfigParser()
-    config.read(configfilepath)
+    config.read(config_path)
     config.sections()
     try:
         access_token = config['ACCESS']['token']
@@ -41,11 +41,11 @@ def setup_github_auth(configfilepath = 'githubanalysis/config.cfg', per_page=100
     try:
         ghlink = Github(
             access_token,
-            per_page=per_page
+            per_page=per_pg
         )  # type(ghlink) is github.MainClass.Github; ghlink.per_page should return 100
 
         print('GH link opened')
         return ghlink
 
     except RuntimeError:
-        print('Github authentication did not work. Check config file has correct format locally and has correct permissions in your github account.')
+        print('Github authentication failed. Check config file format and permissions in your github account.')
