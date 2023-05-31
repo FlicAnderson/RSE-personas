@@ -49,7 +49,7 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     if write_out_as not in ('json', 'csv'):
         raise ValueError('write_out_as must be one of "csv" or "json".')
 
-    if write_out_as == 'json':
+    if write_out_as is 'json':
         # create filename from repo_name
         write_out_filename = f'{filename}__{repo_name.replace("/", "_")}'
         print(write_out_filename)
