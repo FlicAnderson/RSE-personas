@@ -80,7 +80,8 @@ TOTAL                                  17      7    59%
 - [x] Clean repo url to get repo_name [repo_name_clean()](githubanalysis/processing/repo_name_clean.py)  
 - [x] Authenticate to GitHub API using access token [setup_github_auth()](githubanalysis/processing/setup_github_auth.py)  
 - [x] Connect to repo x through github api [get_repo_connection()](githubanalysis/processing/get_repo_connection.py)  
-- [ ] RUN DATA PROCESSING WORKFLOW [clean_data.py](githubanalysis/processing/clean_data.py)  
+- [ ] RUN DATA PROCESSING WORKFLOW [clean_data.py](githubanalysis/processing/clean_data.py)
+- [ ] Write out data to file to avoid repeating API requests  
 
 #### Issue Ticket Usage:  
 - [ ] Check for issue ticket use at repo X   
