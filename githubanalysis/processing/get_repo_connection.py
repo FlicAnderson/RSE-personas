@@ -1,19 +1,24 @@
-""" Set up Github API connection for given github repository."""
+""" Set up GitHub API connection for given GitHub repository."""
 
-from github import Github
 import githubanalysis.processing.setup_github_auth as ghauth
 
-def get_repo_connection(repo_name):
-    """Create connection to github repository and get details
+
+def get_repo_connection(repo_name, config_path='githubanalysis/config.cfg', per_pg=100):
+    """
+    Create connection to GitHub repository and get details
     when given 'username' and 'repo_name' repository name.
-    repo_connection is type: github.Repository.Repository.
+    repo_connection is type: GitHub.Repository.Repository.
 
-    NOTE: Requires `access_token` setup with Github package.
+    NOTE: Requires `access_token` setup with GitHub package.
 
-    :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
-    :type str:
-    :returns: `repo_connection` github object repository connection
-    :type github.Repository.Repository:
+    :param repo_name: cleaned `repo_name` string without GitHub url root or trailing slashes.
+    :type: str
+    :param config_path: file path of config.cfg file containing GitHub Access Token. Default='githubanalysis/config.cfg'.
+    :type: str
+    :param per_pg: number of items per page in paginated API requests. Default=100, overwrites GitHub default 30.
+    :type: int
+    :returns: `repo_connection` GitHub object repository connection
+    :type: GitHub.Repository.Repository
 
     Examples:
     ----------
@@ -21,10 +26,10 @@ def get_repo_connection(repo_name):
     Repository(full_name="riboviz/riboviz")
     """
 
-    # this access token authentication setup line is required; use defaults configfilepath & per_page=100
-    ghlink = ghauth.setup_github_auth()
+    # this access token authentication setup line is required; use defaults `config_path` & `per_pg`=100
+    ghlink = ghauth.setup_github_auth(config_path, per_pg)
 
-    # check repo_name input validity
+    # TODO: check repo_name input validity
 
     # try to set up connection
     repo_connection = ghlink.get_repo(repo_name)
