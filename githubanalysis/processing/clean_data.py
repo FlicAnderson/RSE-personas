@@ -5,6 +5,7 @@ import sys
 import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
+import githubanalysis.processing.write_out_repo_data as writeout
 
 # data cleaning stuff:
     # handle github url input (read in from file? / github API call?)
@@ -29,6 +30,9 @@ def main():
         # verbose = true by default, prints number of issues.
         # issue_state = 'all' by default (open and closed issues gathered)
         # 'per_pgs' = 100 by default.
+
+    writeout.write_out_repo_data(repo_data_df=all_issues, repo_name=repo_name, filename='all_issues', write_out_as='json')
+
 
     # issues_json_to_df(all_issues)
 
