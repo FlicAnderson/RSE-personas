@@ -4,6 +4,7 @@ import pytest
 import pandas as pd
 from pandas.errors import EmptyDataError
 from pathlib import Path
+
 import githubanalysis.processing.get_all_pages_issues as issuepages
 import githubanalysis.processing.write_out_repo_data as writeout
 
@@ -40,9 +41,6 @@ def test_empty_df():
     # given a filename, repo_name, does actual filename match?
 
 
-
-
-
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_filetype_json():
     # test json file is created if write_out_as='json'.
@@ -62,8 +60,8 @@ def test_empty_df():
     # test that the data structure written out is as expected when set using 'write_orientation' param
     # test for json files.
 
+
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_write_orientation_json():
     # test that the data structure written out is as expected when set using 'write_orientation' param
     # test for json files.
-    
