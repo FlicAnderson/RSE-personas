@@ -15,6 +15,8 @@ def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100):
     :returns: `ghlink`
     :type: github.MainClass.Github
 
+    # NB: GitHub API param uses 'per_page', Flic's code using 'per_pg' intentionally.
+
     Examples:
     ----------
     TODO.
