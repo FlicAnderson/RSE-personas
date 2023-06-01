@@ -21,7 +21,7 @@ def main():
     repo_name = sys.argv[1]  # TODO: remove this once using read-in data instead of commandline
 
     # this is a rather coarse attempt at whether to use repo_name_clean() or not, but good in the meantime.
-    # TODO: would be nice to try parseing the url or check how many slashes etc. 
+    # TODO: would be nice to try parseing the url or check how many slashes etc.
     if 'github' in repo_name:
         repo_name = name_clean.repo_name_clean(repo_name)
 
