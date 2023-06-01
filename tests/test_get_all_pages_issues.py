@@ -9,7 +9,7 @@ import githubanalysis.processing.get_all_pages_issues as issuepages
 
 
 repo_name_a = 'ropensci/dwctaxon'  # repo with 49 closed, 6 open issues. with get_issues(state='all) this rises to 92.
-test_repo_no_issues: 'FlicAnderson/test-repo-no-issues'  # this is a public repo where I've unticked 'issues' in settings.
+test_repo_no_issues = 'FlicAnderson/test-repo-no-issues'  # this is a public repo where I've unticked 'issues' in settings.
 
 per_pg = 100
 
