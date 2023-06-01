@@ -19,7 +19,11 @@ def main():
 # read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
 
     repo_name = sys.argv[1]  # TODO: remove this once using read-in data instead of commandline
-    repo_name = name_clean.repo_name_clean(repo_name)
+
+    # this is a rather coarse attempt at whether to use repo_name_clean() or not, but good in the meantime.
+    # TODO: would be nice to try parseing the url or check how many slashes etc. 
+    if 'github' in repo_name:
+        repo_name = name_clean.repo_name_clean(repo_name)
 
 
 # ISSUES DATA:
