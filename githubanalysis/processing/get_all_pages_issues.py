@@ -27,6 +27,9 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     repo_con = ghconnect.get_repo_connection(repo_name, config_path, per_pg)  # create gh repo object to given repo
     # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
+    if hasattr(repo_con, 'has_issues') is False:
+        raise AttributeError(f'GitHub repository {repo_name} does not have issues enabled.')
+
     store_pgs = []
 
     # without `state='all'` you only get open issues.
@@ -45,6 +48,11 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     if verbose:
         print("Shape of data:", all_issues.shape)
         print("Issue state counts:", all_issues.state.value_counts())
+
+    # check all important columns are present in the df.
+    wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
+                   'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
+    assert all(item in all_issues.columns for item in wanted_cols)
 
     return all_issues
 
