@@ -4,7 +4,6 @@ import pytest
 from pathlib import Path
 from githubanalysis.processing import setup_github_auth
 
-@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_config_file_not_exists():
     # test config file exists where expected
     fake_config_path = 'githubanalysis/fakefolder/config.cfg'
