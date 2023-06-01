@@ -72,7 +72,7 @@ def test_open_issues_count():
     # confirm count of all issues is correct
 
 
-# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_inc_imp_issues_params():
     # confirm useful parameters are being returned in df:  'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
     # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url', 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
@@ -86,7 +86,7 @@ def test_inc_imp_issues_params():
     assert all(item in all_issues_cols for item in wanted_cols)
 
 
-# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_excl_fake_issues_params():
     # this one is mainly checking my test logic tbh.
 
