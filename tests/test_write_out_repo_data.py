@@ -18,63 +18,106 @@ filename_2 = "repo_info"
 filename_3 = "2023-06-21-datedfilename"
 filename_4 = "20230621datedfilename"
 
-all_issues = issuepages.get_all_pages_issues(
-    repo_name=repo_name_5,
-    config_path='githubanalysis/config.cfg',
-    per_pg=100,
-    issue_state='all',
-    verbose=True
-)  # get all issues from all pages for given repo
-
-# write out issues data to file and return/save filename and path to write_out object
-write_out = writeout.write_out_repo_data(
-    repo_data_df=all_issues,
-    repo_name=repo_name_5,
-    filename='all_issues',
-    write_out_as='json',
-    write_out_location='data/',
-    write_orientation='table',
-    verbose=True)
-
-# read the data back in as a dataframe from the file and filepath saved in write_out
-read_in_df = pandas.read_json(path_or_buf=write_out, orient='table', typ='frame', dtype=None, convert_dates='False', keep_default_dates='False', precise_float=False, date_unit='s')
-# check dates aren't borked up because there's conversions possible in the to_json() and read_json() functions.
-
-# create 5% sample dfs from all_issues pre-write-out df and post-read_in df for comparison:
-write_out_sample = all_issues.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
-                                     ignore_index=True)
-read_in_sample = read_in_df.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
-                                   ignore_index=True)
 
 
 #@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_empty_df():
-    # test what happens writing out an empty df.
+#@pytest.fixture(scope='session')
+@pytest.fixture
+def make_all_issues():
+    all_issues = issuepages.get_all_pages_issues(
+        repo_name=repo_name_5,
+        config_path='githubanalysis/config.cfg',
+        per_pg=100,
+        issue_state='all',
+        verbose=True
+    )  # get all issues from all pages for given repo
+    return all_issues
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+@pytest.fixture(scope='session')
+def make_write_out(make_all_issues):
+
+    #all_issues = make_all_issues()
+    # write out issues data to file and return/save filename and path to write_out object
+    write_out = writeout.write_out_repo_data(
+        repo_data_df=all_issues,
+        repo_name=repo_name_5,
+        filename='all_issues',
+        write_out_as='json',
+        write_out_location='data/',
+        write_orientation='table',
+        verbose=True
+    )
+    write_out = Path(write_out)
+    return write_out
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+@pytest.fixture(scope='session')
+def make_read_in_df():
+    # read the data back in as a dataframe from the file and filepath saved in write_out
+
+    read_in_df = pd.read_json(path_or_buf=write_out, orient='table', typ='frame', dtype=None, convert_dates=False, keep_default_dates=False, precise_float=False, date_unit='s')
+    return read_in_df
+# check dates aren't borked up because there's conversions possible in the to_json() and read_json() functions.
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+@pytest.fixture(scope='session')
+def make_write_out_sample_df():
+    all_issues = make_all_issues()
+    # create 5% sample dfs from all_issues pre-write-out df and post-read_in df for comparison:
+    write_out_sample = all_issues.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
+                                     ignore_index=True)
+    return write_out_sample
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+@pytest.fixture(scope='session')
+def make_read_in_sample_df():
+    read_in_df = make_read_in_df()
+
+    # create 5% sample dfs from post-read_in df for comparison:
+    read_in_sample = read_in_df.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
+                                   ignore_index=True)
+    return read_in_sample
+
+@pytest.fixture(scope='session')
+def empty_df():
     empty_df = pd.DataFrame({'A': []})
+    return empty_df
+
+#@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_empty_df(empty_df):
+    # test what happens writing out an empty df.
 
     with pytest.raises(EmptyDataError):
         writeout.write_out_repo_data(repo_data_df=empty_df, repo_name=repo_name_1, filename=filename_1)
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_file_created():
+def test_file_created(make_write_out):
     # test that file is created exists at expected location with name as expected
-
     assert Path(write_out).is_file()
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_write_out_reversible_url():
+def test_write_out_reversible_url(make_read_in_sample_df, make_write_out_sample_df):
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+
+    read_in_sample = make_read_in_sample_df()
+    write_out
+
     assert read_in_sample['url'].equals(write_out_sample['url']), 'Sampled urls do not match'
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_write_out_reversible_repo_url():
+def test_write_out_reversible_repo_url(make_read_in_sample_df):
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    read_in_sample = make_read_in_sample_df()
+    write_out_sample = make_write_out_sample_df()
+
     assert read_in_sample['repository_url'].equals(write_out_sample['repository_url']), 'Sampled repository_urls do not match'
 
 
@@ -82,6 +125,8 @@ def test_write_out_reversible_repo_url():
 def test_write_out_reversible_id():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    read_in_sample = make_read_in_sample_df()
+    write_out_sample = make_write_out_sample_df()
     assert read_in_sample['id'].equals(write_out_sample['id']), 'Sampled ids do not match'
 
 
@@ -89,6 +134,7 @@ def test_write_out_reversible_id():
 def test_write_out_reversible_number():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    read_in_sample = make_read_in_sample_df()
     assert read_in_sample['number'].equals(write_out_sample['number']), 'Sampled numbers do not match'
 
 
@@ -96,6 +142,8 @@ def test_write_out_reversible_number():
 def test_write_out_reversible_title():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+
+    read_in_sample = make_read_in_sample_df()
     assert read_in_sample['title'].equals(write_out_sample['title']), 'Sampled titles do not match'
 
 
@@ -103,6 +151,8 @@ def test_write_out_reversible_title():
 def test_write_out_reversible_state():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+
+    read_in_sample = make_read_in_sample_df()
     assert read_in_sample['state'].equals(write_out_sample['state']), 'Sampled states do not match'
 
 
@@ -111,6 +161,7 @@ def test_write_out_reversible_assignees():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
 
+    read_in_sample = make_read_in_sample_df()
     assert read_in_sample['assignees'].equals(write_out_sample['assignees']), 'Sampled assignees do not match'
 
 
@@ -119,6 +170,7 @@ def test_write_out_reversible_created_at():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
 
+    read_in_sample = make_read_in_sample_df()
     assert read_in_sample['created_at'].equals(write_out_sample['created_at']), 'Sampled created_at dates do not match'
 
 
@@ -127,22 +179,20 @@ def test_write_out_reversible_closed_at():
     # tests that df object written out can be read in and retain same data structure as initial object
     # # test values for important columns match from random samples of pre-write all_issues and read-in data:
 
+    read_in_sample = make_read_in_sample_df()
     assert read_in_sample['closed_at'].equals(write_out_sample['closed_at']), 'Sampled closed_at dates do not match'
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_write_out_reversible_df_shape():
+def test_write_out_reversible_df_shape(all_issues):
     # tests that df object written out can be read in and retain same data structure as initial object
-
-    assert all_issues.shape == read_in_df.shape
-
+    all_issues = make_all_issues()
+    assert all_issues.shape() == read_in_df.shape()
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_file_schema_matches():
     # confirm that schema of json or csv file matches that of the written-out schema (and ideally the GH-pulled data).
-
-
 
 
 #@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -155,6 +205,7 @@ def test_write_out_reversible_df_shape():
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_filetype_json():
     # test json file is created if write_out_as='json'.
+
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_filetype_json():
