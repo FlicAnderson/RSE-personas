@@ -1,5 +1,4 @@
 """ Test function for writing dataframes of data from a given GitHub repo to a file. """
-
 import pytest
 import pandas as pd
 from pandas.errors import EmptyDataError
@@ -12,29 +11,141 @@ repo_name_1 = "cooltestusername/coollongunseparatedreponame"
 repo_name_2 = "cooltestusername/dash-separated-repo-name"
 repo_name_3 = "cooltestusername/camelCaseRepoName"
 repo_name_4 = "cooltestusername/repowith.dot"
+repo_name_5 = "riboviz/riboviz"
 
 filename_1 = "all_issues"
 filename_2 = "repo_info"
 filename_3 = "2023-06-21-datedfilename"
 filename_4 = "20230621datedfilename"
 
+all_issues = issuepages.get_all_pages_issues(
+    repo_name=repo_name_5,
+    config_path='githubanalysis/config.cfg',
+    per_pg=100,
+    issue_state='all',
+    verbose=True
+)  # get all issues from all pages for given repo
+
+# write out issues data to file and return/save filename and path to write_out object
+write_out = writeout.write_out_repo_data(
+    repo_data_df=all_issues,
+    repo_name=repo_name_5,
+    filename='all_issues',
+    write_out_as='json',
+    write_out_location='data/',
+    write_orientation='table',
+    verbose=True)
+
+# read the data back in as a dataframe from the file and filepath saved in write_out
+read_in_df = pandas.read_json(path_or_buf=write_out, orient='table', typ='frame', dtype=None, convert_dates='False', keep_default_dates='False', precise_float=False, date_unit='s')
+# check dates aren't borked up because there's conversions possible in the to_json() and read_json() functions.
+
+# create 5% sample dfs from all_issues pre-write-out df and post-read_in df for comparison:
+write_out_sample = all_issues.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
+                                     ignore_index=True)
+read_in_sample = read_in_df.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
+                                   ignore_index=True)
+
 
 #@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_empty_df():
     # test what happens writing out an empty df.
 
-    empty_df = pd.DataFrame({'A':[]})
+    empty_df = pd.DataFrame({'A': []})
 
     with pytest.raises(EmptyDataError):
         writeout.write_out_repo_data(repo_data_df=empty_df, repo_name=repo_name_1, filename=filename_1)
 
 
-#@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_write_out_reversible():
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_file_created():
+    # test that file is created exists at expected location with name as expected
+
+    assert Path(write_out).is_file()
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_url():
     # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    assert read_in_sample['url'].equals(write_out_sample['url']), 'Sampled urls do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_repo_url():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    assert read_in_sample['repository_url'].equals(write_out_sample['repository_url']), 'Sampled repository_urls do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_id():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    assert read_in_sample['id'].equals(write_out_sample['id']), 'Sampled ids do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_number():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    assert read_in_sample['number'].equals(write_out_sample['number']), 'Sampled numbers do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_title():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    assert read_in_sample['title'].equals(write_out_sample['title']), 'Sampled titles do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_state():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+    assert read_in_sample['state'].equals(write_out_sample['state']), 'Sampled states do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_assignees():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+
+    assert read_in_sample['assignees'].equals(write_out_sample['assignees']), 'Sampled assignees do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_created_at():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+
+    assert read_in_sample['created_at'].equals(write_out_sample['created_at']), 'Sampled created_at dates do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_closed_at():
+    # tests that df object written out can be read in and retain same data structure as initial object
+    # # test values for important columns match from random samples of pre-write all_issues and read-in data:
+
+    assert read_in_sample['closed_at'].equals(write_out_sample['closed_at']), 'Sampled closed_at dates do not match'
+
+
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+def test_write_out_reversible_df_shape():
+    # tests that df object written out can be read in and retain same data structure as initial object
+
+    assert all_issues.shape == read_in_df.shape
+
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+#def test_file_schema_matches():
+    # confirm that schema of json or csv file matches that of the written-out schema (and ideally the GH-pulled data).
+
+
+
+
+#@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_filename_correct():
     # test that file is created with name as expected
     # test with repo names including dashes, dots, spaces.
