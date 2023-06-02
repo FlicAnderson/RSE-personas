@@ -40,7 +40,10 @@ def main():
         repo_data_df=all_issues,
         repo_name=repo_name,
         filename='all_issues',
-        write_out_as='json'
+        write_out_as='json',
+        write_out_location='data/',
+        write_orientation='table',
+        verbose=True
     )  # write out issues data to file
 
 
