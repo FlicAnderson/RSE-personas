@@ -6,8 +6,8 @@ import json
 
 
 def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
-                        write_out_as='json', write_out_location='.',
-                        write_orientation='columns', verbose=True):
+                        write_out_as='json', write_out_location='data/',
+                        write_orientation='table', verbose=True):
     """
     Takes pd.DataFrame repo dataset (e.g. issues data) and writes out to file.
     :param repo_data_df: pd.DataFrame containing data for given repo `repo_name`.
@@ -21,6 +21,7 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     :param write_out_location: Desired file location path as string. Default = "." (current directory)
     :type: str
     :param write_orientation: Orientation option for writing out data.
+    (json) Default = 'table' includes schema and type info with 'pandas_version' included.
     If write_out_as='json', follows 'orient' param options in pd.DataFrame.to_json()
     https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_json.html.
     If 'csv', default csv methods apply.
@@ -29,6 +30,12 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     :type: bool
     :returns write_out_filepath: This is the path and filename to which the file has been written out.
     :type: str/path
+
+    NB: this conversion escapes all slashes in the urls so resulting file looks intense.
+
+    TODO: write out and read in datatypes explicitly!
+        - milestone, active_lock_reason and performed_via_github_app are shifted to float64
+        - these are all 'string' in the written-out json file, and read in as float64. :s
 
     Examples:
     ----------
@@ -56,17 +63,30 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     write_out_filename = f'{filename}__{repo_name.replace("/", "_")}'
     print(write_out_filename)
 
+    # build path + filename + file extension string
+    write_out = f'{write_out_location}{write_out_filename}.{write_out_as}'
+
     # which method:
     if write_out_as not in ('json', 'csv'):
         raise ValueError('write_out_as must be one of "csv" or "json".')
 
-    #if write_out_as is 'json':
+    # TODO: write out and read in datatypes explicitly!
+    if write_out_as == 'json':
+        repo_data_df.to_json(
+            path_or_buf=write_out,
+            orient=write_orientation,
+            date_format='iso',
+            date_unit='s',
+            index=False,
+            indent=4,
+        )
+        # FYI: json escapes all the slashes in the urls so resulting file looks pretty intense.
+        # dates in ISO8601 from github (format: YYYY-MM-DDTHH:MM:SSZ e.g "2011-04-10T20:09:31Z" ie UTC times with extended format w/ ':')
 
-        #repo_data_df.to_json(path_or_buf=write_out_location, orient=write_orientation)
+        # milestone, active_lock_reason and performed_via_github_app are shifted to float64
+        # these are all 'string' in the written-out json file, and read in as float64. :s
 
-        #if verbose:
-        #    print(f'file saved out as: {filename} at {write_out_location}')
+    if verbose:
+        print(f'file saved out as: {write_out_filename}.{write_out_as} at {write_out_location}')
 
-
-
-    #return(write_out_filepath)  # get this somehow.
+    return(write_out)  # write_out filename and path.
