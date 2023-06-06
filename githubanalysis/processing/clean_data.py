@@ -5,6 +5,7 @@ import sys
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.processing.write_out_repo_data as writeout
+import githubanalysis.processing.read_in_repo_data as readin
 
 
 def main():
@@ -45,6 +46,12 @@ def main():
         write_orientation='table',
         verbose=True
     )  # write out issues data to file
+
+    # read data back in from file & return tuple: read_in_df, repo_name
+    #all_issues_new = readin.read_in_repo_data(read_in='data/all_issues__riboviz_riboviz.json', repo_name=None, read_in_as='json', read_orientation='table', verbose=True)
+        ## remember that read_in_repo_data() returns tuple. Access as follows:
+        # e.g. print(all_issues_new[0].shape, all_issues_new[1])
+
 
 
 # OTHER DATA (e.g. COMMITS, METRICS):
