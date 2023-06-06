@@ -2,6 +2,7 @@
 import pandas as pd
 from pathlib import Path
 
+
 def read_in_repo_data(read_in, repo_name=None, read_in_as='json', read_orientation='table', verbose=True):
     """
     Takes repo dataset file (e.g. issues data) in json and reads in as pd.DataFrame object.
@@ -49,6 +50,7 @@ def read_in_repo_data(read_in, repo_name=None, read_in_as='json', read_orientati
         read_in_filename = read_path.stem
 
         repo_name = read_in_filename.split("__")[1]  # e.g. read_in_filename = 'all_issues__riboviz_riboviz' -> ['all_issues', 'riboviz_riboviz']
+        repo_name = repo_name.replace('_', '/')  # get back to user/repo format with slashes instead of underscores.
 
     else:
         repo_name = repo_name  # from function arguments.
@@ -61,7 +63,7 @@ def read_in_repo_data(read_in, repo_name=None, read_in_as='json', read_orientati
 
     try:
 
-        read_in_df = None
+        read_in_df = pd.DataFrame()
 
         read_in_df = pd.read_json(
             path_or_buf=read_in, orient=read_orientation, typ='frame', dtype=None,
@@ -70,10 +72,10 @@ def read_in_repo_data(read_in, repo_name=None, read_in_as='json', read_orientati
         # check dates aren't borked up because there's conversions possible in the to_json() and read_json() functions.
 
         if verbose:
-            if read_in_df is not None:
-                print(f"Dataframe has been created from file {read_in} for repo {repo_name}.")
-            else:
+            if read_in_df.empty:  # if read_in hasn't worked and dataframe is empty
                 print(f"Dataframe has not read in correctly from file {read_in}.")
+            else:
+                print(f"Dataframe has been created from file {read_in} for repo {repo_name} and has dimensions: {read_in_df.shape}.")
 
         return read_in_df, repo_name  # return tuple of dataframe and repo_name
 
