@@ -19,7 +19,7 @@ def main():
         save clean data out
         pass clean data to analysis script
     """
-
+# todo: set this up as parametrisation for testing clean_data.py
 # read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
     if len(sys.argv) == 2:
         repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
@@ -118,9 +118,10 @@ def main():
     # calculate close_time for each closed issue
     closed_issues['close_time'] = closed_issues.apply(lambda x: calcclose.calc_issue_close_time(x.created_at, x.closed_at, return_in='decimal_days'), axis=1)
 
-    # Get average close time in DF of repo issues.
-    repo_issue_close_mean = closed_issues['close_time'].mean()
+    # Get average close time in DF of repo issues to 3 decimal places.
+    repo_issue_close_mean = round(closed_issues['close_time'].mean(), 3)
 
+    # todo: do something clever if average close time was < 1 day.
     print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
     # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
 
