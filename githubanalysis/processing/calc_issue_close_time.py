@@ -1,7 +1,7 @@
 """ Function to calculate time in days to close issue for given repo."""
 
 import pandas as pd
-
+import datetime
 
 def calc_issue_close_time(created_at, closed_at, return_in='decimal_days'):
     """
@@ -16,16 +16,13 @@ def calc_issue_close_time(created_at, closed_at, return_in='decimal_days'):
     :type: float64
     """
 
-    # todo: check closed_at and created_at are datetimes
-    #if (type(created_at) or type(closed_at)) is not (datetime.datetime or pd.Timestamp):
-    #    raise TypeError("Input dates are not of type date. Please convert these.")
+    if (type(created_at) or type(closed_at)) not in [datetime.datetime, pd.Timestamp]:
+        raise TypeError("Input dates are not of type date. Please convert these.")
 
     if return_in not in ['decimal_days', 'whole_days']:
         raise ValueError("`return_in` parameter must be one of: 'decimal_days' or 'whole_days'.")
 
     time_diff = pd.Timedelta(closed_at - created_at)
-
-    # todo: make precision of return an argument
 
     try:
 
