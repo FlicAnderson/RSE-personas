@@ -19,3 +19,5 @@ import githubanalysis.processing.calc_issue_close_time as calcclose
     # test error handling where creation date is AFTER close date
     #calcclose.calc_issue_close_time("2023-07-05 15:19:40", "2023-07-04 14:21:09") # closed_at 04th before created_at 05th
 
+# def test_given_days():
+    # test return_in value of 'days' which should fail expectedly (?or should I use default return_in and warn?)
