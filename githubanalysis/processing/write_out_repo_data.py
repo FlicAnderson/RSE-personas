@@ -18,7 +18,7 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
     :type: str
     :param write_out_as: Format to write out as. Default: json.
     :type: str
-    :param write_out_location: Desired file location path as string. Default = "." (current directory)
+    :param write_out_location: Desired file location path as string. Default = "data/"
     :type: str
     :param write_orientation: Orientation option for writing out data.
     (json) Default = 'table' includes schema and type info with 'pandas_version' included.
