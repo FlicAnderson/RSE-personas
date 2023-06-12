@@ -7,6 +7,7 @@ import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.processing.write_out_repo_data as writeout
 #import githubanalysis.processing.read_in_repo_data as readin
 import githubanalysis.processing.calc_issue_close_time as calcclose
+import githubanalysis.visualization.plot_repo_issues_data as plotissues
 
 
 def main():
@@ -57,14 +58,14 @@ def main():
     # calculate issue close times
 
     closed_issues = getallissues.get_all_pages_issues(
-        repo_name='riboviz/riboviz',
+        repo_name=repo_name,
         config_path='githubanalysis/config.cfg',
         per_pg=100,
         issue_state='closed',
         verbose=True
     )  # get closed issues from all pages for given repo
 
-    print(closed_issues.dtypes)
+    #print(closed_issues.dtypes)
 
     # calculate close_time for each closed issue
     closed_issues['close_time'] = closed_issues.apply(lambda x: calcclose.calc_issue_close_time(x.created_at, x.closed_at, return_in='decimal_days'), axis=1)
@@ -75,10 +76,12 @@ def main():
     print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
     # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
 
-
 # OTHER DATA (e.g. COMMITS, METRICS):
 
     # other bits.
+
+    plotissues.plot_repo_issues_data(closed_issues, repo_name, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+
 
 
 # this bit
