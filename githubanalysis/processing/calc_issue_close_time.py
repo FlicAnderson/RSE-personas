@@ -1,7 +1,6 @@
 """ Function to calculate time in days to close issue for given repo."""
 
 import pandas as pd
-import datetime
 
 
 def calc_issue_close_time(created_at, closed_at, return_in='decimal_days'):
@@ -11,18 +10,18 @@ def calc_issue_close_time(created_at, closed_at, return_in='decimal_days'):
     :type: datetime
     :param closed_at: closure time of issue; timestamp (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ) (e.g. "closed_at": "2013-02-12T13:22:01Z")
     :type: datetime
-    :param return_in: granularity to return time difference in ('decimal_days', 'whole_days', 'hours', 'minutes', 'seconds'). Default: 'decimal_days' e.g. 2.7097...
+    :param return_in: granularity to return time difference in ('decimal_days', 'whole_days'). Default: 'decimal_days' e.g. 2.7097...
     :type: str
     :return time_diff: time_diff in days to close GitHub issue.
-    :type: ?str
+    :type: float64
     """
 
     # todo: check closed_at and created_at are datetimes
     #if (type(created_at) or type(closed_at)) is not (datetime.datetime or pd.Timestamp):
     #    raise TypeError("Input dates are not of type date. Please convert these.")
 
-    if return_in not in ['decimal_days', 'whole_days', 'hours', 'minutes', 'seconds']:
-        raise ValueError("`return_in` parameter must be one of: 'decimal_days', 'whole_days', 'hours', 'minutes', 'seconds'.")
+    if return_in not in ['decimal_days', 'whole_days']:
+        raise ValueError("`return_in` parameter must be one of: 'decimal_days' or 'whole_days'.")
 
     time_diff = pd.Timedelta(closed_at - created_at)
 
@@ -35,12 +34,6 @@ def calc_issue_close_time(created_at, closed_at, return_in='decimal_days'):
 
         elif return_in == 'whole_days':
             return time_diff.days  # returns whole days e.g. '2' where time_diff is 2 days 17 hours 2 minutes etc.
-
-        elif return_in == 'hours':
-            return (time_diff.total_seconds()/60)/60
-
-        elif return_in == 'minutes':
-            return time_diff.total_seconds()/60
 
         else:
             return time_diff.total_seconds()
