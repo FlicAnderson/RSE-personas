@@ -64,16 +64,16 @@ def main():
         verbose=True
     )  # get closed issues from all pages for given repo
 
-    # calculate close_time for each closed issue
-    closed_issues['close_time'] = closed_issues.apply(lambda x: calcclose.calc_issue_close_time(x.created_at, x.closed_at), axis=1)
+    print(closed_issues.dtypes)
 
+    # calculate close_time for each closed issue
+    closed_issues['close_time'] = closed_issues.apply(lambda x: calcclose.calc_issue_close_time(x.created_at, x.closed_at, return_in='decimal_days'), axis=1)
 
     # Get average close time in DF of repo issues.
+    repo_issue_close_mean = closed_issues['close_time'].mean()
 
-    closed_issues['close_time'].mean()
-
-    print(f"For repo {repo_name}, average issue closure time was {closed_issues['close_time'].mean()} days")
-    # 32.28 days to close on average of first 100 issue tickets.
+    print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
+    # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
 
 
 # OTHER DATA (e.g. COMMITS, METRICS):
