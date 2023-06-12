@@ -1,6 +1,7 @@
 """Data cleaning workflow for GitHub repo analysis."""
 
 import sys
+import random
 
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
@@ -20,8 +21,55 @@ def main():
     """
 
 # read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
+    if len(sys.argv) == 2:
+        repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
+    elif len(sys.argv) == 1:
+        # use of a specified list of test repos.
+        repo_name = random.choice([
+            'https://github.com/riboviz/riboviz',
+            'https://github.com/ropensci/dwctaxon',
+            'https://github.com/nasa/prog_models/'
+            'https://github.com/FlicAnderson/20230215-JournalClub-BestPractices',
+            'https://github.com/DimmestP/nextflow_paired_reads_pipeline',
+            'https://github.com/sulu/sulu',
+            'https://github.com/ruby/ruby',
+            'https://github.com/martinwoodward/PumpkinPi/',
+            'https://github.com/r-dbi/odbc',
+            'https://github.com/rstudio/cheatsheets',
+            'https://github.com/openjournals/joss',
+            'https://github.com/easybuilders/easybuild',
+            'https://github.com/aeye-lab/pymovements',
+            'https://github.com/FredHutch/SEACR',
+            'https://github.com/omelchert/pyGLLE',
+            'https://github.com/adamspierer/FreeClimber',
+            'https://github.com/alphagov/govuk-frontend',
+            'https://github.com/rfordatascience/tidytuesday',
+            'https://github.com/gbif/pipelines/',
+            'https://github.com/gbif/ipt'
+        ])
+        # riboviz ~314 closed issues,
+        # dwctaxon has 49 closed issues, 6 open
+        # prog_models has 147 closed issues, 127 open.
+        # 20230215-JournalClub-BestPractices has 0 closed issues, 0 open. << NO ISSUES
+        # nextflow_paired_reads_pipeline has 0 closed issues, 2 open. << NO CLOSED, ONLY OPEN
+        # sulu has 1950 closed issues, 435 open  << THOUSANDS CLOSED ISSUES
+        # ruby has 7508 closed, 381 open.  << THOUSANDS CLOSED ISSUES
+        # pumpkinpi has no open and no closed issues << NO ISSUES
+        # r-dbi odbc has 387 closed, 71 open
+        # cheatsheets has 93 closed, 24 open.
+        # joss has 657 closed, 128 open
+        # easybuild hs 168 closed, 90 open
+        # pymovements has 68 closed, 97 open
+        # seacr has 27 closed, 55 open
+        # pyglle has 1 closed, 0 open << NO OPEN, ONLY CLOSED
+        # freeclimber has 2 closed, 2 open
+        # govuk-frontend has 981 closed, 262 open
+        # tidytuesday has 196 closed 186 open
+        # pipelines has 417 closed, 157 open
+        # ipt has 1757 closed, 130 open
 
-    repo_name = sys.argv[1]  # TODO: remove this once using read-in data instead of commandline
+    else:
+        raise IndexError('Please enter a repo_name.')
 
     # this is a rather coarse attempt at whether to use repo_name_clean() or not, but good in the meantime.
     # TODO: would be nice to try parseing the url or check how many slashes etc.
