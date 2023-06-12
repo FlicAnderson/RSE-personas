@@ -59,6 +59,8 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
                                                 format='%Y-%m-%dT%H:%M:%S%Z')
 
+    all_issues['repo_name'] = repo_name
+
     return all_issues
 
     # relevant fields: 'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
