@@ -5,11 +5,12 @@ import random
 
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
-import githubanalysis.processing.write_out_repo_data as writeout
+#import githubanalysis.processing.write_out_repo_data as writeout
 #import githubanalysis.processing.read_in_repo_data as readin
 import githubanalysis.processing.calc_issue_close_time as calcclose
 import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
+import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedevs
 
 
 def main():
@@ -88,15 +89,15 @@ def main():
         verbose=True
     )  # get all issues from all pages for given repo
 
-    writeout.write_out_repo_data(
-        repo_data_df=all_issues,
-        repo_name=repo_name,
-        filename='all_issues',
-        write_out_as='json',
-        write_out_location='data/',
-        write_orientation='table',
-        verbose=True
-    )  # write out issues data to file
+    # writeout.write_out_repo_data(
+    #     repo_data_df=all_issues,
+    #     repo_name=repo_name,
+    #     filename='all_issues',
+    #     write_out_as='json',
+    #     write_out_location='data/',
+    #     write_orientation='table',
+    #     verbose=True
+    # )  # write out issues data to file
 
     # read data back in from file & return tuple: read_in_df, repo_name
     #all_issues_new = readin.read_in_repo_data(read_in='data/all_issues__riboviz_riboviz.json', repo_name=None, read_in_as='json', read_orientation='table', verbose=True)
@@ -129,15 +130,16 @@ def main():
     # parse out assignee data from issues df as new column:
     closed_issues = issuedevs.get_issue_assignees(closed_issues)
 
-    print(closed_issues['assigned_devs'].value_counts())
+    # scatterplot of time to close issue tickets with mean closure time xline
+    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis = 'ticket_number', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+
+    # plot issues assigned to devs, with 25% of assigned tickets plotted as xline and unassigned tickets number in legend.
+    plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='issues_counts_devs_plot', save_type='png', save_out_location='images/')
+
 
 # OTHER DATA (e.g. COMMITS, METRICS):
 
     # other bits.
-
-    plotissues.plot_repo_issues_data(closed_issues, repo_name, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
-
-
 
 # this bit
 if __name__ == "__main__":
