@@ -8,6 +8,7 @@ import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.processing.write_out_repo_data as writeout
 #import githubanalysis.processing.read_in_repo_data as readin
 import githubanalysis.processing.calc_issue_close_time as calcclose
+import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
 
 
@@ -124,6 +125,11 @@ def main():
     # todo: do something clever if average close time was < 1 day.
     print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
     # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
+
+    # parse out assignee data from issues df as new column:
+    closed_issues = issuedevs.get_issue_assignees(closed_issues)
+
+    print(closed_issues['assigned_devs'].value_counts())
 
 # OTHER DATA (e.g. COMMITS, METRICS):
 
