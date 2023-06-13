@@ -4,13 +4,17 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from pandas.errors import EmptyDataError
 
-def plot_repo_issues_data(repo_data_df, repo_name, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/'):
+def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/'):
     """
     Plot issue ticket data from GitHub repositories.
     :param repo_data_df: data to plot
     :type: pd.DataFrame
     :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
     :type: str
+    :param xaxis: What to plot on x-axis: 'ticket_number' / 'project_length' /
+    :type: str
+    :param add_events: Plot release dates as vertical line? Default: False
+    :type: bool
     :param save_out: save plot object to file? Default=True
     :type: bool
     :param save_name: filename prefix to save plot object as. Default='issues_data_plot'
@@ -58,14 +62,22 @@ def plot_repo_issues_data(repo_data_df, repo_name, save_out=True, save_name='iss
             raise OSError('Read-in file does not exist at path:', save_path)
 
 
+    if xaxis == 'ticket_number':
+        # do actual plotting:
+        repo_data_df.plot.scatter(x='number', y='close_time', alpha=0.5, color='red')
+        plt.xlabel("GitHub Issue Ticket Number")
+        plt.ylabel("Time to Close Issue (days)")
+        plt.title(f"Time in days to close GitHub issues from {repo_name}")
+        plt.axhline(y=np.mean(repo_data_df.close_time), linestyle='--',
+                    color='black')  # add mean line with average close time for this set of issues
 
-    # do actual plotting:
-    repo_data_df.plot.scatter(x='number', y='close_time', alpha=0.5, color='red')
-    plt.xlabel("GitHub Issue Ticket Number")
-    plt.ylabel("Time to Close Issue (days)")
-    plt.title(f"Time in days to close GitHub issues from {repo_name}")
-    plt.axhline(y=np.mean(repo_data_df.close_time), linestyle='--',
-                color='black')  # add mean line with average close time for this set of issues
+    elif xaxis == 'project_time':
+        print('This has not been implemented yet.')
+
+    # todo: add code for plotting milestones such as releases
+    if add_events:
+        print('Not currently implemented. Will plot releases as vertical events where xaxis is project_time.')
+
 
     if save_out:
         # create filename to use from repo_name
@@ -75,7 +87,9 @@ def plot_repo_issues_data(repo_data_df, repo_name, save_out=True, save_name='iss
         plot_file = f'{save_out_location}{save_out_filename}.{save_type}'
 
         plt.savefig(plot_file)
+        plt.close()
 
     else:
 
         plt.show()
+        plt.close()
