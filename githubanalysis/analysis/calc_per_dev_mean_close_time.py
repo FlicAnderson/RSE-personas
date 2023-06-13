@@ -26,7 +26,8 @@ def calc_per_dev_mean_close_time(repo_data_df):
         #   add dev, close_time and issue number and repo_number to df 'all_devs_close_times'
         #   calculate mean from all_devs_close_times for dev
 
-        #   return (dev, per_dev_mean_close_time) for dev to output (+/- repo_name?)
+        #   return ?df? for dev to output (+/- repo_name?)
 
+    # calc summary per_dev stats (% of issues assigned; lone-wolf vs team-worker; mean_close_time; min/max issue close_time
     # print each (dev, per_dev_mean_close_time) tuple if verbose
     # return df of devs and per_dev_mean_close_times.
