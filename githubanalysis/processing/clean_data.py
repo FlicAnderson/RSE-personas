@@ -11,6 +11,7 @@ import githubanalysis.processing.calc_issue_close_time as calcclose
 import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
 import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedevs
+import githubanalysis.processing.get_repo_creation_date as createdate
 
 
 def main():
@@ -135,6 +136,12 @@ def main():
 
     # plot issues assigned to devs, with 25% of assigned tickets plotted as xline and unassigned tickets number in legend.
     plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='issues_counts_devs_plot', save_type='png', save_out_location='images/')
+
+    # get creation date of repo:
+    repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
+
+    # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
+    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis = 'project_length', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
 
 # OTHER DATA (e.g. COMMITS, METRICS):
