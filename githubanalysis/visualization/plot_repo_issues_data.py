@@ -81,7 +81,7 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
 
     if save_out:
         # create filename to use from repo_name
-        save_out_filename = f'{save_name}__{repo_name.replace("/", "_")}'
+        save_out_filename = f'{save_name}_{xaxis}__{repo_name.replace("/", "_")}'
 
         # build path + filename + file extension string
         plot_file = f'{save_out_location}{save_out_filename}.{save_type}'
