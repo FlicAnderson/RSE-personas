@@ -55,9 +55,9 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     assert all(item in all_issues.columns for item in wanted_cols)
 
     all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
-                                                 format='%Y-%m-%dT%H:%M:%S%Z')
+                                              format='%Y-%m-%dT%H:%M:%S%Z')
     all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
-                                                format='%Y-%m-%dT%H:%M:%S%Z')
+                                             format='%Y-%m-%dT%H:%M:%S%Z')
 
     all_issues['repo_name'] = repo_name
 
