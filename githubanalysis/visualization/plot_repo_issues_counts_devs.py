@@ -77,7 +77,7 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
     plt.xlabel("Assigned To user")
     plt.ylabel("Number of issue tickets assigned")
     plt.title(f"Number of assigned issue tickets per dev for repo: {repo_name}")
-    plt.axhline(y=(total_assigned*0.25), linestyle='--', color='green', label='25% of assigned issues')  # plot line at 25% of all closed assigned tickets
+    plt.axhline(y=(total_assigned*0.25), linestyle='--', color='black', label='25% of assigned issues')  # plot line at 25% of all closed assigned tickets
     plt.plot([], [], ' ', label=non_assigned_text)  # Create empty plot with blank marker containing the extra label
     plt.legend(loc='upper right')
 
