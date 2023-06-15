@@ -141,7 +141,7 @@ def main():
     repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
 
     # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
-    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis = 'project_length', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis = 'project_length', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
 
 # OTHER DATA (e.g. COMMITS, METRICS):
