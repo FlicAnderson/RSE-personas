@@ -20,8 +20,10 @@ def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', v
 
     Examples:
     ----------
-    >>> get_repo_creation_date('riboviz/riboviz', config_path='githubanalysis/config.cfg')
-    Repository(full_name="riboviz/riboviz")
+    >>> get_repo_creation_date('riboviz/riboviz', config_path='githubanalysis/config.cfg', verbose=True)
+    GH link opened
+    Creation date of repo riboviz/riboviz is 2019 5 3.
+    Timestamp('2019-05-03 12:15:59+0000', tz='UTC')
     """
 
     # set up connection
