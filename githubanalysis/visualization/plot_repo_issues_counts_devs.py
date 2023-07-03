@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from pandas.errors import EmptyDataError
@@ -19,6 +18,8 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
     :type: str
     :param save_out_location: Desired file location path as string. Default = "data/"
     :type: str
+    :param verbose: return status info. Default: True
+    :type: bool
     :return plot: issue data scatterplot.
     :type: ?plot?
     """
@@ -89,3 +90,4 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
         plot_file = f'{save_out_location}{save_out_filename}.{save_type}'
 
         plt.savefig(plot_file, bbox_inches='tight')
+    plt.close()
