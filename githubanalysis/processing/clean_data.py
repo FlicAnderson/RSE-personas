@@ -3,6 +3,8 @@
 import sys
 import random
 
+import pandas as pd
+
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
 #import githubanalysis.processing.write_out_repo_data as writeout
@@ -12,6 +14,7 @@ import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
 import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedevs
 import githubanalysis.processing.get_repo_creation_date as createdate
+import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 
 def main():
@@ -139,6 +142,10 @@ def main():
 
     # get creation date of repo:
     repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
+
+    # get number of days since repo creation.
+    days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, return_in='days')
+    print(f'{days_since_repo_creation} days since creation of repo {repo_name}.')
 
     # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
     #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis = 'project_length', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
