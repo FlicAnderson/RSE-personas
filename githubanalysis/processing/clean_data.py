@@ -127,7 +127,7 @@ def main():
     # Get average close time in DF of repo issues to 3 decimal places.
     repo_issue_close_mean = round(closed_issues['close_time'].mean(), 3)
 
-    # todo: do something clever if average close time was < 1 day.
+    # todo: do something clever if average close time was < 1 day. issue ticket: coding-smart/#4
     print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
     # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
 
@@ -147,8 +147,12 @@ def main():
     days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, return_in='days')
     print(f'{days_since_repo_creation} days since creation of repo {repo_name}.')
 
+    # calculate days_since_start for each closed issue
+    closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, return_in='days', config_path='githubanalysis/config.cfg'), axis=1)
+
     # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
-    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis = 'project_length', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+
 
 
 # OTHER DATA (e.g. COMMITS, METRICS):
