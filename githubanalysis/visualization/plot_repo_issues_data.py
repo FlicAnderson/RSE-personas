@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from pandas.errors import EmptyDataError
 
-import githubanalysis.processing.get_repo_creation_date as createdate
+import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/'):
     """
@@ -73,17 +73,21 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
         plt.axhline(y=np.mean(repo_data_df.close_time), linestyle='--',
                     color='black')  # add mean line with average close time for this set of issues
 
-    elif xaxis == 'project_time':
-        print('This has not been implemented yet.')
-        repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=False)
 
-        ####
+    if xaxis == 'project_time':
+        print('Project time as axis.')
+        repo_data_df.plot.scatter(x='days_since_start', y='close_time', alpha=0.5, color='red')
+        plt.xlabel("Time Since Repo Creation (days)")
+        plt.ylabel("Time to Close Issue (days)")
+        plt.title(f"Time in days to close GitHub issues from {repo_name}")
+        plt.axhline(y=np.mean(repo_data_df.close_time), linestyle='--', color='black')  # add mean line with average close time for this set of issues
 
 
-    # todo: add code for plotting milestones such as releases
+
+
+    # todo: add code for plotting milestones such as releases: issue ticket: coding-smart/#5
     if add_events:
         print('Not currently implemented. Will plot releases as vertical events where xaxis is project_time.')
-
 
     if save_out:
         # create filename to use from repo_name
