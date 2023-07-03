@@ -15,6 +15,8 @@ def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', v
     :type: str
     :param config_path: file path of config.cfg file containing GitHub Access Token. Default='githubanalysis/config.cfg'.
     :type: str
+    :param verbose: return status info. Default: True
+    :type: bool
     :returns: repo_creation_date
     :type: datetime.datetime
 
@@ -27,7 +29,7 @@ def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', v
     """
 
     # set up connection
-    repo_conn = ghconn.get_repo_connection(repo_name=repo_name, config_path=config_path)
+    repo_conn = ghconn.get_repo_connection(repo_name=repo_name, config_path=config_path, verbose=verbose)
 
     # get creation date:
     repo_creation_date = pd.to_datetime(repo_conn.created_at)
