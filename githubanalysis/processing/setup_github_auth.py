@@ -5,13 +5,15 @@ from pathlib import Path
 from github import Github
 
 
-def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100):
+def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100, verbose=True):
     """
     Authenticates with Github API using user-generated config.cfg file contents; sets per_page to 100 items.
     :param config_path: file path of config.cfg file. Default='githubanalysis/config.cfg'.
     :type: str
     :param per_pg: number of items per page in paginated API requests. Default=100, overwrites GitHub default 30.
     :type: int
+    :param verbose: return status info. Default: True
+    :type: bool
     :returns: `ghlink`
     :type: github.MainClass.Github
 
@@ -46,7 +48,9 @@ def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100):
             per_page=per_pg
         )  # type(ghlink) is github.MainClass.Github; ghlink.per_page should return 100
 
-        print('GH link opened')
+        if verbose:
+            print('GH link opened')
+
         return ghlink
 
     except RuntimeError:
