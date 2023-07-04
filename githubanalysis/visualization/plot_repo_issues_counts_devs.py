@@ -67,7 +67,7 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
     all_closed = len(repo_data_df.index)
     total_assigned = len(repo_data_df[[bool(x) for x in repo_data_df.assigned_devs]])
     #non_assigned = all_closed - total_assigned
-    non_assigned_text = f'{all_closed - total_assigned} Unassigned tickets'
+    non_assigned_text = f'{all_closed - total_assigned} Unassigned tickets (N = {all_closed})'
 
     if verbose:
         print(exploded_devs['assigned_devs'].value_counts(dropna=False))  # print per-dev assignment counts
@@ -78,7 +78,7 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
     plt.xlabel("Assigned To user")
     plt.ylabel("Number of issue tickets assigned")
     plt.title(f"Number of assigned issue tickets per dev for repo: {repo_name}")
-    plt.axhline(y=(total_assigned*0.25), linestyle='--', color='black', label='25% of assigned issues')  # plot line at 25% of all closed assigned tickets
+    plt.axhline(y=(total_assigned*0.25), linestyle='--', color='black', label=f'25% ({total_assigned}) assigned issues')  # plot line at 25% of all closed assigned tickets
     plt.plot([], [], ' ', label=non_assigned_text)  # Create empty plot with blank marker containing the extra label
     plt.legend(loc='upper right')
 
