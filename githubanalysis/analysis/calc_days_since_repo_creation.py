@@ -27,7 +27,7 @@ def calc_days_since_repo_creation(date, repo_name, since_date=None, return_in='w
     if type(date) not in [datetime.datetime, pd.Timestamp]:
         raise TypeError("Input `date` is are not of type datetime.datetime or pd.Timestamp. Please convert this.")
 
-    if type(since_date) not in [datetime.datetime, pd.Timestamp, None]:
+    if (type(since_date) not in [datetime.datetime, pd.Timestamp]) and (since_date is not None):
         raise TypeError("Optional `since_date` is not of type datetime.datetime, pd.Timestamp or None. Please convert this.")
 
     if return_in not in ['decimal_days', 'whole_days']:
