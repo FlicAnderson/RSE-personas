@@ -67,4 +67,3 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url',
     # ... 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
 
-    # todo: add optional informative message about how many issues, pages etc?
