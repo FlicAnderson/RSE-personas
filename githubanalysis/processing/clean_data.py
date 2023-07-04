@@ -130,13 +130,8 @@ def main():
     # parse out assignee data from issues df as new column:
     closed_issues = issuedevs.get_issue_assignees(closed_issues)
 
-
     # get creation date of repo:
     repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
-
-    # get number of days since repo creation (may be useful for axis of plots?).
-    #days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, since_date=repo_creation_date, return_in='whole_days')
-    #print(f'{days_since_repo_creation} days since creation of repo {repo_name}.')
 
     # calculate days_since_start for each closed issue
     closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
@@ -150,6 +145,8 @@ def main():
     closed_pull_requests = closed_issues.loc[closed_issues['pull_request'].notna()]
 
     closed_issues_only = closed_issues.loc[closed_issues['pull_request'].isna()]
+
+    print(f"For repo {repo_name}, there are {len(closed_issues_only.index)} closed issue tickets and {len(closed_pull_requests.index)} closed pull requests.")
 
     # plot PRs only:
     plotissues.plot_repo_issues_data(closed_pull_requests, repo_name, xaxis='project_time', add_events=False, save_out=True,
