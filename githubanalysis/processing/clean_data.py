@@ -144,11 +144,11 @@ def main():
     repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
 
     # get number of days since repo creation.
-    days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, return_in='days')
+    days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, since_date=None, return_in='whole_days')
     print(f'{days_since_repo_creation} days since creation of repo {repo_name}.')
 
     # calculate days_since_start for each closed issue
-    closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, return_in='days', config_path='githubanalysis/config.cfg'), axis=1)
+    closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
 
     # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
     plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
