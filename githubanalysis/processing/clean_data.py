@@ -9,7 +9,7 @@ import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
 #import githubanalysis.processing.write_out_repo_data as writeout
 #import githubanalysis.processing.read_in_repo_data as readin
-import githubanalysis.processing.calc_issue_close_time as calcclose
+import githubanalysis.analysis.calc_issue_close_time as calcclose
 import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
 import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedevs

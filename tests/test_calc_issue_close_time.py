@@ -4,7 +4,7 @@
 #import pandas as pd
 
 #import githubanalysis.processing.get_all_pages_issues as issuepages
-import githubanalysis.processing.calc_issue_close_time as calcclose
+#import githubanalysis.analysis.calc_issue_close_time as calcclose
 
 #@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 #def test_sub_1day_closes():
