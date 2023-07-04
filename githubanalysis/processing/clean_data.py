@@ -85,13 +85,13 @@ def main():
 
 # ISSUES DATA:
 
-    all_issues = getallissues.get_all_pages_issues(
-        repo_name,
-        config_path='githubanalysis/config.cfg',
-        per_pg=100,
-        issue_state='all',
-        verbose=True
-    )  # get all issues from all pages for given repo
+    # all_issues = getallissues.get_all_pages_issues(
+    #     repo_name,
+    #     config_path='githubanalysis/config.cfg',
+    #     per_pg=100,
+    #     issue_state='all',
+    #     verbose=True
+    # )  # get all issues from all pages for given repo
 
     # writeout.write_out_repo_data(
     #     repo_data_df=all_issues,
@@ -144,8 +144,8 @@ def main():
     repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
 
     # get number of days since repo creation.
-    days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, since_date=None, return_in='whole_days')
-    print(f'{days_since_repo_creation} days since creation of repo {repo_name}.')
+    days_since_repo_creation = dayssince.calc_days_since_repo_creation(date=pd.Timestamp.today(tz='UTC'), repo_name=repo_name, since_date=repo_creation_date, return_in='whole_days')
+    #print(f'{days_since_repo_creation} days since creation of repo {repo_name}.')
 
     # calculate days_since_start for each closed issue
     closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
