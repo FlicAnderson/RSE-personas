@@ -25,8 +25,7 @@ def main():
         save clean data out
         pass clean data to analysis script
     """
-# todo: set this up as parametrisation for testing clean_data.py
-# read in list of repo_names from some file / specific repo request e.g. ROpenSci repos using R language x 100 or sth.
+
     if len(sys.argv) == 2:
         repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
     elif len(sys.argv) == 1:
@@ -77,8 +76,6 @@ def main():
     else:
         raise IndexError('Please enter a repo_name.')
 
-    # this is a rather coarse attempt at whether to use repo_name_clean() or not, but good in the meantime.
-    # TODO: would be nice to try parseing the url or check how many slashes etc.
     if 'github' in repo_name:
         repo_name = name_clean.repo_name_clean(repo_name)
 
@@ -127,7 +124,6 @@ def main():
     # Get average close time in DF of repo issues to 3 decimal places.
     repo_issue_close_mean = round(closed_issues['close_time'].mean(), 3)
 
-    # todo: do something clever if average close time was < 1 day. issue ticket: coding-smart/#4
     print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
     # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
 
