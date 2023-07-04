@@ -8,7 +8,9 @@ import githubanalysis.processing.get_repo_creation_date as createdate
 
 def calc_days_since_repo_creation(date, repo_name, since_date=None, return_in='whole_days', config_path='githubanalysis/config.cfg'):
     """
-    Takes repo dataset file (e.g. issues data) in json and reads in as pd.DataFrame object.
+    Takes date and calculates number of days since that date from the date a given repo was created.
+    For faster performance, since_date (ie date repo was created) can be supplied if already known.
+
     :param date: date to calculate number of days to, since creation date of repo.
     :type: datetime
     :param repo_name: cleaned `repo_name` string without GitHub url root or trailing slashes.
