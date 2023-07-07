@@ -125,6 +125,13 @@ TOTAL                                  17      7    59%
 - [ ] Check for 'assertions' in repo X 
 - [ ] Check for 'test coverage' calculation in repo X 
 
+#### Error handling:  
+- [ ] is message() used in code?
+- [ ] are there system status output codes (e.g. 0, 100, 200, etc).
+- [ ] check condition handling is used in code?
+- [ ] check if stop() or tryCatch() is used.  
+
+
 #### Code Documentation:  
 - [ ] Check for roxygen docs in repo X.  
 - [ ] Check for docstrings in repo X.  
@@ -135,9 +142,12 @@ TOTAL                                  17      7    59%
 #### Repo Structure: 
 - [ ] Does repo have data/ folder?
 - [ ] Does repo have code/ or src/ folder?
+- [ ] Is there a docs/ or documentation/ or doc/ folder?  
 - [ ] Does repo have license?
 - [ ] Does repo have README?
 - [ ] Does repo have wiki?
+- [ ] if R: is repo packaged? Is there a DESCRIPTION folder?
+- [ ] Does repo meet package requirement for its language?  
 
 
 #### Repo Language:  
@@ -145,6 +155,9 @@ TOTAL                                  17      7    59%
 - [ ] Check if repo mainly / only in 1 language?
 
 
+#### Readability:  
+- [ ] Checks no more than 2-3 levels of indentation.
+- [ ] 
 
 
 
