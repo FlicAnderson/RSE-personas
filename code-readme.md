@@ -81,7 +81,7 @@ TOTAL                                  17      7    59%
 - [x] Authenticate to GitHub API using access token [setup_github_auth()](githubanalysis/processing/setup_github_auth.py)  
 - [x] Connect to repo x through github api [get_repo_connection()](githubanalysis/processing/get_repo_connection.py)  
 - [ ] RUN DATA PROCESSING WORKFLOW [clean_data.py](githubanalysis/processing/clean_data.py)
-- [ ] Write out data to file to avoid repeating API requests  
+- [x] Write out data to file to avoid repeating API requests [write_out_repo_data()](githubanalysis/processing/write_out_repo_data.py) 
 
 #### Issue Ticket Usage:  
 - [ ] Check for issue ticket use at repo X   
@@ -93,7 +93,8 @@ TOTAL                                  17      7    59%
 - [ ] Get closing author of issue X 
 - [ ] Get issue X discussion  
 - [ ] Calculate linked issues to issue X   
-- [ ] Calculate time to close issue X  
+- [x] Calculate time to close issue X [calc_issue_close_time()](githubanalysis/analysis/calc_issue_close_time.py)
+- [~] Calculate average time to close issue per dev [calc_per_dev_mean_close_time()](githubanalysis/analysis/calc_per_dev_mean_close_time.py)
 - [ ] Calculate number of ticket authors in repo X   
 - [ ] Calculate measure of issue ticket creation frequency     
 - [ ] Calculate measure of issue ticket closure frequency     
