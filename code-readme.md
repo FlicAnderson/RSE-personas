@@ -126,6 +126,26 @@ TOTAL                                  17      7    59%
 - [ ] Check for 'test coverage' calculation in repo X 
 
 #### Code Documentation:  
+- [ ] Check for roxygen docs in repo X.  
+- [ ] Check for docstrings in repo X.  
+- [ ] Check for comments in function X. 
+- [ ] Check for docs/ or documentation/ folder.  
+
+
+#### Repo Structure: 
+- [ ] Does repo have data/ folder?
+- [ ] Does repo have code/ or src/ folder?
+- [ ] Does repo have license?
+- [ ] Does repo have README?
+- [ ] Does repo have wiki?
+
+
+#### Repo Language:  
+- [ ] Check repo languages.   
+- [ ] Check if repo mainly / only in 1 language?
+
+
+
 
 
 #### Automation:  
