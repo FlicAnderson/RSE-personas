@@ -100,11 +100,12 @@ TOTAL                                  17      7    59%
 - [ ] Calculate measure of issue ticket closure frequency     
 - [ ] Plot average time to close issues in list   
 - [ ] Plot number of issue ticket authors over time  
-- [ ] Plot issue ticket creation over time for repo   
-- [ ] Plot issue ticket closure over time  
+- [ ] Plot issue ticket creation over time for repo  
+- [ ] Plot issue ticket closure over time [plot_repo_issues_data()](githubanalysis/visualization/plot_repo_issues_data.py)   
 
 #### Pull Requests:
-- [ ] Check for PR usage at repo X  
+- [ ] Check for PR usage at repo X
+- [ ] Check for PR closure rates over time at repo X []() 
 - [ ] Get PRs for repo X  
 - [ ] Get linked issues / PRs for issue X    
 - [ ] Check PR code reviewed before merge  
