@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from pathlib import Path
 from pandas.errors import EmptyDataError
 
@@ -66,23 +67,49 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
 
     if xaxis == 'ticket_number':
         # do actual plotting:
-        repo_data_df.plot.scatter(x='number', y='close_time', alpha=0.5, color='red')
-        plt.xlabel("GitHub Issue Ticket Number")
-        plt.ylabel("Time to Close Issue (days)")
-        plt.title(f"Time in days to close GitHub issues from {repo_name}")
-        plt.axhline(y=np.mean(repo_data_df.close_time), linestyle='--',
-                    color='black')  # add mean line with average close time for this set of issues
+        (
+            sns.set_theme(),
+            sns.lmplot(x='number', y='close_time', data=repo_data_df,
+                       hue='pull_request_bool',
+                       height=5,
+                       legend=False,
+                       #ci=95,  # Confidence Interval %; can use 'sd' for standard deviations instead
+                       scatter_kws={'alpha':0.65},
+                       line_kws={'lw': 1.5}   #'color': 'red'
+                        )
+            .set(title=f"Time in days to close GitHub issues from {repo_name}",
+                 xlabel="GitHub Issue Ticket Number",
+                 ylabel="Time to Close Issue (days)"
+                 )
+            .add_legend(title="Pull Requests?"),
+            plt.axhline(y=np.mean(repo_data_df.close_time), linestyle = '--',
+                     color='black')  # add mean line with average close time for this set of issues
+
+        )
+
 
 
     if xaxis == 'project_time':
-        print('Project time as axis.')
-        repo_data_df.plot.scatter(x='days_since_start', y='close_time', alpha=0.5, color='red')
-        plt.xlabel("Time Since Repo Creation (days)")
-        plt.ylabel("Time to Close Issue (days)")
-        plt.title(f"Time in days to close GitHub issues from {repo_name}")
-        plt.axhline(y=np.mean(repo_data_df.close_time), linestyle='--', color='black')  # add mean line with average close time for this set of issues
+        # plot:
+        (
+            sns.set_theme(),
+            sns.lmplot(x='days_since_start', y='close_time', data=repo_data_df,
+                       hue='pull_request_bool',
+                       height=5,
+                       legend=False,
+                       #ci=95,  # Confidence Interval %; can use 'sd' for standard deviations instead
+                       scatter_kws={'alpha':0.65},
+                       line_kws={'lw': 1.5}   #'color': 'red'
+                        )
+            .set(title=f"Time in days to close GitHub issues from {repo_name}",
+                 xlabel="Time Since Repo Creation (days)",
+                 ylabel="Time to Close Issue (days)"
+                 )
+            .add_legend(title="Pull Requests?"),
+            plt.axhline(y=np.mean(repo_data_df.close_time), linestyle = '--',
+                     color='black')  # add mean line with average close time for this set of issues
 
-
+        )
 
 
     # todo: add code for plotting milestones such as releases: issue ticket: coding-smart/#5
@@ -96,7 +123,7 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
         # build path + filename + file extension string
         plot_file = f'{save_out_location}{save_out_filename}.{save_type}'
 
-        plt.savefig(plot_file)
+        plt.savefig(plot_file, bbox_inches='tight')
         plt.close()
 
     else:
