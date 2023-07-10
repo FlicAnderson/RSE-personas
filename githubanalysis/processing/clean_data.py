@@ -2,6 +2,8 @@
 
 import sys
 import random
+import seaborn as sns
+import seaborn.objects as so
 
 import pandas as pd
 
@@ -136,6 +138,9 @@ def main():
     # calculate days_since_start for each closed issue
     closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
 
+    # add column with boolean for PR status
+    closed_issues['pull_request_bool'] = closed_issues['pull_request'].notna()
+
     # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
     #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
@@ -148,20 +153,17 @@ def main():
 
     print(f"For repo {repo_name}, there are {len(closed_issues_only.index)} closed issue tickets and {len(closed_pull_requests.index)} closed pull requests.")
 
-    # plot PRs only:
-    plotissues.plot_repo_issues_data(closed_pull_requests, repo_name, xaxis='project_time', add_events=False, save_out=True,
-                                     save_name='pull_requests_data_plot', save_type='png', save_out_location='images/')
-    # plot closed issues only:
-    plotissues.plot_repo_issues_data(closed_issues_only, repo_name, xaxis='project_time', add_events=False, save_out=True,
-                                     save_name='issues_data_plot', save_type='png', save_out_location='images/')
+
+    # plot ticket_number for closed_issues (closed issues and PRs together, coloured by PR status)
+    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='ticket_number', add_events=False,
+                                     save_out=True, save_name='pull_requests_data_plot', save_type='png', save_out_location='images/')
 
 
-    # plot closed issues assigned to devs, with 25% of assigned tickets plotted as xline and unassigned tickets number in legend.
-    plotissuedevs.plot_repo_issues_counts_devs(closed_issues_only, repo_name, save_name='issues_counts_devs_plot', save_type='png', save_out_location='images/')
+    # plot issue ticket data by project_time (closed issues and PRs together, coloured by PR status)
+    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
-    # plot PRs assigned to devs, with 25% of assigned tickets plotted as xline and unassigned tickets number in legend.
-    plotissuedevs.plot_repo_issues_counts_devs(closed_pull_requests, repo_name, save_name='pull_requests_counts_devs_plot',
-                                               save_type='png', save_out_location='images/')
+    # issues & assigned devs:
+    # plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='pull_requests_counts_devs_plot', save_type='png', save_out_location='images/')
 
 
 # OTHER DATA (e.g. COMMITS, METRICS):
