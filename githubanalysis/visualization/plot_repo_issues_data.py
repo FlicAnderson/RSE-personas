@@ -69,6 +69,7 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
         # do actual plotting:
         (
             sns.set_theme(),
+            sns.set_palette('colorblind'),
             sns.lmplot(x='number', y='close_time', data=repo_data_df,
                        hue='pull_request_bool',
                        height=5,
@@ -93,6 +94,7 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
         # plot:
         (
             sns.set_theme(),
+            sns.set_palette('colorblind'),
             sns.lmplot(x='days_since_start', y='close_time', data=repo_data_df,
                        hue='pull_request_bool',
                        height=5,
