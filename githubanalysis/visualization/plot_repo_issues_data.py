@@ -101,14 +101,15 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
                        legend=False,
                        #ci=95,  # Confidence Interval %; can use 'sd' for standard deviations instead
                        scatter_kws={'alpha':0.65},
-                       line_kws={'lw': 1.5}   #'color': 'red'
+                       line_kws={'lw': 1.5},   #'color': 'red'
+                       col='pull_request_bool'
                         )
             .set(title=f"Time in days to close GitHub issues from {repo_name}",
                  xlabel="Time Since Repo Creation (days)",
                  ylabel="Time to Close Issue (days)"
                  )
-            .add_legend(title="Pull Requests?"),
-            plt.axhline(y=np.mean(repo_data_df.close_time), linestyle = '--',
+            .add_legend(title="Pull Requests?")
+            .refline(y=np.mean(repo_data_df.close_time), linestyle = '--',
                      color='black')  # add mean line with average close time for this set of issues
 
         )
