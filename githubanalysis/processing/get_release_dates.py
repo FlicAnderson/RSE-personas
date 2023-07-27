@@ -4,12 +4,10 @@ import pandas as pd
 import requests
 
 
-def get_release_dates(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True):
+def get_release_dates(repo_name, verbose=True):
     """
     Takes repo name, creates new dataframe of release info especially dates (pd.DataFrame object) for that repository.
     :param repo_name: cleaned `repo_name` string without GitHub url root or trailing slashes.
-    :type: str
-    :param config_path: filepath of config.cfg file containing GitHub Access Token. Default='githubanalysis/config.cfg'.
     :type: str
     :param verbose: print status info? Default= true
     :type: bool
@@ -17,7 +15,7 @@ def get_release_dates(repo_name, config_path='githubanalysis/config.cfg', per_pg
     :type: pd.DataFrame
     """
 
-    if(repo_name is None):
+    if repo_name is None:
         raise TypeError('`repo_name` is empty. Please supply name of repo to retrieve release info for.')
 
     # get release dates
@@ -40,11 +38,19 @@ def get_release_dates(repo_name, config_path='githubanalysis/config.cfg', per_pg
 
         # drop unnecessary columns from df (including author: succeeded by new 'release_author' column)
         repo_releases = repo_releases.drop(
-            columns=['url', 'assets_url', 'upload_url', 'html_url', 'author', 'target_commitish', 'prerelease',
+            columns=['url', 'assets_url', 'upload_url', 'html_url', 'id', 'author', 'node_id', 'target_commitish', 'prerelease',
                      'assets', 'tarball_url', 'zipball_url']
         )
+
+        repo_releases['repo_name'] = repo_name
         # remaining columns aka $ repo_releases.columns:
-        # Index(['id', 'node_id', 'tag_name', 'name', 'draft', 'created_at', 'published_at', 'body', 'release_author'],
+        # Index(['tag_name', 'name', 'draft', 'created_at', 'published_at', 'body', 'release_author', 'repo_name'],
         #       dtype='object')
+
+        if verbose:
+            last_release = repo_releases.sort_values(by=['published_at'], ascending=False)
+            last_release_date = pd.to_datetime(last_release['published_at'][0], utc=True)
+            last_release_name = last_release['name'][0]
+            print(f"There have been {len(repo_releases)} releases published at repo {repo_name}. The last release was {last_release_name}, released on {last_release_date}.")
 
         return repo_releases
