@@ -17,6 +17,7 @@ import githubanalysis.visualization.plot_repo_issues_data as plotissues
 import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedevs
 import githubanalysis.processing.get_repo_creation_date as createdate
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
+import githubanalysis.processing.get_release_dates as getreleases
 
 
 def main():
@@ -165,11 +166,17 @@ def main():
     # issues & assigned devs:
     plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='pull_requests_counts_devs_plot', save_type='png', save_out_location='images/')
 
-
-
 # OTHER DATA (e.g. COMMITS, METRICS):
-
     # other bits.
+
+    # # get release dates for repo
+    # repo_releases = getreleases.get_release_dates(repo_name, verbose=True)
+    # repo_releases.type()
+    # repo_releases.columns
+    #
+    # # calculate 'days since' date equivalents for release dates.
+    # repo_releases['release_date_since_repo_creation'] = repo_releases.apply(lambda x: dayssince.calc_days_since_repo_creation(x.published_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
+    # print(repo_releases['release_date_since_repo_creation'])
 
 # this bit
 if __name__ == "__main__":
