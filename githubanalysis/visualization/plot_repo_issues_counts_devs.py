@@ -61,7 +61,7 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
     # todo: check 'assigned_devs' column exists, error if not
 
     # reshape dataset to make taller on 'assigned_devs' column (ie 1x row:[dev1, dev2]; -> 2x rows: dev1; dev2
-    exploded_devs = repo_data_df.apply(pd.Series).explode(column='assigned_devs')
+    exploded_devs = repo_data_df.apply(pd.Series).explode(column='assigned_devs', ignore_index=True)
 
     # calculate 25% of assigned tickets
     all_closed = len(repo_data_df.index)
