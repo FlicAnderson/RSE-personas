@@ -156,27 +156,58 @@ def main():
 
 
     # plot ticket_number for closed_issues (closed issues and PRs together, coloured by PR status)
-    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='ticket_number', add_events=False,
-                                     save_out=True, save_name='pull_requests_data_plot', save_type='png', save_out_location='images/')
+    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='ticket_number', add_events=False,
+    #                                 save_out=True, save_name='pull_requests_data_plot', save_type='png', save_out_location='images/')
 
 
     # plot issue ticket data by project_time (closed issues and PRs together, coloured by PR status)
-    plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
     # issues & assigned devs:
-    plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='pull_requests_counts_devs_plot', save_type='png', save_out_location='images/')
+    #plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='pull_requests_counts_devs_plot', save_type='png', save_out_location='images/')
 
 # OTHER DATA (e.g. COMMITS, METRICS):
     # other bits.
 
     # # get release dates for repo
-    # repo_releases = getreleases.get_release_dates(repo_name, verbose=True)
-    # repo_releases.type()
-    # repo_releases.columns
-    #
-    # # calculate 'days since' date equivalents for release dates.
-    # repo_releases['release_date_since_repo_creation'] = repo_releases.apply(lambda x: dayssince.calc_days_since_repo_creation(x.published_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
-    # print(repo_releases['release_date_since_repo_creation'])
+    repo_releases = getreleases.get_release_dates(repo_name, verbose=True)
+    print(repo_releases)
+    print(repo_releases.shape)
+    #print(repo_releases.columns)
+
+    # calculate 'days since' date equivalents for release dates if there were any:
+    if len(repo_releases.columns) != 0:
+
+        repo_releases['release_date_since_repo_creation'] = repo_releases.apply(
+            lambda x: dayssince.calc_days_since_repo_creation(
+                x.published_at,
+                x.repo_name,
+                since_date=repo_creation_date,
+                return_in='whole_days',
+                config_path='githubanalysis/config.cfg'
+            ), axis=1
+        )
+        # print(repo_releases['release_date_since_repo_creation'])
+
+        repo_releases['releases_before_repo_creation'] = repo_releases['created_at'].apply(
+            lambda x: 'True' if x < repo_creation_date else 'False')
+
+        # print(repo_releases['releases_before_repo_creation'])
+
+        if pd.Series(repo_releases['releases_before_repo_creation']).any():
+            print(f"BE AWARE: Some releases were created before the 'official' repo creation date.")
+
+        # print(repo_releases.columns)
+
+        release_events = repo_releases['release_date_since_repo_creation']
+        print(f'release events: {release_events}')
+        print(f'type release events: {type(release_events)}')
+
+        # plot issues data WITH RELEASE DATE LINES
+        plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=release_events,
+                                         save_out=True, save_name='releases_issues_data_plot', save_type='png',
+                                         save_out_location='images/')
+
 
 # this bit
 if __name__ == "__main__":
