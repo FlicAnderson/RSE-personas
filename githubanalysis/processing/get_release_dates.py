@@ -15,23 +15,25 @@ def get_release_dates(repo_name, verbose=True):
     :type: pd.DataFrame
     """
 
-    if repo_name is None:
-        raise TypeError('`repo_name` is empty. Please supply name of repo to retrieve release info for.')
+    #if repo_name is None:
+    #    raise TypeError('`repo_name` is empty. Please supply name of repo to retrieve release info for.')
 
     # get release dates
     base_releases_url = f"https://api.github.com/repos/{repo_name}/releases"
     api_response = requests.get(url=base_releases_url)
 
-    if api_response == 404:
-        # status NOT OK
-        print("API ERROR: Resource not found. There may be no releases for this repo")
-
-    if api_response == 200:
+    try:
+        if api_response == 200:
         # status OK
-
+         if verbose:
+            print(api_response)
+            print('API response status 200')
         # pull data as json then convert to pandas dataframe for ease of use
         release_info = api_response.json()
         repo_releases = pd.DataFrame.from_dict(release_info)
+
+        if verbose:
+            print(repo_releases.shape)
 
         # pull out release author username as new column in df.
         repo_releases['release_author'] = repo_releases[['author']].apply(lambda x: [x.get('login') for x in x])
@@ -41,6 +43,9 @@ def get_release_dates(repo_name, verbose=True):
             columns=['url', 'assets_url', 'upload_url', 'html_url', 'id', 'author', 'node_id', 'target_commitish', 'prerelease',
                      'assets', 'tarball_url', 'zipball_url']
         )
+
+        repo_releases['created_at'] = pd.to_datetime(repo_releases['created_at'], utc=True)
+        repo_releases['published_at'] = pd.to_datetime(repo_releases['published_at'], utc=True)
 
         repo_releases['repo_name'] = repo_name
         # remaining columns aka $ repo_releases.columns:
@@ -54,3 +59,13 @@ def get_release_dates(repo_name, verbose=True):
             print(f"There have been {len(repo_releases)} releases published at repo {repo_name}. The last release was {last_release_name}, released on {last_release_date}.")
 
         return repo_releases
+
+    except:
+        if api_response == 404:        # status NOT OK
+            print("API ERROR: 404: Resource not found. There may be no releases for this repo")
+            repo_releases = pd.DataFrame()
+            return repo_releases
+        else:
+            print("API ERROR: response *NOT* 404 (forbidden/not found) *OR* 200 (OK). Something has gone wrong with API response, check requests.get(url)")
+            repo_releases = pd.DataFrame()
+            return repo_releases
