@@ -92,32 +92,21 @@ def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_ev
 
     if xaxis == 'project_time':
         # plot:
-        (
-            sns.set_theme(),
-            sns.set_palette('colorblind'),
-            sns.lmplot(x='days_since_start', y='close_time', data=repo_data_df,
-                       hue='pull_request_bool',
-                       height=5,
-                       legend=False,
-                       #ci=95,  # Confidence Interval %; can use 'sd' for standard deviations instead
-                       scatter_kws={'alpha':0.65},
-                       line_kws={'lw': 1.5},   #'color': 'red'
-                       col='pull_request_bool'
-                        )
-            .set(title=f"Time in days to close GitHub issues from {repo_name}",
-                 xlabel="Time Since Repo Creation (days)",
-                 ylabel="Time to Close Issue (days)"
-                 )
-            .add_legend(title="Pull Requests?")
-            .refline(y=np.mean(repo_data_df.close_time), linestyle = '--',
-                     color='black')  # add mean line with average close time for this set of issues
+        sns.set_theme()
+        sns.set_palette('colorblind')
 
-        )
+        g = sns.FacetGrid(data=repo_data_df, col='pull_request_bool', hue='pull_request_bool', height=5)
+        g.map(sns.scatterplot, 'days_since_start', 'close_time')
+        g.set(title=f"Time (days) to close at {repo_name}")
+        g.set_axis_labels("Time Since Repo Creation (days)", "Time to Close Issue (days)")
+        g.add_legend(title="Pull Requests?")
+        g.refline(y=np.mean(repo_data_df.close_time), linestyle='--',
+                  alpha=0.5)  # add mean line w/ average close time for repo
 
+        if add_events is not False:
+            for event in add_events:
+                g.refline(x=event, ymin=0, ymax=1, color='black', linestyle=':', alpha=0.75)
 
-    # todo: add code for plotting milestones such as releases: issue ticket: coding-smart/#5
-    if add_events:
-        print('Not currently implemented. Will plot releases as vertical events where xaxis is project_time.')
 
     if save_out:
         # create filename to use from repo_name
