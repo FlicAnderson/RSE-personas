@@ -212,9 +212,9 @@ def main():
 
     # get contributor stats for repo:
     contributor_commits_stats = getcontributorstats.get_contributor_commits_stats(repo_name, verbose=True)
-    print(contributor_commits_stats)
-    print(type(contributor_commits_stats))
-
+    if contributor_commits_stats is not None:
+        print(contributor_commits_stats.head())
+        print(type(contributor_commits_stats))
 
 # this bit
 if __name__ == "__main__":
