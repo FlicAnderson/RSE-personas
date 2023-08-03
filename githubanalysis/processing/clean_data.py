@@ -18,6 +18,8 @@ import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedev
 import githubanalysis.processing.get_repo_creation_date as createdate
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 import githubanalysis.processing.get_release_dates as getreleases
+import githubanalysis.processing.get_contributor_commits_stats as getcontributorstats
+
 
 
 def main():
@@ -207,6 +209,11 @@ def main():
         plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=release_events,
                                          save_out=True, save_name='releases_issues_data_plot', save_type='png',
                                          save_out_location='images/')
+
+    # get contributor stats for repo:
+    contributor_commits_stats = getcontributorstats.get_contributor_commits_stats(repo_name, verbose=True)
+    print(contributor_commits_stats)
+    print(type(contributor_commits_stats))
 
 
 # this bit
