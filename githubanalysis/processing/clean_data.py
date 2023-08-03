@@ -171,8 +171,8 @@ def main():
 
     # # get release dates for repo
     repo_releases = getreleases.get_release_dates(repo_name, verbose=True)
-    print(repo_releases)
-    print(repo_releases.shape)
+    #print(repo_releases)
+    #print(repo_releases.shape)
     #print(repo_releases.columns)
 
     # calculate 'days since' date equivalents for release dates if there were any:
