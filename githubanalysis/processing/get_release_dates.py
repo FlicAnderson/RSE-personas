@@ -22,18 +22,21 @@ def get_release_dates(repo_name, verbose=True):
     base_releases_url = f"https://api.github.com/repos/{repo_name}/releases"
     api_response = requests.get(url=base_releases_url)
 
+
     try:
-        if api_response == 200:
-        # status OK
-         if verbose:
-            print(api_response)
-            print('API response status 200')
+        if api_response.status_code == 200 and verbose:
+            print(f'API response status OK: {api_response}')
+
         # pull data as json then convert to pandas dataframe for ease of use
         release_info = api_response.json()
         repo_releases = pd.DataFrame.from_dict(release_info)
 
+        if len(repo_releases.columns) == 0:
+            raise Exception(f"Repo {repo_name} contains NO releases.")
+
         if verbose:
             print(repo_releases.shape)
+
 
         # pull out release author username as new column in df.
         repo_releases['release_author'] = repo_releases[['author']].apply(lambda x: [x.get('login') for x in x])
@@ -61,11 +64,12 @@ def get_release_dates(repo_name, verbose=True):
         return repo_releases
 
     except:
-        if api_response == 404:        # status NOT OK
-            print("API ERROR: 404: Resource not found. There may be no releases for this repo")
+        if api_response.status_code == 404:        # status NOT OK
+            print(f"API ERROR: {api_response}. There may be no releases for this repo, or an API exception.")
             repo_releases = pd.DataFrame()
             return repo_releases
         else:
-            print("API ERROR: response *NOT* 404 (forbidden/not found) *OR* 200 (OK). Something has gone wrong with API response, check requests.get(url)")
+            if len(repo_releases.columns) == 0:
+                print(f"Repo {repo_name} contains NO releases.") # This version prints, not the above if: exception()
             repo_releases = pd.DataFrame()
             return repo_releases
