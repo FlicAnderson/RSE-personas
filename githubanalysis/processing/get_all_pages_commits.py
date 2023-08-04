@@ -41,9 +41,10 @@ def get_all_pages_commits(repo_name, config_path='githubanalysis/config.cfg', pe
         print(all_commits.head())
 
     # confirm all important columns present;
+    # pull date & message out of commit column of df
     # pull author info into username only `commit_author` column
     # drop unnecessary columns;
-    # convert dates/times w/ pd.to_datetime()
+    # convert dates/times w/ pd.to_datetime() if required
 
     # add repo_name column to df
     all_commits['repo_name'] = repo_name
