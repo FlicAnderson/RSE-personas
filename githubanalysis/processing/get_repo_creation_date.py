@@ -1,4 +1,5 @@
 """ Set up GitHub API connection for given GitHub repository."""
+
 import pandas as pd
 from pandas import DatetimeIndex
 
