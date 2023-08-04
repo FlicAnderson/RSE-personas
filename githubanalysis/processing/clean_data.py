@@ -19,6 +19,7 @@ import githubanalysis.processing.get_repo_creation_date as createdate
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 import githubanalysis.processing.get_release_dates as getreleases
 import githubanalysis.processing.get_contributor_commits_stats as getcontributorstats
+import githubanalysis.visualization.plot_repo_contributor_commits_stats as plotcontributorcommits
 
 
 
@@ -215,6 +216,18 @@ def main():
     if contributor_commits_stats is not None:
         print(contributor_commits_stats.head())
         print(type(contributor_commits_stats))
+
+        # plot contributor stats for repo:
+        plotcontributorcommits.plot_repo_contributor_commits_stats(
+            repo_data_df=contributor_commits_stats,
+            repo_name = repo_name,
+            save_out=True,
+            save_name='contributor_commits_totals_plot',
+            save_type='png',
+            save_out_location='images/',
+            verbose=True
+        )
+
 
 # this bit
 if __name__ == "__main__":
