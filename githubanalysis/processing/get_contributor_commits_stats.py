@@ -25,8 +25,8 @@ def get_contributor_commits_stats(repo_name, verbose=True):
     base_contributor_stats_url = f"https://api.github.com/repos/{repo_name}/stats/contributors"
     # approach via: https://stackoverflow.com/a/35636367
 
-    if verbose:
-        logging.basicConfig(level=logging.INFO)  # might be able to remove this as it doesn't affect the requests code
+    #if verbose:
+    #    logging.basicConfig(level=logging.DEBUG)  # might be able to remove this as it doesn't affect the requests code
 
     s = requests.Session()
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[202, 502, 503, 504])
@@ -56,13 +56,11 @@ def get_contributor_commits_stats(repo_name, verbose=True):
 
             contributor_commits_stats = contributor_commits_stats.sort_values(by='total', axis=0, ascending=False)
 
-            logging.basicConfig(level=logging.WARNING)
             return contributor_commits_stats
 
         except:
             print("No contributor stats found")
             contributor_commits_stats = pd.DataFrame()
-            logging.basicConfig(level=logging.WARNING)
             return contributor_commits_stats
 
     elif api_response.status_code == 202 and verbose:
@@ -75,11 +73,9 @@ def get_contributor_commits_stats(repo_name, verbose=True):
     elif api_response.status_code == 204 and verbose:
         print(f'API response status "A header with no content is returned": {api_response}')
         contributor_commits_stats = pd.DataFrame()
-        logging.basicConfig(level=logging.WARNING)
         return contributor_commits_stats
 
     else:
         print(f'Something else is wrong; API response: {api_response}')
         contributor_commits_stats = pd.DataFrame()
-        logging.basicConfig(level=logging.WARNING)
         return contributor_commits_stats
