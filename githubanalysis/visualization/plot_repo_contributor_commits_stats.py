@@ -81,7 +81,7 @@ def plot_repo_contributor_commits_stats(repo_data_df, repo_name, save_out=True, 
         y='total',
         color='black'
     )
-    ax.refline(y=contrib25pc, linestyle='--', alpha=0.5)
+    ax.axhline(y=contrib25pc, linestyle='--', alpha=0.5)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha="left", fontsize=7)
     plt.tight_layout()
 
