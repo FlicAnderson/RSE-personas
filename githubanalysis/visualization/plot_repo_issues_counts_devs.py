@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from pathlib import Path
 from pandas.errors import EmptyDataError
 
@@ -73,6 +74,9 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
         print(exploded_devs['assigned_devs'].value_counts(dropna=False))  # print per-dev assignment counts
 
     # do actual plotting:
+    sns.set_theme()
+    sns.set_palette('colorblind')
+
     exploded_devs['assigned_devs'].value_counts().plot.bar(column='assigned_devs', color='red', label='assigned tickets')
 
     plt.xlabel("Assigned To user")
@@ -90,4 +94,5 @@ def plot_repo_issues_counts_devs(repo_data_df, repo_name, save_out=True, save_na
         plot_file = f'{save_out_location}{save_out_filename}.{save_type}'
 
         plt.savefig(plot_file, bbox_inches='tight')
+
     plt.close()
