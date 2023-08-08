@@ -3,6 +3,7 @@
 import pandas as pd
 import githubanalysis.processing.get_repo_connection as ghconnect
 
+
 def get_all_pages_commits(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True):
     """
     Obtain all commits data from all pages for a given GitHub repo `repo_name`.
@@ -37,17 +38,32 @@ def get_all_pages_commits(repo_name, config_path='githubanalysis/config.cfg', pe
 
     if verbose:
         print("Shape of data:", all_commits.shape)
-        print("Commit columns:", all_commits.columns)
-        print(all_commits.head())
 
     # confirm all important columns present;
-    # pull date & message out of commit column of df
+
+    # get commit messages as new columns in df.
+    #all_commits['commit_message'] = all_commits['commit'].apply(lambda x: [x.get('message') for x in x])
+
     # pull author info into username only `commit_author` column
-    # drop unnecessary columns;
+    #all_commits['commit_author'] = all_commits[['author']].apply(lambda x: [x.get('login') for x in x])
+
     # convert dates/times w/ pd.to_datetime() if required
+    #all_commits['commit_date_info'] = all_commits['commit'].apply(lambda x: [x.get('author') for x in x])
+    #all_commits['commit_date'] = ['commit_date_info'].apply(lambda x: [x.get('date') for x in x])
+
+    #all_commits['commit_date'] = pd.to_datetime(all_commits['commit_date'])
+    #all_commits['commit_date'] = all_commits.commit_date.tz_localize(tz='UTC')
 
     # add repo_name column to df
     all_commits['repo_name'] = repo_name
+
+    # drop unnecessary columns;
+
+
+    if verbose:
+        print("Shape of data:", all_commits.shape)
+        print("Commit columns:", all_commits.columns)
+        print(all_commits.head())
 
     # return df
 
