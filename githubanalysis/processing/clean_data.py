@@ -20,6 +20,7 @@ import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 import githubanalysis.processing.get_release_dates as getreleases
 import githubanalysis.processing.get_contributor_commits_stats as getcontributorstats
 import githubanalysis.visualization.plot_repo_contributor_commits_stats as plotcontributorcommits
+import githubanalysis.processing.get_all_pages_commits as getallcommits
 
 
 
@@ -227,6 +228,34 @@ def main():
             save_out_location='images/',
             verbose=True
         )
+
+
+    print(f"Getting commits from {repo_name}...")
+    # get all commits for repo:
+    all_commits = getallcommits.get_all_pages_commits(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True)
+    print(f"{all_commits.len} commits returned")
+
+    # # add commit date in days since repo creation:
+    # if len(all_commits.columns) != 0:
+    #
+    #     all_commits['commit_date_since_repo_creation'] = all_commits.apply(
+    #         lambda x: dayssince.calc_days_since_repo_creation(
+    #             x.commit_date,
+    #             x.repo_name,
+    #             since_date=repo_creation_date,
+    #             return_in='whole_days',
+    #             config_path='githubanalysis/config.cfg'
+    #         ), axis=1
+    #     )
+    #
+    #     all_commits['commits_before_repo_creation'] = all_commits['commit_date'].apply(
+    #         lambda x: 'True' if x < repo_creation_date else 'False')
+    #
+    #     # print(repo_releases['releases_before_repo_creation'])
+    #
+    #     if pd.Series(all_commits['commits_before_repo_creation']).any():
+    #         print(f"BE AWARE: Some commits were made before the 'official' repo creation date.")
+
 
 
 # this bit
