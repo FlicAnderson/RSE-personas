@@ -25,5 +25,10 @@ Code was written in a linux Ubuntu 22.04 LTS environment.
 A conda environment yaml file for running this code is stored within the repo within the `code/githubanalysis/` folder as `coding-smart-github.yml`.   
 
 
+#### GitHub Authentication  
+
+This code expects a GitHub Personal Access Token stored in a file called `config.cfg` locally.  
+This PAT should have read access to repo permissions, and in my case also has GitHub Workflow permissions. 
+
 #### License  
 Licensed under BSD 3-Clause "New" or "Revised" License.
