@@ -175,4 +175,5 @@ images/
 
 # private data
 config.cfg
-
+githubanalysis/config.cfg 
+zenodocode/zenodoconfig.cfg
