@@ -10,3 +10,13 @@ setup(
 )
 
 # via https://stackoverflow.com/a/50194143
+
+
+setup(
+    name='zenodocode',
+    version='1.0',
+    description='Code for obtaining github repositories from DOIs on zenodo',
+    author='Flic Anderson',
+    packages=find_packages()
+)
+
