@@ -3,6 +3,8 @@
 import pandas as pd
 import datetime
 from datetime import timezone
+import requests
+from requests.adapters import HTTPAdapter, Retry
 
 import githubanalysis.processing.setup_github_auth as ghauth
 import githubanalysis.processing.get_repo_connection as ghconnect
@@ -56,9 +58,32 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     repo_stats.update({"devs": 0})
 
 
-    # count number of commits
+    # count total number of commits
 
-    repo_stats.update({"total_commits": 0})
+    base_commits_url = f"https://api.github.com/repos/{repo_name}/commits?per_page=1"
+
+    api_response = requests.get(base_commits_url)
+    commit_links = api_response.links
+    commit_links_last = commit_links['last']['url'].split("&page=")[1]
+    total_commits = int(commit_links_last)
+
+
+    repo_stats.update({"total_commits": total_commits})
+
+
+    # count total commits in last year
+
+    base_commit_stats_url = f"https://api.github.com/repos/{repo_name}/stats/commit_activity"
+
+    s = requests.Session()
+    retries = Retry(total=5, backoff_factor=1, status_forcelist=[202, 502, 503, 504])
+    s.mount('https://', HTTPAdapter(max_retries=retries))
+
+    api_response = s.get(url=base_commit_stats_url, timeout=10)
+    print(api_response)
+
+    total_commits_1_year = pd.DataFrame(api_response.json())['total'].sum()
+    repo_stats.update({"total_commits_last_year": total_commits_1_year})
 
 
     # count closed issue tickets
@@ -81,7 +106,8 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     repo_stats.update({"tickets": closed_issues})
 
 
-    # get date of last commit
+    # get date of last commit ON MAIN BRANCH
+    last_update = repo_con.updated_at
 
     repo_stats.update({"last_commit": "datetype"})
 
@@ -137,6 +163,7 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     #     "repo_name": "repo_name",
     #     "devs": 0,
     #     "total_commits": 0,
+    #     "total_commits_last_year": 0,
     #     "tickets": 0,
     #     "last_commit": "datetype",
     #     "repo_age_days": 0,
