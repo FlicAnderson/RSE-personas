@@ -53,9 +53,30 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
 # get stats:
 
-    # count number of devs
+    # count number of devs (contributors; including anonymous contribs* )
 
-    repo_stats.update({"devs": 0})
+    contribs_url = f"https://api.github.com/repos/{repo_name}/contributors?per_page=1&anon=1"
+
+    api_response = requests.get(contribs_url)
+
+    if api_response.ok:
+        contrib_links = api_response.links
+        contrib_links_last = contrib_links['last']['url'].split("&page=")[1]
+        total_contributors = int(contrib_links_last)
+
+        if total_contributors >= 500:
+            raise Warning(f"Repo {repo_name} has over 500 contributors, so API may not return contributors numbers accurately.}")
+        # * NOTE: gh API does NOT return username info where number of contributors is > 500;
+        #  ... after this they're listed as anonymous contributors.
+        #  ... It's NOT possible to get the number of contributors GH web page returns using API info.
+        # source: https://docs.github.com/en/free-pro-team@latest/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors
+            # > "GitHub identifies contributors by author email address.
+            # > This endpoint groups contribution counts by GitHub user, which includes all associated email addresses.
+            # > To improve performance, only the first 500 author email addresses in the repository link to GitHub users.
+            # > The rest will appear as anonymous contributors without associated GitHub user information."
+
+    repo_stats.update({"devs": total_contributors})
+
 
 
     # count total number of commits
