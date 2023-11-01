@@ -65,7 +65,7 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
         total_contributors = int(contrib_links_last)
 
         if total_contributors >= 500:
-            raise Warning(f"Repo {repo_name} has over 500 contributors, so API may not return contributors numbers accurately.}")
+            raise Warning(f"Repo {repo_name} has over 500 contributors, so API may not return contributors numbers accurately.")
         # * NOTE: gh API does NOT return username info where number of contributors is > 500;
         #  ... after this they're listed as anonymous contributors.
         #  ... It's NOT possible to get the number of contributors GH web page returns using API info.
@@ -107,6 +107,43 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     repo_stats.update({"total_commits_last_year": total_commits_1_year})
 
 
+    # has PRs
+
+    #PRs_bool = TODO
+    #repo_stats.update({"has_PRs": PRs_bool})
+
+
+
+    # date of most recently updated PR:
+    per_pg = 1
+    state = 'all'
+    sort = 'udpated'
+    direction = 'desc'
+    params_string = f"?per_pg={per_pg}&state={state}&sort={sort}&direction={direction}"
+
+    PRs_url = f"https://api.github.com/repos/{repo_name}/pulls{params_string}"
+
+    api_response = requests.get(PRs_url)
+
+    if api_response.ok:
+        print(api_response.ok)
+
+        try:
+            assert len(api_response.json()) != 0, "No json therefore no PRs"
+            last_PR_update = api_response.json()[0]['updated_at']  # 0th(1st) for latest update as sorted desc.
+            date_format = '%Y-%m-%dT%H:%M:%S%z'
+            last_PR_update = datetime.strptime(last_PR_update, date_format)
+            # as datetime w/ UTC timezone awareness(last_PR_update)
+            PRs_bool = True
+        except:
+            PRs_bool = False
+            last_PR_update = None
+
+    repo_stats.update({"has_PRs": PRs_bool})
+    repo_stats.update({"last_PR_update": last_PR_update})
+
+
+
     # count closed issue tickets
 
     if hasattr(repo_con, 'has_issues') is True:
@@ -128,9 +165,9 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
 
     # get date of last commit ON MAIN BRANCH
-    last_update = repo_con.updated_at
+    last_commit_update = repo_con.updated_at
 
-    repo_stats.update({"last_commit": "datetype"})
+    repo_stats.update({"last_commit_update": "datetype"})
 
 
     # get age of repo
