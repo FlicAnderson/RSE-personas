@@ -43,6 +43,9 @@ def check_repo_eligibility(repo_name, config_path='githubanalysis/config.cfg', p
     # Commits:
         # > 100 commits? > 500?
 
+    # Has PRs:
+        # has PRs
+
     # Is RS:
         # (will be TRUE since the gh repo url should have come via zenodocode therefore has associated DOI)
 
@@ -52,6 +55,7 @@ def check_repo_eligibility(repo_name, config_path='githubanalysis/config.cfg', p
 
     # Recent Activity:
         # has commit within last 12 months? 18 months?
+        # last PR activity within last 12 months?
     
     # Repo Age:
         # repo is established, >3 years old.
