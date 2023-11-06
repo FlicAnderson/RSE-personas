@@ -107,13 +107,6 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     repo_stats.update({"total_commits_last_year": total_commits_1_year})
 
 
-    # has PRs
-
-    #PRs_bool = TODO
-    #repo_stats.update({"has_PRs": PRs_bool})
-
-
-
     # date of most recently updated PR:
     per_pg = 1
     state = 'all'
@@ -164,12 +157,6 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     repo_stats.update({"tickets": closed_issues})
 
 
-    # get date of last commit ON MAIN BRANCH
-    last_commit_update = repo_con.updated_at
-
-    repo_stats.update({"last_commit_update": "datetype"})
-
-
     # get age of repo
     repo_age_days = dayssince.calc_days_since_repo_creation(
         datetime.datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
@@ -184,9 +171,6 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     # get license type
     license_type = repo_con.get_license().license
     # will be of type: github.License.License
-    # TODO: check license type is in list of open licenses.
-        # perhaps check for something specific in `repo_con.get_license().license.permissions`?
-        # Example: Apache 2: ['commercial-use', 'modifications', 'distribution', 'patent-use', 'private-use']
 
     repo_stats.update({"repo_license": license_type})
 
