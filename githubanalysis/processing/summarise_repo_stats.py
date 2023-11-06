@@ -1,17 +1,20 @@
 """ Summarise key stats for GitHub repository."""
 
+import sys
 import pandas as pd
 import datetime
+from datetime import datetime
 from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
-import githubanalysis.processing.setup_github_auth as ghauth
+import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
-def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg = 100, verbose=True):
+
+def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True):
     """
     Connect to given GitHub repository and get details
     when given 'username' and 'repo_name' repository name.
@@ -21,9 +24,9 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
     :param repo_name: cleaned `repo_name` string without GitHub url root or trailing slashes.
     :type: str
-    :param config_path: file path of config.cfg file containing GitHub Access Token. Default='githubanalysis/config.cfg'.
+    :param config_path: file path of config.cfg file containing GitHub Access Token. Default = 'githubanalysis/config.cfg'.
     :type: str
-    :param per_pg: number of items per page in paginated API requests. Default=100, overwrites GitHub default 30.
+    :param per_pg: number of items per page in paginated API requests. Default = 100, overwrites GitHub default 30.
     :type: int
     :param verbose: return status info. Default: True
     :type: bool
@@ -58,6 +61,8 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     contribs_url = f"https://api.github.com/repos/{repo_name}/contributors?per_page=1&anon=1"
 
     api_response = requests.get(contribs_url)
+
+    total_contributors = None
 
     if api_response.ok:
         contrib_links = api_response.links
@@ -118,6 +123,9 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
     api_response = requests.get(PRs_url)
 
+    PRs_bool = None
+    last_PR_updated = None
+
     if api_response.ok:
         print(api_response.ok)
 
@@ -125,15 +133,17 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
             assert len(api_response.json()) != 0, "No json therefore no PRs"
             last_PR_update = api_response.json()[0]['updated_at']  # 0th(1st) for latest update as sorted desc.
             date_format = '%Y-%m-%dT%H:%M:%S%z'
-            last_PR_update = datetime.strptime(last_PR_update, date_format)
+            last_PR_updated = datetime.strptime(last_PR_update, date_format)
             # as datetime w/ UTC timezone awareness(last_PR_update)
             PRs_bool = True
         except:
             PRs_bool = False
-            last_PR_update = None
+            last_PR_updated = None
+    else:
+        api_response.raise_for_status()
 
     repo_stats.update({"has_PRs": PRs_bool})
-    repo_stats.update({"last_PR_update": last_PR_update})
+    repo_stats.update({"last_PR_update": last_PR_updated})
 
 
 
@@ -159,7 +169,7 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
     # get age of repo
     repo_age_days = dayssince.calc_days_since_repo_creation(
-        datetime.datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
+        datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
         repo_name,
         since_date=None,
         return_in='whole_days',
@@ -177,10 +187,10 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
     # is repo accessible?
 
-    if hasattr(repo_con, 'private') is False:
-        repo_visibility = True
-    else:
+    if hasattr(repo_con, 'private') is True:
         repo_visibility = False
+    else:
+        repo_visibility = True
         #raise AttributeError(f'GitHub repository {repo_name} is private.')
 
     repo_stats.update({"repo_visibility": repo_visibility})
@@ -217,6 +227,32 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     # check ALL keys in repo_stats dict:
     #try: all x in repo_stats = TRUE
 
+
+    if verbose:
+        print(f"Stats for {repo_name}: {repo_stats}")
+
     return repo_stats
 
     # except: something's wrong.
+
+
+def main():
+    """
+    Run summarise_repo_stats() from terminal on supplied repo name.
+    """
+
+    if len(sys.argv) == 2:
+        repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
+    else:
+        raise IndexError('Please enter a repo_name.')
+
+    if 'github' in repo_name:
+        repo_name = name_clean.repo_name_clean(repo_name)
+
+    # run summarise_repo_stats() on repo_name.
+    summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True)
+
+
+# this bit
+if __name__ == "__main__":
+    main()
