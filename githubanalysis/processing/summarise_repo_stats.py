@@ -14,7 +14,7 @@ import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 
-def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True):
+def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg=1, verbose=True):
     """
     Connect to given GitHub repository and get details
     when given 'username' and 'repo_name' repository name.
@@ -85,14 +85,29 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
 
     # count total number of commits
+    total_commits = None
 
     base_commits_url = f"https://api.github.com/repos/{repo_name}/commits?per_page=1"
 
-    api_response = requests.get(base_commits_url)
-    commit_links = api_response.links
-    commit_links_last = commit_links['last']['url'].split("&page=")[1]
-    total_commits = int(commit_links_last)
+    s = requests.Session()
+    retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
+    s.mount('https://', HTTPAdapter(max_retries=retries))
+    try:
+        api_response = s.get(url=base_commits_url, timeout=10)
+        commit_links = api_response.links
+        commit_links_last = commit_links['last']['url'].split("&page=")[1]
+        total_commits = int(commit_links_last)
 
+        if verbose:
+            print(f"API response for getting total commits: {api_response}")
+            #print(commit_links)
+            #print(commit_links_last)
+
+    except Exception as e:
+        if verbose:
+            print(f"API response total_commits_last_year fail exception: {e}")
+        print(type(e))
+        print(e)
 
     repo_stats.update({"total_commits": total_commits})
 
@@ -102,11 +117,17 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     base_commit_stats_url = f"https://api.github.com/repos/{repo_name}/stats/commit_activity"
 
     s = requests.Session()
-    retries = Retry(total=5, backoff_factor=1, status_forcelist=[202, 502, 503, 504])
+    retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
     s.mount('https://', HTTPAdapter(max_retries=retries))
-
-    api_response = s.get(url=base_commit_stats_url, timeout=10)
-    print(api_response)
+    try:
+        api_response = s.get(url=base_commit_stats_url, timeout=10)
+        if verbose:
+            print(f"API response for getting total commits in year: {api_response}")
+    except Exception as e:
+        if verbose:
+            print(f"API response total_commits_last_year fail exception: {e}")
+        print(type(e))
+        print(e)
 
     total_commits_1_year = pd.DataFrame(api_response.json())['total'].sum()
     repo_stats.update({"total_commits_last_year": total_commits_1_year})
@@ -115,7 +136,7 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     # date of most recently updated PR:
     per_pg = 1
     state = 'all'
-    sort = 'udpated'
+    sort = 'updated'
     direction = 'desc'
     params_string = f"?per_pg={per_pg}&state={state}&sort={sort}&direction={direction}"
 
@@ -127,7 +148,9 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
     last_PR_updated = None
 
     if api_response.ok:
-        print(api_response.ok)
+
+        if verbose:
+            print(f"API response for getting PRs info: {api_response}")
 
         try:
             assert len(api_response.json()) != 0, "No json therefore no PRs"
@@ -156,7 +179,7 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
             config_path='githubanalysis/config.cfg',
             per_pg=100,
             issue_state='closed',
-            verbose=True
+            verbose=False
         )  # get closed issues from all pages for given repo
 
         closed_issues = closed_issues.shape[0]  # get number; discard df
@@ -164,7 +187,7 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
         closed_issues = 0
         #raise AttributeError(f'GitHub repository {repo_name} does not have issues enabled.')
 
-    repo_stats.update({"tickets": closed_issues})
+    repo_stats.update({"closed_tickets": closed_issues})
 
 
     # get age of repo
@@ -187,10 +210,13 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
     # is repo accessible?
 
-    if hasattr(repo_con, 'private') is True:
-        repo_visibility = False
+    if hasattr(repo_con, 'private'):  # this only checks repo_con HAS the attribute, not if T/F!
+        if repo_con.private is False:
+            repo_visibility = True  # if private = false, it's visible :)
+        else:
+            repo_visibility = False # if private is true, it's NOT visible
     else:
-        repo_visibility = True
+        repo_visibility = False
         #raise AttributeError(f'GitHub repository {repo_name} is private.')
 
     repo_stats.update({"repo_visibility": repo_visibility})
@@ -204,9 +230,6 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
         repo_stats.update({"repo_language": languages})
     else:
         repo_stats.update({"repo_language": "other"})
-
-    # ? repo architecture?
-    # ? Not sure how best to check this...
 
 
     # return:
@@ -226,7 +249,23 @@ def summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per
 
     # check ALL keys in repo_stats dict:
     #try: all x in repo_stats = TRUE
-
+    stat_list = [
+        "repo_name",
+        "devs",
+        "total_commits",
+        "total_commits_last_year",
+        "has_PRs",
+        "last_PR_update",
+        "closed_tickets",
+        "repo_age_days",
+        "repo_license",
+        "repo_visibility",
+        "repo_language"
+    ]
+    try:
+        assert all(item in repo_stats for item in stat_list)
+    except AssertionError as err:
+        print(f"key(s) {[x for x in repo_stats if x not in stat_list]} are missing; {err}")
 
     if verbose:
         print(f"Stats for {repo_name}: {repo_stats}")
@@ -250,7 +289,7 @@ def main():
         repo_name = name_clean.repo_name_clean(repo_name)
 
     # run summarise_repo_stats() on repo_name.
-    summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True)
+    summarise_repo_stats(repo_name, config_path='githubanalysis/config.cfg', per_pg=1, verbose=True)
 
 
 # this bit
