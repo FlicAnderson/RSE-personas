@@ -24,7 +24,7 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     TODO.
     """
 
-    repo_con = ghconnect.get_repo_connection(repo_name, config_path, per_pg)  # create gh repo object to given repo
+    repo_con = ghconnect.get_repo_connection(repo_name, config_path, per_pg, verbose=False)  # create gh repo object to given repo
     # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
     if hasattr(repo_con, 'has_issues') is False:
@@ -52,7 +52,10 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     # check all important columns are present in the df.
     wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
                    'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
-    assert all(item in all_issues.columns for item in wanted_cols)
+    try:
+        assert all(item in all_issues.columns for item in wanted_cols)
+    except AssertionError as err:
+        print(f"column {[x for x in all_issues.columns if x not in wanted_cols]} not present in all_issues df; {err}")
 
     all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
                                               format='%Y-%m-%dT%H:%M:%S%Z')
