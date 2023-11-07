@@ -38,26 +38,15 @@ def main():
     elif len(sys.argv) == 1:
         # use of a specified list of test repos.
         repo_name = random.choice([
-            'https://github.com/riboviz/riboviz',
-            'https://github.com/ropensci/dwctaxon',
-            'https://github.com/nasa/prog_models/'
-            'https://github.com/FlicAnderson/20230215-JournalClub-BestPractices',
-            'https://github.com/DimmestP/nextflow_paired_reads_pipeline',
-            'https://github.com/sulu/sulu',
-            'https://github.com/ruby/ruby',
-            'https://github.com/martinwoodward/PumpkinPi/',
-            'https://github.com/r-dbi/odbc',
-            'https://github.com/rstudio/cheatsheets',
-            'https://github.com/openjournals/joss',
-            'https://github.com/easybuilders/easybuild',
-            'https://github.com/aeye-lab/pymovements',
-            'https://github.com/FredHutch/SEACR',
-            'https://github.com/omelchert/pyGLLE',
-            'https://github.com/adamspierer/FreeClimber',
-            'https://github.com/alphagov/govuk-frontend',
-            'https://github.com/rfordatascience/tidytuesday',
-            'https://github.com/gbif/pipelines/',
-            'https://github.com/gbif/ipt'
+            'https://github.com/jtimonen/lgpr/',
+            'https://github.com/tnanri/cotocoa/',
+            'https://github.com/pkeys/WAM2layersPython'
+            'https://github.com/STBrinkmann/GVI',
+            'https://github.com/neelsoumya/rlib',
+            'https://github.com/sunpy/sunkit-instruments',
+            'https://github.com/Zibunas/Towards-circular-plastics-within-planetary-boundaries-Q-matrix/',
+            'https://github.com/restrepo/anomalies',
+            'https://github.com/awickert/terrapin/'
         ])
         # riboviz ~314 closed issues,
         # dwctaxon has 49 closed issues, 6 open
@@ -233,7 +222,8 @@ def main():
     print(f"Getting commits from {repo_name}...")
     # get all commits for repo:
     all_commits = getallcommits.get_all_pages_commits(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True)
-    print(f"{all_commits.len} commits returned")
+    type(all_x)
+    print(f"{len(all_commits.columns)} commits returned")
 
     # # add commit date in days since repo creation:
     # if len(all_commits.columns) != 0:
