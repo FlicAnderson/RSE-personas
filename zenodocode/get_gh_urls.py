@@ -64,14 +64,37 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
 
 # pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
 
+    # specify custom http headers:
+    headers_list={"Content-Type": "application/json", 'user-agent': 'coding-smart/zenodocode'}
+
     r = requests.get(
         records_api_url,
+        headers = headers_list,
         params={'q': search_query, 'all_versions': 'true', 'size': per_pg, 'page': page_iterator}
     )
 
+    print(r.headers)
+    headers_out = r.headers
+    print(type(headers_out))
+
+    #print(headers_out.get('x-ratelimit-limit'))
+    #headers_ratelimit-remaining = r.headers.['x-ratelimit-remaining']  # e.g. 'x-ratelimit-remaining': '132'
+    #headers_ratelimit-reset = r.headers['x-ratelimit-reset']  # e.g. 'x-ratelimit-reset': '1702408561'
+    #headers_retry-after = r.headers['retry-after']  # e.g. 'retry-after': '53'
+
+    # if verbose:
+    #     print(r.headers)
+    # else:
+    #     print(f"Ratelimit remaining: {headers_ratelimit-remaining}")
+    #
+    # if headers_ratelimit-remaining < total_records:
+    #     print("This request is likely to be ratelimited!")
+    # else:
+    #     print("Request is within rate limits.")
+
     try:
         r.status_code != 429
-        print(r.status_code)
+        print(f"API status: {r.status_code}")
     except:
         raise requests.exceptions.HTTPError("Rate Limit Exceeded - too many requests.")
 
@@ -102,7 +125,7 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
     f = open(write_out, 'w')
     writer = csv.writer(f)
 
-    header = ['Zenodo ID', 'Title', 'DOI', 'GitHub Link']
+    header = ['Zenodo ID', 'Title', 'DOI', 'GitHub Link', 'CreatedDate']
     writer.writerow(header)
 
 # Iterate through identifiers to get gh url info
@@ -113,9 +136,12 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
 
         if 'metadata' in r.json():
 
-            record_title = r.json()['title']
-            record_doi = r.json()['doi']
-            record_metadata = r.json()['metadata']
+            # API tag info via https://developers.zenodo.org/#representation at 12 Dec 2023.
+            record_title = r.json()['title']  # (string) Title of deposition (automatically set from metadata).
+            record_created = r.json()['created']  # (timestamp) Creation time of deposition (in ISO8601 format)
+            record_doi = r.json()['doi']  # (string) Digital Object Identifier (DOI) ... only present for published depositions
+            record_metadata = r.json()['metadata']  # (object) deposition metadata resource
+            #record_published = r.json()['metadata']['publication_date']  # (string) Date of publication in ISO8601 format (YYYY-MM-DD). Defaults to current date.
 
             if 'related_identifiers' in record_metadata:
                 record_metadata_identifiers = r.json()['metadata']['related_identifiers']
@@ -130,14 +156,16 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
                     row.append(record_title)
                     row.append(record_doi)
                     row.append(record_gh_repo_url)
+                    row.append(record_created)
+                    #row.append(record_published)
                     writer.writerow(row)
                     record_count += 1
 
             else:
-                # print(record_id, record_title)
+
                 continue
         else:
-            # print("no metadata")
+
             continue
 
     f.close()
