@@ -15,7 +15,7 @@ def main():
 
     # get github urls
 
-    zngetghurls.get_gh_urls(config_path='zenodocode/zenodoconfig.cfg', per_pg=20, total_records=250, filename='gh_urls', write_out_location='data/', verbose=True)
+    zngetghurls.get_gh_urls(config_path='zenodocode/zenodoconfig.cfg', per_pg=100, total_records=1000, filename='gh_urls', write_out_location='data/', verbose=True)
 
 
 
