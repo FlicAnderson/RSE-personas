@@ -12,7 +12,7 @@ RATE_LIMIT = 60
 
 @sleep_and_retry
 @limits(calls=CALLS, period=RATE_LIMIT)
-def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', zenodo_ids_file='data/zn_ids.csv', per_pg=20, total_records=100, filename='gh_urls', write_out_location='data/', verbose=True):
+def get_gh_urls(auth='access_token', zenodo_ids_file='data/zn_ids.csv', per_pg=20, total_records=100, filename='gh_urls', write_out_location='data/', verbose=True):
     """
     Get zenodo records for software and pull out GitHub urls from metadata, saving these out into a csv file.
 
@@ -68,7 +68,7 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', zenodo_ids_file='da
     record_count = 0
 
     for record_id in identifiers:
-        r = requests.get(f"{records_api_url}/{record_id}")
+        r = requests.get(f"{records_api_url}/{record_id}", params={'access_token': auth, 'size': per_pg})
 
         if r.status_code != 200:
             raise Exception('gh data API response: {}'.format(r.status_code))

@@ -3,7 +3,7 @@
 import sys
 import zenodocode.setup_zenodo_auth as znconnect
 import zenodocode.get_zenodo_ids as zngetids
-#import zenodocode.get_gh_urls as zngetghurls
+import zenodocode.get_gh_urls as zngetghurls
 
 def main():
     """
@@ -20,7 +20,7 @@ def main():
 
     # get github urls
 
-    #zngetghurls.get_gh_urls(config_path='zenodocode/zenodoconfig.cfg', zenodo_ids_file='data/zn_ids.csv', per_pg=100, total_records=1000, filename='gh_urls', write_out_location='data/', verbose=True)
+    zngetghurls.get_gh_urls(auth=access_token, zenodo_ids_file='data/zn_ids.csv', per_pg=100, total_records=1000, filename='gh_urls', write_out_location='data/', verbose=True)
 
 
 
