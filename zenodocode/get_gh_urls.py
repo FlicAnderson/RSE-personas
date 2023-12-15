@@ -2,17 +2,23 @@
 
 import requests
 import csv
-import ratelimit
+from ratelimit import limits, sleep_and_retry
 
 import zenodocode.setup_zenodo_auth as znconnect
 
+# using ratelimit library, set things to 100 calls per minute (secs) time (Authenticated user limits here https://developers.zenodo.org/#rate-limiting)
+CALLS = 80
+RATE_LIMIT = 60
 
-
-def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='gh_urls', write_out_location='data/', verbose=True):
+@sleep_and_retry
+@limits(calls=CALLS, period=RATE_LIMIT)
+def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', zenodo_ids_file='data/zn_ids.csv', per_pg=20, total_records=100, filename='gh_urls', write_out_location='data/', verbose=True):
     """
     Get zenodo records for software and pull out GitHub urls from metadata, saving these out into a csv file.
 
     :param config_path: file path of zenodoconfig.cfg file. Default=zenodocode/zenodoconfig.cfg'.
+    :type: str
+    :param zenodo_ids_file: file where zenodo software ids are held. Default='data/zn_ids.csv'
     :type: str
     :param per_pg: number of items per page in paginated API requests. Default=20.
     :type: int
@@ -32,97 +38,24 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
     TODO.
     """
 
-# check Zenodo API with test request to confirm token authentication is working.
-    try:
-        znconnect.setup_zenodo_auth(config_path=config_path, verbose=False)
-    except requests.exceptions.Timeout:
-    # Maybe set up for a retry, or continue in a retry loop
-        print("Timeout happened; please retry.")
-    except requests.exceptions.TooManyRedirects:
-    # Tell the user their URL was bad and try a different one
-        print("Too many redirects, bad url?")
-    except requests.exceptions.RequestException as e:
-        # catastrophic error. Bail.
-        raise SystemExit(e)
-
 
 # writeout setup:
 
     # build path + filename
     write_out = f'{write_out_location}{filename}.csv'
 
+# read in zenodo IDs to get urls from
+
+    with open ('zenodo_ids_file', newline='') as csvfile:
+        zn_ids = csv.reader(csvfile)
+
+    identifiers = zn_ids
+    print(identifiers)
+
 
 # zenodo API call setup:
 
     records_api_url = 'https://zenodo.org/api/records'
-    search_query = 'type:software'
-
-    page_iterator = 1
-
-    if verbose:
-        print(f'Obtaining {total_records} zenodo record IDs')
-
-# pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
-
-    # specify custom http headers:
-    #headers_list={"Content-Type": "application/json", 'user-agent': 'coding-smart/zenodocode'}
-
-    r = requests.get(
-        records_api_url,
-        #headers = headers_list,
-        params={'q': search_query, 'all_versions': 'true', 'size': per_pg, 'page': page_iterator}
-    )
-
-
-    headers_out = r.headers
-    print(f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
-    #print(type(headers_out))
-
-    #print(headers_out.get('x-ratelimit-limit'))
-    #headers_ratelimit-remaining = r.headers.['x-ratelimit-remaining']  # e.g. 'x-ratelimit-remaining': '132'
-    #headers_ratelimit-reset = r.headers['x-ratelimit-reset']  # e.g. 'x-ratelimit-reset': '1702408561'
-    #headers_retry-after = r.headers['retry-after']  # e.g. 'retry-after': '53'
-
-    # if verbose:
-    #     print(r.headers)
-    # else:
-    #     print(f"Ratelimit remaining: {headers_ratelimit-remaining}")
-    #
-    # if headers_ratelimit-remaining < total_records:
-    #     print("This request is likely to be ratelimited!")
-    # else:
-    #     print("Request is within rate limits.")
-
-    try:
-        r.status_code != 429
-        print(f"API status: {r.status_code}")
-    except:
-        raise requests.exceptions.HTTPError("Rate Limit Exceeded - too many requests.")
-
-    if 'hits' in r.json():
-        still_iterating = True
-    else:
-        still_iterating = False
-
-    identifiers = []
-
-    while still_iterating and (len(identifiers) < total_records):
-
-        r.raise_for_status()
-
-        if 'hits' in r.json():
-            for hit in r.json()['hits']['hits']:
-                #print(hit['id'])
-                #print(type(hit))
-                identifiers.append(hit['id'])
-
-        page_iterator += 1
-
-    if verbose:
-        print(f'Querying {len(identifiers)} zenodo record IDs')
-
-
-    print(identifiers)
 
 # Create file connection
     f = open(write_out, 'w')
@@ -136,6 +69,9 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
 
     for record_id in identifiers:
         r = requests.get(f"{records_api_url}/{record_id}")
+
+        if r.status_code != 200:
+            raise Exception('gh data API response: {}'.format(r.status_code))
 
         headers_out = r.headers
         print(f"url info request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
