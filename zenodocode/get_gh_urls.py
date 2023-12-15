@@ -2,7 +2,7 @@
 
 import requests
 import csv
-
+import ratelimit
 
 import zenodocode.setup_zenodo_auth as znconnect
 
@@ -65,17 +65,18 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
 # pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
 
     # specify custom http headers:
-    headers_list={"Content-Type": "application/json", 'user-agent': 'coding-smart/zenodocode'}
+    #headers_list={"Content-Type": "application/json", 'user-agent': 'coding-smart/zenodocode'}
 
     r = requests.get(
         records_api_url,
-        headers = headers_list,
+        #headers = headers_list,
         params={'q': search_query, 'all_versions': 'true', 'size': per_pg, 'page': page_iterator}
     )
 
-    print(r.headers)
+
     headers_out = r.headers
-    print(type(headers_out))
+    print(f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
+    #print(type(headers_out))
 
     #print(headers_out.get('x-ratelimit-limit'))
     #headers_ratelimit-remaining = r.headers.['x-ratelimit-remaining']  # e.g. 'x-ratelimit-remaining': '132'
@@ -121,6 +122,8 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
         print(f'Querying {len(identifiers)} zenodo record IDs')
 
 
+    print(identifiers)
+
 # Create file connection
     f = open(write_out, 'w')
     writer = csv.writer(f)
@@ -133,6 +136,9 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
 
     for record_id in identifiers:
         r = requests.get(f"{records_api_url}/{record_id}")
+
+        headers_out = r.headers
+        print(f"url info request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
 
         if 'metadata' in r.json():
 
