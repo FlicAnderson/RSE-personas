@@ -3,7 +3,7 @@
 import sys
 import zenodocode.setup_zenodo_auth as znconnect
 import zenodocode.get_zenodo_ids as zngetids
-import zenodocode.get_gh_urls as zngetghurls
+#import zenodocode.get_gh_urls as zngetghurls
 
 def main():
     """
@@ -12,10 +12,11 @@ def main():
     write out dataset for input to githubanalysis code
     """
 
-    znconnect.setup_zenodo_auth(config_path='zenodocode/zenodoconfig.cfg', verbose=True)
+    access_token = znconnect.setup_zenodo_auth(config_path='zenodocode/zenodoconfig.cfg', verbose=True)[1]
+
 
     # get zenodo IDs
-    zngetids.get_zenodo_ids(config_path='zenodoconfig.cfg', per_pg=20, total_records=100, filename='zn_ids', write_out_location='data/', verbose=True)
+    zngetids.get_zenodo_ids(auth=access_token, per_pg=20, total_records=1000, filename='zn_ids', write_out_location='data/', verbose=True)
 
     # get github urls
 
