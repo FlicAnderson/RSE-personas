@@ -23,7 +23,7 @@ def setup_zenodo_auth(config_path='zenodocode/zenodoconfig.cfg', verbose=True):
     # check config filepath input (using separate variable to avoid overwriting it as pathlib Path type)
     pathchecker = Path(config_path)
     if pathchecker.exists() is False:
-        raise OSError('Config file does not exist at path:', config_path)
+        raise OSError(f"Config file does not exist at path: {config_path} from current location {Path(__file__).resolve().parent}")
 
     # read config file and pull out access token details
     config = configparser.ConfigParser()
@@ -47,7 +47,7 @@ def setup_zenodo_auth(config_path='zenodocode/zenodoconfig.cfg', verbose=True):
         if verbose:
             print('Zenodo API request OK')
 
-        return zenodo_response
+        return zenodo_response, access_token
 
     except RuntimeError:
         print('Zenodo authentication failed. Check config file format and permissions in your zenodo account.')
