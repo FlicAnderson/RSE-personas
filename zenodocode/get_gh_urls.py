@@ -46,7 +46,7 @@ def get_gh_urls(auth='access_token', zenodo_ids_file='data/zn_ids.csv', per_pg=2
 
 # read in zenodo IDs to get urls from
 
-    with open ('zenodo_ids_file', newline='') as csvfile:
+    with open (zenodo_ids_file, newline='') as csvfile:
         zn_ids = csv.reader(csvfile)
 
     identifiers = zn_ids
