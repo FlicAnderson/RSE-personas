@@ -162,6 +162,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/ 
 
+# VS Code
+#  VS Code related files here.  
+.vscode/
+coding-smart.code-workspace
+
 
 # Datasets
 data/
