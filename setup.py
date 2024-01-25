@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+# IMPORTANT: this must be enabled via pip using the command `pip install -e .` (remember to include the dot at the end of command). 
+
 setup(
     name='githubanalysis',
     version='1.0',
