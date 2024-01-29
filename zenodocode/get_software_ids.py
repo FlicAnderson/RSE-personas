@@ -3,10 +3,7 @@
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import csv
-
-import zenodocode.setup_zenodo_auth as znconnect
-
-
+import pandas as pd
 
 def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='zenodo_ids', write_out_location='data/', verbose=True):
     """
@@ -82,35 +79,52 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     #headers_ratelimit-remaining = r.headers.['x-ratelimit-remaining']  # e.g. 'x-ratelimit-remaining': '132'
     #headers_ratelimit-reset = r.headers['x-ratelimit-reset']  # e.g. 'x-ratelimit-reset': '1702408561'
 #    headers_retry-after = api_response.headers['retry-after']
+    
+    #f = open(write_out, 'w')
+    #writer = csv.writer(f)
+
+    #header = 'Zenodo ID'
+    #writer.writerow(header)
+
 
     if api_response.status_code == 200 and verbose:
         print(f'API response status "OK": {api_response}')
 
         try:
             # pull data as json then convert to pandas dataframe for ease of use
-            software_ids = api_response.json()
+            #software_ids = api_response.json()
+            if 'hits' in api_response.json():
+                still_iterating = True
+                print("has hits")
+            else:
+                still_iterating = False
+                        
+            identifiers = []            
 
-            print(len(software_ids))
-            print(software_ids)
+            while still_iterating and (len(identifiers) < total_records):
 
+                if 'hits' in api_response.json():
+                    for hit in api_response.json()['hits']['hits']:
+                        print(hit['id'])
+                    #print(type(hit))
+                        identifiers.append(hit['id'])
 
+                page_iterator += 1
 
-    elif api_response.status_code == 202 and verbose:
-        print(f'API response status "Accepted": {api_response}. Data not yet been cached, need to retry request shortly.')
-        # Wait further, then retry...
-        print('Retrying same function recursively; this could go infinitely wrong... Cancel if uncertain tbh!')
-        get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='zenodo_ids', write_out_location='data/', verbose=True)
+            if verbose:
+                print(f'Querying {len(identifiers)} zenodo record IDs')
+                print(identifiers)
 
+            print(len(identifiers))
+            print(type(identifiers))
+            #print(identifiers)
 
-    elif api_response.status_code == 204 and verbose:
-        print(f'API response status "No content. Request succeeded. No response included.": {api_response}')
-        #contributor_commits_stats = pd.DataFrame()
-        #return contributor_commits_stats
+            identifiers = pd.DataFrame(identifiers)
+            identifiers.to_csv(write_out, index=False, header=["zenodo_id"])
 
-    else:
-        print(f'Something else is wrong; API response: {api_response}')
-        #contributor_commits_stats = pd.DataFrame()
-        #return contributor_commits_stats
+        finally:
+            #f.close()
+            return(identifiers)
 
 
 
@@ -120,8 +134,14 @@ def main():
     get zenodo software IDs
     TODO write these to csv file
     """
-    get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='zenodo_ids', write_out_location='data/', verbose=True)
+    software_ids = []
 
+    software_ids = get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True)
+    
+    if len(software_ids) != 0:
+        print("record ID grab complete")
+    else: 
+        print("this did not work.")
 
 
 # this bit
