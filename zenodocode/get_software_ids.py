@@ -1,5 +1,5 @@
 """ Get all zenodo record IDs for software records."""
-
+import sys
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import csv
@@ -29,6 +29,18 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     TODO.
     """
 
+    # get commandline input if any 
+    if len(sys.argv) == 2:
+
+        total_records = int(sys.argv[1])  # use second argv (user-provided by commandline)
+
+        if not isinstance(total_records, int):
+            raise TypeError('Ensure argument is an integer number.')
+
+        if verbose:
+            print(f"Using commandline argument {total_records} as number of software IDs to get from zenodo.")
+
+       
 
     # writeout setup:
       # build path + filename
@@ -48,7 +60,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
         print(f'Obtaining {total_records} zenodo record IDs')
 
 
-# pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
+    # pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
 
     #if verbose:
     #    logging.basicConfig(level=logging.DEBUG)  # might be able to remove this as it doesn't affect the requests code
@@ -56,7 +68,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     s = requests.Session()
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[202, 502, 503, 504])
     s.mount('https://', HTTPAdapter(max_retries=retries))
-#
+    
     api_response = s.get(
         records_api_url,
         #headers = headers_list,
@@ -70,8 +82,9 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     )
 
     headers_out = api_response.headers
-    print(headers_out)
-    print(f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
+    #print(headers_out)
+    if verbose: 
+        print(f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
     #headers_retry-after = api_response.headers['retry-after']
     #print(type(headers_out))
 
