@@ -3,11 +3,13 @@ import sys
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
+import logging
 
 def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True):
     """
     Get zenodo record IDs for software records and save these out into a csv file.
     NOTE: this code overwrites an existing csv of the same name. 
+    If verbose = TRUE, logging info is sent to get_software_ids_info_logs.txt file
 
     :param config_path: file path of zenodoconfig.cfg file. Default=zenodocode/zenodoconfig.cfg'.
     :type: str
@@ -55,6 +57,13 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     Record ID grab complete.
     """
 
+    # write logs to file: 
+    # NOTE: this appends logs to same file for multiple runs. To overwrite, specify: filemode='w' in logging.basicConfig()
+    logging.basicConfig(level=logging.DEBUG,
+                        filename='get_software_ids_logs.txt', 
+                        encoding='utf-8',
+                        format='[%(asctime)s] %(levelname)s:%(message)s')
+
     # get commandline input if any 
     if len(sys.argv) == 2:
 
@@ -69,6 +78,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     # deal with input less than per_page 
     if total_records < per_pg: 
         per_pg = total_records
+        logging.info("total_records is less than per_pg; adjusting per_pg to total_records.")
     
     # writeout setup:
       # build path + filename
@@ -117,10 +127,11 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
                 if 'hits' in api_response.json():
                     for hit in api_response.json()['hits']['hits']:
                         identifiers.append(hit['id'])
-
                 
                 if api_response.status_code == 200 and verbose:
-                    print(f'API response status still "OK": {api_response}')
+                    logging.info(f'API response status still "OK": {api_response}')
+                elif api_response.status_code != 200: 
+                    logging.warning(f'API response status: {api_response}')
 
                 page_iterator += 1
 
@@ -134,18 +145,20 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
             # check there are no duplicates in list 
             if len(set(identifiers)) == len(identifiers): 
                 print("Gathered record IDs all unique")
+                logging.info("Gathered record IDs all unique")
             else: 
-                print("ERROR: Gathered record IDs contain duplicates!")  
-
-            # convert to pandas dataframe for ease of use and write out to csv  
-            software_ids = pd.DataFrame(identifiers)
-            software_ids.to_csv(write_out, index=False, header=["zenodo_id"])
+                logging.warning("Gathered record IDs contain duplicates!")
+                print("Watch out: Gathered record IDs contain duplicates!")  
 
             if verbose:
                 print(f'Zenodo software IDs saved out as: {write_out} at {write_out_location}')
+                logging.info(f'Zenodo software IDs saved out as: {write_out} at {write_out_location}')
 
         finally:
-            return(software_ids)
+            # convert to pandas dataframe for ease of use and write out to csv  
+            software_ids_df = pd.DataFrame(identifiers)
+            software_ids_df.to_csv(write_out, index=False, header=["zenodo_id"])
+            return(software_ids_df)
 
 
 
