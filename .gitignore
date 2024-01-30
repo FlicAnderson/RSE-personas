@@ -182,3 +182,7 @@ images/
 config.cfg
 githubanalysis/config.cfg 
 zenodocode/zenodoconfig.cfg
+
+# log files 
+*_logs.txt
+
