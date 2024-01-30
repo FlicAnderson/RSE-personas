@@ -4,6 +4,7 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
 import logging
+import math
 
 def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True):
     """
@@ -32,28 +33,27 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
 
     Using commandline argument 3 as number of software IDs to get from zenodo.
     Obtaining 3 zenodo record IDs
-    API response status "OK": <Response [200]>
-    Querying 3 zenodo record IDs
-    [32712, 6477900, 5899728]
-    Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
+    [6567232, 5157894, 5564801]
+    Gathered record IDs all unique
+    3 Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
     Record ID grab complete.
 
     $ python zenodocode/get_software_ids.py 10
 
     Using commandline argument 10 as number of software IDs to get from zenodo.
     Obtaining 10 zenodo record IDs
-    API response status "OK": <Response [200]>
-    Querying 10 zenodo record IDs
-    [32712, 6477900, 5899728, 3608671] ...
-    Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
+    [6567232, 5157894, 5564801, 6408054] ...
+    Gathered record IDs all unique
+    10 Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
     Record ID grab complete.
 
-    $ python zenodocode/get_software_ids.py
-    Obtaining 10000 zenodo record IDs
-    API response status "OK": <Response [200]>
-    Querying 10000 zenodo record IDs
-    [32712, 6477900, 5899728, 3608671] ...
-    Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
+    $ python zenodocode/get_software_ids.py 75
+
+    Using commandline argument 75 as number of software IDs to get from zenodo.
+    Obtaining 75 zenodo record IDs
+    [6567232, 5157894, 5564801, 6408054] ...
+    Gathered record IDs all unique
+    75 Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
     Record ID grab complete.
     """
 
@@ -96,69 +96,63 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     records_api_url = 'https://zenodo.org/api/records'
     search_query = 'type:software'
     page_iterator = 1
+    identifiers = []   
 
-    # run API request 
-    api_response = s.get(
-        records_api_url,
-        #headers = headers_list,
-        params={
-            'q': search_query, 
-            'all_versions': 'false', 
-            'size': per_pg, 
-            'page': page_iterator
-        },
-        timeout=10
-    )
+    requests_needed = math.ceil(total_records/per_pg)
+    page_iterator=1
 
-    if api_response.status_code == 200 and verbose:
-        print(f'API response status "OK": {api_response}')
+    for calls in range(requests_needed):
+        logging.info(f"... page {page_iterator} of {requests_needed}...")
+        api_response = s.get(
+                records_api_url,
+                #headers = headers_list,
+                params={
+                    'q': search_query, 
+                    'all_versions': 'false', 
+                    'size': per_pg, 
+                    'page': page_iterator
+                },
+                timeout=10)
+        logging.info(f"API response on request {page_iterator}: {api_response}")
+        logging.info(f"API rate limit remaining: {api_response.headers['x-ratelimit-remaining']}")
 
-    # pull out N zenodo record IDs json response, paging through until N = page_iterator:
-        try:
-            if 'hits' in api_response.json():
-                still_iterating = True
-            else:
-                still_iterating = False
-                        
-            identifiers = []            
+        page = [] # temporary list which holds all IDs from this page of the query
+        for hit in api_response.json()['hits']['hits']:
+            #print(hit['id'])
+            page.append(hit['id'])
 
-            while still_iterating and (len(identifiers) < total_records):
+        identifiers.extend(page)  # add this page of ids onto main identifiers list    
+        page_iterator += 1  # this call loop ends
 
-                if 'hits' in api_response.json():
-                    for hit in api_response.json()['hits']['hits']:
-                        identifiers.append(hit['id'])
-                
-                if api_response.status_code == 200 and verbose:
-                    logging.info(f'API response status still "OK": {api_response}')
-                elif api_response.status_code != 200: 
-                    logging.warning(f'API response status: {api_response}')
+    # print only a few IDs
+    if verbose:
+        if len(identifiers) > 5: 
+            print(f"{identifiers[0:4]} ...")
+        else:
+            print(identifiers)
 
-                page_iterator += 1
+    if len(set(identifiers)) == len(identifiers): 
+        print("Gathered record IDs all unique")
+        logging.info("Gathered record IDs all unique")
+    else: 
+        print("Watch out: Gathered record IDs contain duplicates!")
+        logging.warning("Gathered record IDs contain duplicates!")
+        
+    # slice identifiers if it is longer than total_records value (ie total_records=30, per_page=20 => len(identifiers)=40... )
+    if len(identifiers) > total_records:
+        logging.info(f"Slicing down list of IDs from {len(identifiers)} to {total_records}.")
+        identifiers = identifiers[0:total_records]
 
-            if verbose:
-                print(f'Querying {len(identifiers)} zenodo record IDs')
-                if len(identifiers) > 5: 
-                    print(f"{identifiers[0:4]} ...")
-                else:
-                    print(identifiers)
+    if verbose:
+        print(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out} at {write_out_location}')
+    
+    # convert to pandas dataframe for ease of use and write out to csv  
+    software_ids_df = pd.DataFrame(identifiers)
+    software_ids_df.to_csv(write_out, index=False, header=["zenodo_id"])
+    logging.info(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out} at {write_out_location}')
 
-            # check there are no duplicates in list 
-            if len(set(identifiers)) == len(identifiers): 
-                print("Gathered record IDs all unique")
-                logging.info("Gathered record IDs all unique")
-            else: 
-                logging.warning("Gathered record IDs contain duplicates!")
-                print("Watch out: Gathered record IDs contain duplicates!")  
-
-            if verbose:
-                print(f'Zenodo software IDs saved out as: {write_out} at {write_out_location}')
-                logging.info(f'Zenodo software IDs saved out as: {write_out} at {write_out_location}')
-
-        finally:
-            # convert to pandas dataframe for ease of use and write out to csv  
-            software_ids_df = pd.DataFrame(identifiers)
-            software_ids_df.to_csv(write_out, index=False, header=["zenodo_id"])
-            return(software_ids_df)
+    # return df of IDs
+    return(software_ids_df)
 
 
 
