@@ -2,31 +2,57 @@
 import sys
 import requests
 from requests.adapters import HTTPAdapter, Retry
-import csv
 import pandas as pd
 
-def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='zenodo_ids', write_out_location='data/', verbose=True):
+def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True):
     """
     Get zenodo record IDs for software records and save these out into a csv file.
+    NOTE: this code overwrites an existing csv of the same name. 
 
     :param config_path: file path of zenodoconfig.cfg file. Default=zenodocode/zenodoconfig.cfg'.
     :type: str
     :param per_pg: number of items per page in paginated API requests. Default=20.
     :type: int
-    :param total_records: Total number of zenodo records to iterate through. Default=100.
+    :param total_records: Total number of zenodo records to iterate through. Default=10,000.
     :type: int
     :param filename: name to include in write out filename. Saves as CSV.
     :type: str
     :param write_out_location: Desired file location path as string. Default = "data/"
     :type: str
-    :param verbose: whether to print out issue data dimensions and counts. Default: True
+    :param verbose: whether to print out issue data details and counts. Default: True
     :type: bool
     :returns: software_ids
-    :type: list of integers
+    :type: pd.Dataframe of record IDs 
 
     Examples:
     ----------
-    TODO.
+    $ python zenodocode/get_software_ids.py 3
+
+    Using commandline argument 3 as number of software IDs to get from zenodo.
+    Obtaining 3 zenodo record IDs
+    API response status "OK": <Response [200]>
+    Querying 3 zenodo record IDs
+    [32712, 6477900, 5899728]
+    Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
+    Record ID grab complete.
+
+    $ python zenodocode/get_software_ids.py 10
+
+    Using commandline argument 10 as number of software IDs to get from zenodo.
+    Obtaining 10 zenodo record IDs
+    API response status "OK": <Response [200]>
+    Querying 10 zenodo record IDs
+    [32712, 6477900, 5899728, 3608671] ...
+    Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
+    Record ID grab complete.
+
+    $ python zenodocode/get_software_ids.py
+    Obtaining 10000 zenodo record IDs
+    API response status "OK": <Response [200]>
+    Querying 10000 zenodo record IDs
+    [32712, 6477900, 5899728, 3608671] ...
+    Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
+    Record ID grab complete.
     """
 
     # get commandline input if any 
@@ -40,35 +66,28 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
         if verbose:
             print(f"Using commandline argument {total_records} as number of software IDs to get from zenodo.")
 
-       
-
+    # deal with input less than per_page 
+    if total_records < per_pg: 
+        per_pg = total_records
+    
     # writeout setup:
       # build path + filename
     write_out = f'{write_out_location}{filename}.csv'
 
-
-    # handle API responses:
-      # approach via: https://stackoverflow.com/a/35636367
-      # zenodo API call setup:
-
-    records_api_url = 'https://zenodo.org/api/records'
-    search_query = 'type:software'
-
-    page_iterator = 1
-
     if verbose:
         print(f'Obtaining {total_records} zenodo record IDs')
 
-
-    # pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
-
-    #if verbose:
-    #    logging.basicConfig(level=logging.DEBUG)  # might be able to remove this as it doesn't affect the requests code
-
+    # set up API session details: retry 5 times with a backoff factor
+      # approach via: https://stackoverflow.com/a/35636367
     s = requests.Session()
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[202, 502, 503, 504])
     s.mount('https://', HTTPAdapter(max_retries=retries))
     
+    records_api_url = 'https://zenodo.org/api/records'
+    search_query = 'type:software'
+    page_iterator = 1
+
+    # run API request 
     api_response = s.get(
         records_api_url,
         #headers = headers_list,
@@ -81,34 +100,13 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
         timeout=10
     )
 
-    headers_out = api_response.headers
-    #print(headers_out)
-    if verbose: 
-        print(f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
-    #headers_retry-after = api_response.headers['retry-after']
-    #print(type(headers_out))
-
-    #print(headers_out.get('x-ratelimit-limit'))
-    #headers_ratelimit-remaining = r.headers.['x-ratelimit-remaining']  # e.g. 'x-ratelimit-remaining': '132'
-    #headers_ratelimit-reset = r.headers['x-ratelimit-reset']  # e.g. 'x-ratelimit-reset': '1702408561'
-#    headers_retry-after = api_response.headers['retry-after']
-    
-    #f = open(write_out, 'w')
-    #writer = csv.writer(f)
-
-    #header = 'Zenodo ID'
-    #writer.writerow(header)
-
-
     if api_response.status_code == 200 and verbose:
         print(f'API response status "OK": {api_response}')
 
+    # pull out N zenodo record IDs json response, paging through until N = page_iterator:
         try:
-            # pull data as json then convert to pandas dataframe for ease of use
-            #software_ids = api_response.json()
             if 'hits' in api_response.json():
                 still_iterating = True
-                print("has hits")
             else:
                 still_iterating = False
                         
@@ -118,43 +116,41 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
 
                 if 'hits' in api_response.json():
                     for hit in api_response.json()['hits']['hits']:
-                        print(hit['id'])
-                    #print(type(hit))
                         identifiers.append(hit['id'])
 
                 page_iterator += 1
 
             if verbose:
                 print(f'Querying {len(identifiers)} zenodo record IDs')
-                print(identifiers)
+                if len(identifiers) > 5: 
+                    print(f"{identifiers[0:4]} ...")
+                else:
+                    print(identifiers)
 
-            print(len(identifiers))
-            print(type(identifiers))
-            #print(identifiers)
+            # convert to pandas dataframe for ease of use and write out to csv  
+            software_ids = pd.DataFrame(identifiers)
+            software_ids.to_csv(write_out, index=False, header=["zenodo_id"])
 
-            identifiers = pd.DataFrame(identifiers)
-            identifiers.to_csv(write_out, index=False, header=["zenodo_id"])
+            if verbose:
+                print(f'Zenodo software IDs saved out as: {write_out} at {write_out_location}')
 
         finally:
-            #f.close()
-            return(identifiers)
-
+            return(software_ids)
 
 
 
 def main():
     """
     get zenodo software IDs
-    TODO write these to csv file
+    write these to csv file
     """
     software_ids = []
-
     software_ids = get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True)
     
     if len(software_ids) != 0:
-        print("record ID grab complete")
+        print(f"Record ID grab complete.")
     else: 
-        print("this did not work.")
+        print("Record ID grab did not work, length of software_ids returned is zero.")
 
 
 # this bit
