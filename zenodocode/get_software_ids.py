@@ -118,6 +118,10 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
                     for hit in api_response.json()['hits']['hits']:
                         identifiers.append(hit['id'])
 
+                
+                if api_response.status_code == 200 and verbose:
+                    print(f'API response status still "OK": {api_response}')
+
                 page_iterator += 1
 
             if verbose:
@@ -126,6 +130,12 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
                     print(f"{identifiers[0:4]} ...")
                 else:
                     print(identifiers)
+
+            # check there are no duplicates in list 
+            if len(set(identifiers)) == len(identifiers): 
+                print("Gathered record IDs all unique")
+            else: 
+                print("ERROR: Gathered record IDs contain duplicates!")  
 
             # convert to pandas dataframe for ease of use and write out to csv  
             software_ids = pd.DataFrame(identifiers)
