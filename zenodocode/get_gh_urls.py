@@ -1,17 +1,24 @@
-""" Get zenodo records for software and pull out GitHub urls from metadata."""
+""" Get GitHub urls from metadata of existing zenodo software record IDs."""
 
+import sys
 import requests
+from requests.adapters import HTTPAdapter, Retry
+import numpy as np
+import pandas as pd
+import logging
 import csv
-import ratelimit
+import math
 
-import zenodocode.setup_zenodo_auth as znconnect
-
-
+def chunker(seq, size):
+    for pos in range(0, len(seq), size):
+        yield seq.iloc[pos:pos + size] 
+# via Andrei Krivoshei at SO: https://stackoverflow.com/a/61798585  
 
 def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='gh_urls', write_out_location='data/', verbose=True):
     """
-    Get zenodo records for software and pull out GitHub urls from metadata, saving these out into a csv file.
-
+    Read in zenodo record IDs for software records and query; pull out GitHub urls from metadata, saving these out into a csv file.
+    Logging output to file get_gh_urls_logs.txt
+    
     :param config_path: file path of zenodoconfig.cfg file. Default=zenodocode/zenodoconfig.cfg'.
     :type: str
     :param per_pg: number of items per page in paginated API requests. Default=20.
@@ -32,154 +39,155 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
     TODO.
     """
 
-# check Zenodo API with test request to confirm token authentication is working.
-    try:
-        znconnect.setup_zenodo_auth(config_path=config_path, verbose=False)
-    except requests.exceptions.Timeout:
-    # Maybe set up for a retry, or continue in a retry loop
-        print("Timeout happened; please retry.")
-    except requests.exceptions.TooManyRedirects:
-    # Tell the user their URL was bad and try a different one
-        print("Too many redirects, bad url?")
-    except requests.exceptions.RequestException as e:
-        # catastrophic error. Bail.
-        raise SystemExit(e)
+    # write logs to file: 
+    # NOTE: this appends logs to same file for multiple runs. To overwrite, specify: filemode='w' in logging.basicConfig()
+    logging.basicConfig(level=logging.DEBUG,
+                        filename='logs/get_gh_urls_logs.txt', 
+                        encoding='utf-8',
+                        format='[%(asctime)s] %(levelname)s:%(message)s')
 
-
-# writeout setup:
-
-    # build path + filename
+    # accept commandline input for zenodo_ids file  
+     # default location: data/zenodo_ids.csv  
+    
+    # write-out file setup
+     # default location: data/gh_urls.csv    
+     # build path + filename
     write_out = f'{write_out_location}{filename}.csv'
+    
+    # set format for section of data to write out to csv  
+    writeable_chunk = {'ZenodoID': [], 
+           'Title': [], 
+           'DOI': [], 
+           'GitHubURL':[], 
+           'CreatedDate': []
+    }
+    
+
+    # read in CSV file of zenodo IDs  
+     # default location: data/zenodo_ids.csv 
+    zenodo_ids = pd.read_csv('data/zenodo_ids.csv', header=None, names=['index', 'zenodo_id'], dtype='Int64')
+    
+    # print(zenodo_ids.dtypes)
+    # #index        Int64
+    # #zenodo_id    Int64
+    # #dtype: object
+    # print(zenodo_ids.shape)
+    # #(30, 2)
+    # print(zenodo_ids)
+    # #    index  zenodo_id
+    # #0       0    6626409
+    # #1       1    1283299
+    # #2       2      35602
+    # #3       3    5179941
+    # print(zenodo_ids.columns)
+    # #Index(['index', 'zenodo_id'], dtype='object')
+    # print(zenodo_ids.take([0]))
+    # #   index  zenodo_id
+    # #0      0    6626409
+    # print(zenodo_ids.zenodo_id[0])
+    # #6626409
+
+    # for record in range(len(zenodo_ids)):
+    #     print(record)
+    #     print(zenodo_ids.zenodo_id[record])
+    # #0
+    # #6626409
+    # #1
+    # #1283299
+
+    batch_size = 10
+    total_records = 30
+    num_batches = math.ceil(total_records/batch_size) # 3
+
+    writeable_chunk = []
+
+    # this loop splits the zenodo IDs into 3x batches of size 10 and returns ephemeral 
+    for i in chunker(zenodo_ids['zenodo_id'], batch_size):
+        writeable_chunk_ids = i.to_list()  # pull IDs into a list of size 10 in this iteration of the loop
+        print(writeable_chunk_ids)
+        print(f"This is the 3rd item of this chunk: {writeable_chunk_ids[2]}")  # print 3rd item of this chunk; remember it's 0-based index
 
 
-# zenodo API call setup:
+    # rate handling setup  
 
-    records_api_url = 'https://zenodo.org/api/records'
-    search_query = 'type:software'
+    # zenodo API call setup  
 
-    page_iterator = 1
+    # 'gatherer' variables setup   
 
-    if verbose:
-        print(f'Obtaining {total_records} zenodo record IDs')
+    # API queries loop 
 
-# pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
+    # write out 'completed' chunks to csv via APPEND 
+    # convert to pandas dataframe format  
+    #writeable_chunk_df = pd.DataFrame(writeable_chunk)
+    
+    # append df to csv file  
+    #writeable_chunk_df.to_csv(write_out, mode='a', index=False, header=False)
 
-    # specify custom http headers:
-    #headers_list={"Content-Type": "application/json", 'user-agent': 'coding-smart/zenodocode'}
-
-    r = requests.get(
-        records_api_url,
-        #headers = headers_list,
-        params={'q': search_query, 'all_versions': 'true', 'size': per_pg, 'page': page_iterator}
-    )
+    # report on status  
+    # report success/fail  
+    #print("Data appended successfully.")
 
 
-    headers_out = r.headers
-    print(f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
-    #print(type(headers_out))
 
-    #print(headers_out.get('x-ratelimit-limit'))
-    #headers_ratelimit-remaining = r.headers.['x-ratelimit-remaining']  # e.g. 'x-ratelimit-remaining': '132'
-    #headers_ratelimit-reset = r.headers['x-ratelimit-reset']  # e.g. 'x-ratelimit-reset': '1702408561'
-    #headers_retry-after = r.headers['retry-after']  # e.g. 'retry-after': '53'
-
-    # if verbose:
-    #     print(r.headers)
-    # else:
-    #     print(f"Ratelimit remaining: {headers_ratelimit-remaining}")
-    #
-    # if headers_ratelimit-remaining < total_records:
-    #     print("This request is likely to be ratelimited!")
-    # else:
-    #     print("Request is within rate limits.")
-
-    try:
-        r.status_code != 429
-        print(f"API status: {r.status_code}")
-    except:
-        raise requests.exceptions.HTTPError("Rate Limit Exceeded - too many requests.")
-
-    if 'hits' in r.json():
-        still_iterating = True
-    else:
-        still_iterating = False
-
-    identifiers = []
-
-    while still_iterating and (len(identifiers) < total_records):
-
-        r.raise_for_status()
-
-        if 'hits' in r.json():
-            for hit in r.json()['hits']['hits']:
-                #print(hit['id'])
-                #print(type(hit))
-                identifiers.append(hit['id'])
-
-        page_iterator += 1
-
-    if verbose:
-        print(f'Querying {len(identifiers)} zenodo record IDs')
+def main():
+    """
+    get zenodo software IDs
+    write these to csv file
+    """
+    total_urls = []
+    total_urls = get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=100, filename='gh_urls', write_out_location='data/', verbose=True)
+    
+    # if len(total_urls) != 0:
+    #     print(f"Record ID grab complete.")
+    # else: 
+    #     print("Record ID grab did not work, length of software_ids returned is zero.")
 
 
-    print(identifiers)
+# this bit
+if __name__ == "__main__":
+    main()
 
-# Create file connection
-    f = open(write_out, 'w')
-    writer = csv.writer(f)
 
-    header = ['Zenodo ID', 'Title', 'DOI', 'GitHub Link', 'CreatedDate']
-    writer.writerow(header)
+  
 
-# Iterate through identifiers to get gh url info
-    record_count = 0
 
-    for record_id in identifiers:
-        r = requests.get(f"{records_api_url}/{record_id}")
 
-        headers_out = r.headers
-        print(f"url info request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
 
-        if 'metadata' in r.json():
 
-            # API tag info via https://developers.zenodo.org/#representation at 12 Dec 2023.
-            record_title = r.json()['title']  # (string) Title of deposition (automatically set from metadata).
-            record_created = r.json()['created']  # (timestamp) Creation time of deposition (in ISO8601 format)
-            record_doi = r.json()['doi']  # (string) Digital Object Identifier (DOI) ... only present for published depositions
-            record_metadata = r.json()['metadata']  # (object) deposition metadata resource
-            #record_published = r.json()['metadata']['publication_date']  # (string) Date of publication in ISO8601 format (YYYY-MM-DD). Defaults to current date.
 
-            if 'related_identifiers' in record_metadata:
-                record_metadata_identifiers = r.json()['metadata']['related_identifiers']
 
-                if ("github.com" in record_metadata_identifiers[0]['identifier']) & (
-                        "url" in record_metadata_identifiers[0]['scheme']):
+# # Iterate through identifiers to get gh url info
+#     record_count = 0
 
-                    record_gh_repo_url = record_metadata_identifiers[0]['identifier']
+#     for record_id in identifiers:
+#         r = requests.get(f"{records_api_url}/{record_id}")
 
-                    row = []
-                    row.append(record_id)
-                    row.append(record_title)
-                    row.append(record_doi)
-                    row.append(record_gh_repo_url)
-                    row.append(record_created)
-                    #row.append(record_published)
-                    writer.writerow(row)
-                    record_count += 1
+#         headers_out = r.headers
+#         print(f"url info request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}")
 
-            else:
+#         if 'metadata' in r.json():
 
-                continue
-        else:
+#             # API tag info via https://developers.zenodo.org/#representation at 12 Dec 2023.
+#             record_title = r.json()['title']  # (string) Title of deposition (automatically set from metadata).
+#             record_created = r.json()['created']  # (timestamp) Creation time of deposition (in ISO8601 format)
+#             record_doi = r.json()['doi']  # (string) Digital Object Identifier (DOI) ... only present for published depositions
+#             record_metadata = r.json()['metadata']  # (object) deposition metadata resource
+#             #record_published = r.json()['metadata']['publication_date']  # (string) Date of publication in ISO8601 format (YYYY-MM-DD). Defaults to current date.
 
-            continue
+#             if 'related_identifiers' in record_metadata:
+#                 record_metadata_identifiers = r.json()['metadata']['related_identifiers']
 
-    f.close()
+#                 if ("github.com" in record_metadata_identifiers[0]['identifier']) & (
+#                         "url" in record_metadata_identifiers[0]['scheme']):
 
-    if verbose:
-        print(f'Retrieved {record_count} zenodo record github URLs')
+#                     record_gh_repo_url = record_metadata_identifiers[0]['identifier']
 
-    if verbose:
-        print(f'file saved out as: {write_out} at {write_out_location}')
-
-    #return(write_out)  # write_out filename and path.
+#                     row = []
+#                     row.append(record_id)
+#                     row.append(record_title)
+#                     row.append(record_doi)
+#                     row.append(record_gh_repo_url)
+#                     row.append(record_created)
+#                     #row.append(record_published)
+#                     writer.writerow(row)
+#                     record_count += 1
