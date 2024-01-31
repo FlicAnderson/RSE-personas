@@ -148,7 +148,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     
     # convert to pandas dataframe for ease of use and write out to csv  
     software_ids_df = pd.DataFrame(identifiers)
-    software_ids_df.to_csv(write_out, index=False, header=["zenodo_id"])
+    software_ids_df.to_csv(write_out, index=True, header=False, mode='w', sep=',')
     logging.info(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out} at {write_out_location}')
 
     # return df of IDs
