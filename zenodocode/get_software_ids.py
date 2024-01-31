@@ -60,7 +60,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     # write logs to file: 
     # NOTE: this appends logs to same file for multiple runs. To overwrite, specify: filemode='w' in logging.basicConfig()
     logging.basicConfig(level=logging.DEBUG,
-                        filename='get_software_ids_logs.txt', 
+                        filename='logs/get_software_ids_logs.txt', 
                         encoding='utf-8',
                         format='[%(asctime)s] %(levelname)s:%(message)s')
 
