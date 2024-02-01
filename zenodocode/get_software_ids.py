@@ -6,7 +6,7 @@ import pandas as pd
 import logging
 import math
 
-def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True):
+def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, out_filename='zenodo_ids', write_out_location='data/', verbose=True):
     """
     Get zenodo record IDs for software records and save these out into a csv file.
     NOTE: this code overwrites an existing csv of the same name. 
@@ -18,7 +18,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     :type: int
     :param total_records: Total number of zenodo records to iterate through. Default=10,000.
     :type: int
-    :param filename: name to include in write out filename. Saves as CSV.
+    :param out_filename: name to include in write out filename. Saves as CSV.
     :type: str
     :param write_out_location: Desired file location path as string. Default = "data/"
     :type: str
@@ -82,7 +82,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     
     # writeout setup:
       # build path + filename
-    write_out = f'{write_out_location}{filename}.csv'
+    write_out = f'{write_out_location}{out_filename}.csv'
 
     if verbose:
         print(f'Obtaining {total_records} zenodo record IDs')
@@ -162,7 +162,7 @@ def main():
     write these to csv file
     """
     software_ids = []
-    software_ids = get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, filename='zenodo_ids', write_out_location='data/', verbose=True)
+    software_ids = get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, out_filename='zenodo_ids', write_out_location='data/', verbose=True)
     
     if len(software_ids) != 0:
         print(f"Record ID grab complete.")
