@@ -203,7 +203,7 @@ def main():
     
     # read in complete dataset as separate variable
     current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
-    gh_urls_file = "data/gh_urls.csv"
+    gh_urls_file = "data/gh_urls"
     gh_urls_file_extra_info = f"{gh_urls_file}_{current_date_info}.csv"
     total_urls = pd.read_csv(gh_urls_file_extra_info, header=0)
 
