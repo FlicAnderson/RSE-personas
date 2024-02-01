@@ -5,6 +5,7 @@ from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
 import logging
 import math
+from datetime import datetime
 
 def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, out_filename='zenodo_ids', write_out_location='data/', verbose=True):
     """
@@ -82,7 +83,7 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
     
     # writeout setup:
       # build path + filename
-    write_out = f'{write_out_location}{out_filename}.csv'
+    write_out = f'{write_out_location}{out_filename}'
 
     if verbose:
         print(f'Obtaining {total_records} zenodo record IDs')
@@ -143,13 +144,17 @@ def get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, tot
         logging.info(f"Slicing down list of IDs from {len(identifiers)} to {total_records}.")
         identifiers = identifiers[0:total_records]
 
-    if verbose:
-        print(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out} at {write_out_location}')
-    
-    # convert to pandas dataframe for ease of use and write out to csv  
+ 
+    # convert to pandas dataframe for ease of use  
     software_ids_df = pd.DataFrame(identifiers)
-    software_ids_df.to_csv(write_out, index=True, header=False, mode='w', sep=',')
-    logging.info(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out} at {write_out_location}')
+
+    current_date_info = datetime.now().strftime("%Y-%m-%d")
+    write_out_extra_info = f"{write_out}_x{total_records}_{current_date_info}.csv"
+    if verbose:
+        print(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out_extra_info} at {write_out_location}')
+    # write out to csv here: 
+    software_ids_df.to_csv(write_out_extra_info, index=True, header=False, mode='w', sep=',')
+    logging.info(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out_extra_info} at {write_out_location}')
 
     # return df of IDs
     return(software_ids_df)
