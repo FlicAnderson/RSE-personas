@@ -1,6 +1,7 @@
 """ Get GitHub urls from metadata of existing zenodo software record IDs."""
 
 import sys
+import os
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import numpy as np
@@ -55,13 +56,6 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
     write_out = f'{write_out_location}{filename}.csv'
     
     # set format for section of data to write out to csv  
-    writeable_chunk = {'ZenodoID': [], 
-           'Title': [], 
-           'DOI': [], 
-           'GitHubURL':[], 
-           'CreatedDate': []
-    }
-    
 
     # read in CSV file of zenodo IDs  
      # default location: data/zenodo_ids.csv 
@@ -98,34 +92,92 @@ def get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_re
     batch_size = 10
     total_records = 30
     num_batches = math.ceil(total_records/batch_size) # 3
+    logging.info(f"Number of records to process is {total_records}; batch size is set to {batch_size}; this requires {num_batches} batches.")
 
-    writeable_chunk = []
+    # rate handling setup  
+    s = requests.Session()
+    retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
+    s.mount('https://', HTTPAdapter(max_retries=retries))
+
+    # 'gatherer' variables setup   
+    record_count = 0
+    loop_num = 0
 
     # this loop splits the zenodo IDs into 3x batches of size 10 and returns ephemeral 
     for i in chunker(zenodo_ids['zenodo_id'], batch_size):
+        writeable_chunk = []
+        loop_num += 1
         writeable_chunk_ids = i.to_list()  # pull IDs into a list of size 10 in this iteration of the loop
-        print(writeable_chunk_ids)
-        print(f"This is the 3rd item of this chunk: {writeable_chunk_ids[2]}")  # print 3rd item of this chunk; remember it's 0-based index
+        #print(writeable_chunk_ids)
+        #print(f"This is the 3rd item of this chunk: {writeable_chunk_ids[2]}")  # print 3rd item of this chunk; remember it's 0-based index
+
+        print(f">>>> Running loop/chunk number {loop_num}:")
+
+        for record_id in writeable_chunk_ids:
+            #print(f"record ID {record_id}; {type(record_id)}; {type(writeable_chunk_ids)}")
+
+            # API queries loop #
+            try:
+                # zenodo API query created 
+                records_api_url = 'https://zenodo.org/api/records'
+                record_query_url = f"{records_api_url}/{record_id}"
+
+                api_response = s.get(url=record_query_url, timeout=10)
+                #headers = api_response.headers
+                logging.info(f"For record ID {record_id}, API response is {api_response}") # and headers are {headers}")
+
+                if 'metadata' in api_response.json():
+                    # API tag info via https://developers.zenodo.org/#representation at 12 Dec 2023.
+                    record_title = api_response.json()['title']  # (string) Title of deposition (automatically set from metadata).
+                    record_created = api_response.json()['created']  # (timestamp) Creation time of deposition (in ISO8601 format)
+                    record_doi = api_response.json()['doi']  # (string) Digital Object Identifier (DOI) ... only present for published depositions
+                    record_metadata = api_response.json()['metadata']  # (object) deposition metadata resource
+
+                    if 'related_identifiers' in record_metadata:
+                        record_metadata_identifiers = api_response.json()['metadata']['related_identifiers']
+
+                        if ("github.com" in record_metadata_identifiers[0]['identifier']) & (
+                                "url" in record_metadata_identifiers[0]['scheme']):
+
+                            # get the github url!
+                            record_gh_repo_url = record_metadata_identifiers[0]['identifier']
+
+                            # collate items into a dictionary for this record ID
+                            row_dict = {
+                                'ZenodoID': record_id, 
+                                'Title': record_title, 
+                                'DOI': record_doi, 
+                                'GitHubURL':record_gh_repo_url, 
+                                'CreatedDate': record_created
+                            }
+                            #print(f"{record_id}; {record_title}; {record_created}; {record_doi}; {record_gh_repo_url}")   
+                            # add this completed 'row' to the chunk
+                            writeable_chunk.append(row_dict)
+                            record_count += 1    
+            # handle errors
+            except TypeError as e_type:
+                logging.debug(f"Type error going on: {e_type}")
+            except Exception as e:
+                if verbose:
+                    print(f"API response fail exception for {record_id}: {e}")
+                print(type(e))
+                print(e)
+
+        # write out 'completed' chunk content to csv via APPEND 
+        # convert to pandas dataframe format  
+        writeable_chunk_df = pd.DataFrame.from_dict(writeable_chunk)
+        print("writeable chunk dataframe vvvv")
+        print(writeable_chunk_df)
+
+        # append df to csv file  
+        #writeable_chunk_df.to_csv(write_out, mode='a', index=False, header= not os.path.exists(write_out))
 
 
-    # rate handling setup  
+    print(f"There are {record_count} records with github urls, out of {total_records} records in total.")
 
-    # zenodo API call setup  
-
-    # 'gatherer' variables setup   
-
-    # API queries loop 
-
-    # write out 'completed' chunks to csv via APPEND 
-    # convert to pandas dataframe format  
-    #writeable_chunk_df = pd.DataFrame(writeable_chunk)
-    
-    # append df to csv file  
-    #writeable_chunk_df.to_csv(write_out, mode='a', index=False, header=False)
-
-    # report on status  
-    # report success/fail  
-    #print("Data appended successfully.")
+        # report on status  
+        # report success/fail  
+        #print("Data appended successfully.")
 
 
 
