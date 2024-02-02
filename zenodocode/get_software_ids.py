@@ -24,11 +24,6 @@ def _get_default_logger(console: bool):
     return logger
 
 
-# example of a function which doesn't need any logger whatever  
-def doesnt_log():  # note that self isn't included here  
-    pass
-
-
 class SoftwareIDsGetter:
     # if not given a better option, use my default settings for logging
     logger: logging.Logger
@@ -89,7 +84,7 @@ class SoftwareIDsGetter:
         75 Zenodo software IDs saved out as: data/zenodo_ids.csv at data/
         Record ID grab complete.
         """
-        
+
         # get commandline input if any 
         if len(sys.argv) == 2:
             try:
@@ -166,7 +161,6 @@ class SoftwareIDsGetter:
         if len(identifiers) > total_records:
             self.logger.info(f"Slicing down list of IDs from {len(identifiers)} to {total_records}.")
             identifiers = identifiers[0:total_records]
-
     
         # convert to pandas dataframe for ease of use  
         software_ids_df = pd.DataFrame(identifiers)
