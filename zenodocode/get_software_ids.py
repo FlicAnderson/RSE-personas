@@ -25,6 +25,8 @@ def _get_default_logger(console: bool):
 
 
 class SoftwareIDsGetter:
+    # shoutout to @dk949 for advice and patient explanation on using Classes for fun & profit
+    
     # if not given a better option, use my default settings for logging
     logger: logging.Logger
     def __init__(self, logger: logging.Logger = None) -> None:
