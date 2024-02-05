@@ -9,22 +9,7 @@ import logging
 import math
 from datetime import datetime
 
-# set the default logging params 
-def _get_default_logger(console: bool):
-    logger = logging.getLogger('gh_url_getter')
-    fh = logging.FileHandler('logs/get_gh_urls_logs.txt')
-    fh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    if console:
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
-        ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.setLevel(logging.DEBUG)
-
-    return logger
+import utilities.get_default_logger as loggit
 
 
 def chunker(seq, size):
@@ -38,7 +23,7 @@ class GhURLsGetter:
     logger: logging.Logger
     def __init__(self, logger: logging.Logger = None) -> None:
         if logger is None:
-            self.logger = _get_default_logger(False)
+            self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_gh_urls_logs.txt')
         else:
             self.logger = logger
 
@@ -98,7 +83,6 @@ class GhURLsGetter:
             if not isinstance(zenodo_file, str):
                 raise TypeError("Ensure argument is a file location and name in string format (e.g. 'data/zenodo_id.csv')")
 
-            print(f"Using commandline argument {zenodo_file} as input file of Zenodo IDs to retrieve GH URLs for.")
             self.logger.info(f"Using commandline argument {zenodo_file} as input file of Zenodo IDs to retrieve GH URLs for. Entered as: {sys.argv[1]}")
         else: 
             # default location: data/zenodo_ids.csv 
@@ -116,7 +100,7 @@ class GhURLsGetter:
         batch_size = 10
         total_records = len(zenodo_ids.index)
         num_batches = math.ceil(total_records/batch_size) # 3
-        self.logger.info(f"\n ... STARTING RUN. Read in file {zenodo_file} of shape {zenodo_ids.shape}; Number of record IDs to process is {total_records}; Batch size is set to {batch_size}; This run requires {num_batches} batches ... \n")
+        self.logger.debug(f"\n ... STARTING RUN. Read in file {zenodo_file} of shape {zenodo_ids.shape}; Number of record IDs to process is {total_records}; Batch size is set to {batch_size}; This run requires {num_batches} batches ... \n")
 
         # rate handling setup  
         s = requests.Session()
@@ -135,11 +119,10 @@ class GhURLsGetter:
             self.logger.info(f"\n >> Running loop/chunk number {loop_num} of {num_batches} ... ")
             writeable_chunk = [] # reset to empty the dict of previous records
             writeable_chunk_ids = i.to_list()  # pull IDs into a list of size 10 in this iteration of the loop
-            #print(f">> Running loop/chunk number {loop_num} of {num_batches} ...")
-
+            
             for record_id in writeable_chunk_ids:
                 id_count += 1
-                self.logger.info(f"Running loop for record ID {record_id}, in loop {loop_num}, ID count {id_count} of {total_records}")
+                self.logger.debug(f"Running loop for record ID {record_id}, in loop {loop_num}, ID count {id_count} of {total_records}")
 
                 # API queries loop #
                 try:
@@ -148,7 +131,7 @@ class GhURLsGetter:
                     record_query_url = f"{records_api_url}/{record_id}"
 
                     api_response = s.get(url=record_query_url, timeout=10)
-                    self.logger.info(f"For record ID {record_id}, API response is {api_response}; with rate limit remaining: {api_response.headers['x-ratelimit-remaining']}")
+                    self.logger.debug(f"For record ID {record_id}, API response is {api_response}; with rate limit remaining: {api_response.headers['x-ratelimit-remaining']}")
 
                     if 'metadata' in api_response.json():
                         # API tag info via https://developers.zenodo.org/#representation at 12 Dec 2023.
@@ -177,23 +160,19 @@ class GhURLsGetter:
                                 #print(f"{record_id}; {record_title}; {record_created}; {record_doi}; {record_gh_repo_url}")   
                                 # add this completed 'row' to the chunk
                                 writeable_chunk.append(row_dict)
-                                self.logger.info(f"At (including) ID count {id_count} there have been {record_count} github urls records located so far.")
+                                self.logger.debug(f"At (including) ID count {id_count} there have been {record_count} github urls records located so far.")
                                 record_count += 1    
                 # handle errors
                 except TypeError as e_type:
                     self.logger.debug(f"Type error going on: {e_type}")
                 except Exception as e:
                     if verbose:
-                        print(f"API response fail exception for {record_id}: {e}")
+                        self.logger.error(f"API response fail exception for {record_id}: {e}")
                     print(type(e))
                     print(e)
 
             # convert to pandas dataframe format  
             writeable_chunk_df = pd.DataFrame.from_dict(writeable_chunk)
-            if verbose: 
-                print("writeable chunk dataframe vvvv")
-                print(writeable_chunk_df)
-
 
             # write out 'completed' chunk df content to csv via APPEND (use added date filename)
             writeable_chunk_df.to_csv(write_out_extra_info, mode='a', index=False, header= not os.path.exists(write_out_extra_info))
@@ -201,14 +180,14 @@ class GhURLsGetter:
             # add the completed chunk of df to a 'total' df:
             gh_urls_df = pd.concat([gh_urls_df, writeable_chunk_df], )
 
-        print(f"There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}.")
+        #print(f"There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}.")
         self.logger.info(f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}.")
         
         # report on status  
         if record_count >= (total_records/2): 
-            self.logger.info("More than half of records have GitHub urls. Nice. ")
+            self.logger.debug("More than half of records have GitHub urls. Nice. ")
         else: 
-            self.logger.info("Less than half of records have GitHub urls... Something could be wrong?")  
+            self.logger.debug("Less than half of records have GitHub urls... Something could be wrong?")  
 
         # return complete set of github url records as a dataframe 
         return(gh_urls_df)
@@ -221,7 +200,7 @@ if __name__ == "__main__":
     write these to csv file
     read csv file back in for comparison
     """
-    logger = _get_default_logger(console=True)
+    logger = loggit.get_default_logger(console=True, set_level_to='DEBUG', log_name='logs/get_gh_urls_logs.txt')
 
     url_getter = GhURLsGetter(logger)
 
@@ -230,14 +209,11 @@ if __name__ == "__main__":
         # returns dataframe and saves to variable
         gh_urls_df = url_getter.get_gh_urls(config_path='zenodococode/zenodoconfig.cfg', in_filename='zenodo_ids', read_in_location='data/', out_filename='gh_urls', write_out_location='data/', verbose=False)
         if len(gh_urls_df) != 0:
-            print("GitHub URL grab complete.")
             logger.info("GitHub URL grab complete.")
         else: 
-            print("GitHub URL grab did not work, length of records returned is zero.")
             logger.warning("GitHub URL grab did not work, length of records returned is zero.")
     except Exception as e: 
         logger.error(f"There's been an exception while trying to run get_gh_urls(): {e}")
-        print(f"There's been an exception while trying to run get_gh_urls(): {e}")
 
     # read in complete dataset as separate variable for comparison
     total_urls = pd.DataFrame()
@@ -248,8 +224,7 @@ if __name__ == "__main__":
         total_urls = pd.read_csv(gh_urls_file_extra_info, header=0)
     except Exception as e: 
         logger.error(f"There's been an exception while trying to read back in data generated by get_gh_urls() from {gh_urls_file_extra_info}: {e}")
-        print(f"There's been an exception while trying to read back in data generated by get_gh_urls() from {gh_urls_file_extra_info}: {e}")
-
+        
     # if everything is good, this shouldn't trigger.
         try: 
             assert len(gh_urls_df.index) == len(total_urls.index), f"WARNING! Lengths of returned df ({len(gh_urls_df)}) vs df read in from file ({len(total_urls)}) DO NOT MATCH. Did you append too many records to the gh_urls file??"
