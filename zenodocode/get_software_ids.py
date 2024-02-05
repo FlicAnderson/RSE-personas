@@ -7,23 +7,7 @@ import logging
 import math
 from datetime import datetime
 
-# set the default logging params 
-def _get_default_logger(console: bool):
-    logger = logging.getLogger('software_getter')
-    fh = logging.FileHandler('logs/get_software_ids_logs.txt')
-    
-    fh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    if console:
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
-        ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.setLevel(logging.DEBUG)
-
-    return logger
+import utilities.get_default_logger as loggit
 
 
 class SoftwareIDsGetter:
@@ -33,7 +17,7 @@ class SoftwareIDsGetter:
     logger: logging.Logger
     def __init__(self, logger: logging.Logger = None) -> None:
         if logger is None:
-            self.logger = _get_default_logger(False)
+            self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_software_ids_logs.txt')
         else:
             self.logger = logger
 
@@ -96,18 +80,17 @@ class SoftwareIDsGetter:
             except ValueError as e:
                 raise TypeError('Bad input. Ensure argument is an integer number.')        
             self.logger.info(f"Using commandline argument {total_records} as number of software IDs to get from zenodo.")
+        else: 
+            self.logger.info(f'Obtaining {total_records} zenodo record IDs')
 
         # deal with input less than per_page 
         if total_records < per_pg: 
             per_pg = total_records
-            self.logger.info("total_records is less than per_pg; adjusting per_pg to total_records.")
+            self.logger.debug("total_records is less than per_pg; adjusting per_pg to total_records.")
         
         # writeout setup:
         # build path + filename
         write_out = f'{write_out_location}{out_filename}'
-
-        if verbose:
-            print(f'Obtaining {total_records} zenodo record IDs')
 
         # set up API session details: retry 5 times with a backoff factor
         # approach via: https://stackoverflow.com/a/35636367
@@ -124,7 +107,7 @@ class SoftwareIDsGetter:
         page_iterator=1
 
         for calls in range(requests_needed):
-            self.logger.info(f"... page {page_iterator} of {requests_needed}...")
+            self.logger.debug(f"... page {page_iterator} of {requests_needed}...")
             api_response = s.get(
                     records_api_url,
                     #headers = headers_list,
@@ -135,8 +118,8 @@ class SoftwareIDsGetter:
                         'page': page_iterator
                     },
                     timeout=10)
-            self.logger.info(f"API response on request {page_iterator}: {api_response}")
-            self.logger.info(f"API rate limit remaining: {api_response.headers['x-ratelimit-remaining']}")
+            self.logger.debug(f"API response on request {page_iterator}: {api_response}")
+            self.logger.debug(f"API rate limit remaining: {api_response.headers['x-ratelimit-remaining']}")
 
             page = [] # temporary list which holds all IDs from this page of the query
             for hit in api_response.json()['hits']['hits']:
@@ -154,15 +137,13 @@ class SoftwareIDsGetter:
                 print(identifiers)
 
         if len(set(identifiers)) == len(identifiers): 
-            print("Gathered record IDs all unique")
             self.logger.info("Gathered record IDs all unique")
         else: 
-            print("Watch out: Gathered record IDs contain duplicates!")
             self.logger.warning("Gathered record IDs contain duplicates!")
             
         # slice identifiers if it is longer than total_records value (ie total_records=30, per_page=20 => len(identifiers)=40... )
         if len(identifiers) > total_records:
-            self.logger.info(f"Slicing down list of IDs from {len(identifiers)} to {total_records}.")
+            self.logger.debug(f"Slicing down list of IDs from {len(identifiers)} to {total_records}.")
             identifiers = identifiers[0:total_records]
     
         # convert to pandas dataframe for ease of use  
@@ -170,8 +151,7 @@ class SoftwareIDsGetter:
 
         current_date_info = datetime.now().strftime("%Y-%m-%d")
         write_out_extra_info = f"{write_out}_x{total_records}_{current_date_info}.csv"
-        if verbose:
-            print(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out_extra_info} at {write_out_location}')
+        
         # write out to csv here: 
         software_ids_df.to_csv(write_out_extra_info, index=True, header=False, mode='w', sep=',')
         self.logger.info(f'{len(identifiers)} Zenodo software IDs saved out as: {write_out_extra_info} at {write_out_location}')
@@ -184,9 +164,8 @@ class SoftwareIDsGetter:
 # this bit
 if __name__ == "__main__":
     # use the defined logger details  
-    # true because it's being run from terminal... 
       # ... so DO want console handler (ie print error info to terminal as well as logging file)
-    logger = _get_default_logger(console=True)  
+    logger = loggit.get_default_logger(console=True, set_level_to='DEBUG', log_name='logs/get_software_ids_logs.txt')  
 
     # make it easier to pass on logger properties to the get_software_ids() function 
     getter = SoftwareIDsGetter(logger)
@@ -199,6 +178,6 @@ if __name__ == "__main__":
         # print(f"There's been an exception while trying to run get_software_ids(): {e}")
 
     if len(software_ids) != 0:
-        print(f"Record ID grab complete.")
+        logger.info(f"Record ID grab complete.")
     else: 
-        print("Record ID grab did not work, length of software_ids returned is zero.")
+        logger.error("Record ID grab did not work, length of software_ids returned is zero.")
