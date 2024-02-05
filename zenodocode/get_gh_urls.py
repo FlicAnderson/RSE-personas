@@ -22,6 +22,7 @@ def _get_default_logger(console: bool):
         ch.setLevel(logging.ERROR)
         ch.setFormatter(formatter)
     logger.addHandler(ch)
+    logger.setLevel(logging.DEBUG)
 
     return logger
 
@@ -134,7 +135,7 @@ class GhURLsGetter:
             self.logger.info(f"\n >> Running loop/chunk number {loop_num} of {num_batches} ... ")
             writeable_chunk = [] # reset to empty the dict of previous records
             writeable_chunk_ids = i.to_list()  # pull IDs into a list of size 10 in this iteration of the loop
-            print(f">> Running loop/chunk number {loop_num} of {num_batches} ...")
+            #print(f">> Running loop/chunk number {loop_num} of {num_batches} ...")
 
             for record_id in writeable_chunk_ids:
                 id_count += 1
