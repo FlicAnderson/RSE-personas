@@ -73,10 +73,10 @@ done
  ```
  1) Create `githubanalysis` package from the root of the coding-smart repo directory by using the `setup.py` script and running pip command: `pip install -e .` This should be done WITHIN the activated conda environment `coding-smart-github`.  
  ```
- (coding-smart-github) flic@eidf103-vm:~/clonezone/coding-smart$ ls
-LICENSE         coding-smart-github-prev.yml    data            repo-analysis-ideas.md  tests
-README.md       coding-smart-github-remote.yml  githubanalysis  requirements.txt        zenodocode
-code-readme.md  coding-smart-github.yml         images          setup.py
+(coding-smart-github) flic@demeter:~/clonezone/coding-smart$ ls -F
+LICENSE         coding-smart-github.yml      githubanalysis/           logs/                   setup.py    zenodocode/
+README.md       coding-smart.code-workspace  githubanalysis.egg-info/  repo-analysis-ideas.md  tests/
+code-readme.md  data/                        images/                   requirements.txt        utilities/
 
 (coding-smart-github) flic@eidf103-vm:~/clonezone/coding-smart$ pip install -e .
 Obtaining file:///home/eidf103/eidf103/flic/clonezone/coding-smart
@@ -93,6 +93,7 @@ Successfully installed githubanalysis-1.0
 Within `coding-smart` repo, the key folders are:  
  - `githubanalysis` - holds the `githubanalysis` python module code for getting, processing, analysing and visualizing github repository info.  
  - `zenodocode` -  this holds code for obtaining DOI records for software from zenodo's API to gather github urls for research software repositories.  
+ - `utilities` - this holds generally useful functions (e.g. logging setup).  
  - `tests` - contains `{pytest}` test code for testing project code.     
  - `data` - this will contain raw, cleaned and analysed data for the project.   
  - `images` - will hold analysis result visualisations and other relevant images.
