@@ -11,6 +11,7 @@ from datetime import datetime
 def _get_default_logger(console: bool):
     logger = logging.getLogger('software_getter')
     fh = logging.FileHandler('logs/get_software_ids_logs.txt')
+    
     fh.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(message)s')
     fh.setFormatter(formatter)
@@ -20,6 +21,7 @@ def _get_default_logger(console: bool):
         ch.setLevel(logging.ERROR)
         ch.setFormatter(formatter)
     logger.addHandler(ch)
+    logger.setLevel(logging.DEBUG)
 
     return logger
 
@@ -93,8 +95,7 @@ class SoftwareIDsGetter:
                 total_records = int(sys.argv[1])  # use second argv (user-provided by commandline)
             except ValueError as e:
                 raise TypeError('Bad input. Ensure argument is an integer number.')        
-            if verbose:
-                print(f"Using commandline argument {total_records} as number of software IDs to get from zenodo.")
+            self.logger.info(f"Using commandline argument {total_records} as number of software IDs to get from zenodo.")
 
         # deal with input less than per_page 
         if total_records < per_pg: 
@@ -195,7 +196,7 @@ if __name__ == "__main__":
         software_ids = getter.get_software_ids(config_path='zenodococode/zenodoconfig.cfg', per_pg=20, total_records=10000, out_filename='zenodo_ids', write_out_location='data/', verbose=True)
     except Exception as e:
         logger.error(f"There's been an exception while trying to run get_software_ids(): {e}")
-        print(f"There's been an exception while trying to run get_software_ids(): {e}")
+        # print(f"There's been an exception while trying to run get_software_ids(): {e}")
 
     if len(software_ids) != 0:
         print(f"Record ID grab complete.")
