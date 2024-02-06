@@ -16,7 +16,6 @@ import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 
-
 class RepoStatsSummariser:
     # shoutout to @dk949 for advice and patient explanation on using Classes for fun & profit
     
@@ -128,16 +127,10 @@ class RepoStatsSummariser:
                 commit_links_last = commit_links['last']['url'].split("&page=")[1]
                 total_commits = int(commit_links_last)
 
-                if verbose:
-                    print(f"API response for getting total commits: {api_response}")
-                    #print(commit_links)
-                    #print(commit_links_last)
+                self.logger.debug(f"API response for getting total commits: {api_response}")
 
             except Exception as e:
-                if verbose:
-                    print(f"API response total_commits_last_year fail exception: {e}")
-                print(type(e))
-                print(e)
+                self.logger.error(f"API response total_commits_last_year fail exception: {e}; error type {type(e)}.")
 
             repo_stats.update({"total_commits": total_commits})
             self.logger.debug(f"Repo total commits is {repo_stats.get('total_commits')}.")
@@ -154,13 +147,10 @@ class RepoStatsSummariser:
             s.mount('https://', HTTPAdapter(max_retries=retries))
             try:
                 api_response = s.get(url=base_commit_stats_url, timeout=10)
-                if verbose:
-                    print(f"API response for getting total commits in year: {api_response}")
+                self.logger.debug(f"API response for getting total commits in year: {api_response}")
             except Exception as e:
-                if verbose:
-                    print(f"API response total_commits_last_year fail exception: {e}")
-                print(type(e))
-                print(e)
+                self.logger.error(f"API response total_commits_last_year fail exception: {e}; error type {type(e)}.")
+
 
             total_commits_1_year = pd.DataFrame(api_response.json())['total'].sum()
             repo_stats.update({"total_commits_last_year": total_commits_1_year})
@@ -185,8 +175,7 @@ class RepoStatsSummariser:
 
             if api_response.ok:
 
-                if verbose:
-                    print(f"API response for getting PRs info: {api_response}")
+                self.logger.debug(f"API response for getting PRs info: {api_response}")
 
                 try:
                     assert len(api_response.json()) != 0, "No json therefore no PRs"
@@ -196,6 +185,7 @@ class RepoStatsSummariser:
                     # as datetime w/ UTC timezone awareness(last_PR_update)
                     PRs_bool = True
                 except:
+                    self.logger.debug(f"No PRs found for repo {repo_name}; setting PRs_bool to False and last_PR_updated to None.")
                     PRs_bool = False
                     last_PR_updated = None
             else:
@@ -228,7 +218,7 @@ class RepoStatsSummariser:
             repo_stats.update({"closed_tickets": closed_issues})
             self.logger.debug(f"Repo number of closed tickets is {repo_stats.get('closed_tickets')}.")
         except Exception as e_closedtix: 
-            self.logger.error(f"Error in checking closed issue numbers at {repo_name} and config path {config_path}: {e_PRs}.")
+            self.logger.error(f"Error in checking closed issue numbers at {repo_name} and config path {config_path}: {e_closedtix}.")
 
         try:
         # get age of repo
@@ -318,17 +308,18 @@ class RepoStatsSummariser:
         try:
             assert all(item in repo_stats for item in stat_list)
         except AssertionError as err:
-            print(f"key(s) {[x for x in repo_stats if x not in stat_list]} are missing; {err}")
+            self.logger.error(f"key(s) {[x for x in repo_stats if x not in stat_list]} are missing; {err}")
 
-        if verbose:
-            print(f"Stats for {repo_name}: {repo_stats}")
-
+        self.logger.debug(f"Stats for {repo_name}: {repo_stats}")
+        self.logger.debug(f"Returned stats object is shape {repo_stats.shape}")
         return repo_stats
 
         # except: something's wrong.
 
 
-def main():
+
+# this bit
+if __name__ == "__main__":
     """
     Run summarise_repo_stats() from terminal on supplied repo name.
     """
@@ -348,12 +339,6 @@ def main():
     # run summarise_repo_stats() on repo_name.
     try: 
         output_stats = repo_summariser.summarise_repo_stats(repo_name=repo_name, config_path='githubanalysis/config.cfg', per_pg=1, verbose=True)
-        #print(output_stats)
         logger.info(f"Stats for repo {repo_name} summarised as: {output_stats}.")
     except Exception as e: 
         logger.error(f"Exception while running summarise_repo_stats(): {e}")
-
-
-# this bit
-if __name__ == "__main__":
-    main()
