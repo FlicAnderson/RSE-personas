@@ -1,5 +1,7 @@
 """Cleaning github repository names and urls of github repos."""
 
+import re
+
 def repo_name_clean(repo_url):
     """
     Remove trailing slashes and github url root from string repo names.
@@ -39,14 +41,16 @@ def repo_name_clean(repo_url):
     # do repo url cleaning
         try:
             repo_url = (repo_url.split("https://github.com/"))[1]
-            repo_name = (repo_url.rstrip("/"))
+            if "tree" in repo_url: 
+                repo_url = re.split('(^[\.\w-]+\/[\.\w-]+)', repo_url)[1]
+            repo_name = repo_url
 
         except ValueError:
             print(
                 f"Could not clean repo_url into username/repo_name format. Confirm input is correct (and if url is given that it starts 'https://github.com/').")
 
     # finish
-        print(repo_name)
+        #print(repo_name)
         return repo_name
 
 

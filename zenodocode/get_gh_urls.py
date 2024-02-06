@@ -9,13 +9,8 @@ import logging
 import math
 from datetime import datetime
 
+import utilities.chunker as chunker
 import utilities.get_default_logger as loggit
-
-
-def chunker(seq, size):
-    for pos in range(0, len(seq), size):
-        yield seq.iloc[pos:pos + size] 
-# via Andrei Krivoshei at SO: https://stackoverflow.com/a/61798585  
 
 
 class GhURLsGetter:
@@ -114,7 +109,7 @@ class GhURLsGetter:
         gh_urls_df = pd.DataFrame()  # create empty df to hold complete record set  
 
         # this loop splits the zenodo IDs into 3x batches of size 10 and returns ephemeral 
-        for i in chunker(zenodo_ids['zenodo_id'], batch_size):
+        for i in chunker.chunker(zenodo_ids['zenodo_id'], batch_size):
             loop_num += 1
             self.logger.info(f"\n >> Running loop/chunk number {loop_num} of {num_batches} ... ")
             writeable_chunk = [] # reset to empty the dict of previous records
