@@ -5,7 +5,7 @@ from pathlib import Path
 from github import Github
 
 
-def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100, verbose=True):
+def setup_github_auth(config_path='githubanalysis/config.cfg', verbose=True):
     """
     Authenticates with Github API using user-generated config.cfg file contents; sets per_page to 100 items.
     :param config_path: file path of config.cfg file. Default='githubanalysis/config.cfg'.
@@ -24,10 +24,6 @@ def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100, verbo
     TODO.
     """
 
-    # ensure arguments are valid
-    if per_pg > 100:
-        raise ValueError('GH API maximum per_page value is 100.')
-
     # check config filepath input (using separate variable to avoid overwriting it as pathlib Path type)
     pathchecker = Path(config_path)
     if pathchecker.exists() is False:
@@ -45,13 +41,8 @@ def setup_github_auth(config_path='githubanalysis/config.cfg', per_pg=100, verbo
     try:
         ghlink = Github(
             access_token,
-            per_page=per_pg
         )  # type(ghlink) is github.MainClass.Github; ghlink.per_page should return 100
-
-        if verbose:
-            print('GH link opened')
-
-        return ghlink
-
+        return(access_token)
+    
     except RuntimeError:
         print('Github authentication failed. Check config file format and permissions in your github account.')
