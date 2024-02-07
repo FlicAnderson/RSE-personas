@@ -33,10 +33,10 @@ def repo_name_clean(repo_url):
 
     if isinstance(repo_url, str):
 
-        if "," in repo_url:
-            raise ValueError('Input contains commas - ensure input is string of ONE repo only.')
-        if ";" in repo_url:
-            raise ValueError('Input contains semicolons - ensure input is string of ONE repo only.')
+        # if "," in repo_url:
+        #     raise ValueError('Input contains commas - ensure input is string of ONE repo only.')
+        # if ";" in repo_url:
+        #     raise ValueError('Input contains semicolons - ensure input is string of ONE repo only.')
 
     # do repo url cleaning
         try:
