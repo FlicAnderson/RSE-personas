@@ -3,7 +3,7 @@
 import pandas as pd
 from pandas import DatetimeIndex
 
-import githubanalysis.processing.get_repo_connection as ghconn
+import githubanalysis.processing.get_repo_connection as ghconnect
 
 def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True):
     """
@@ -28,13 +28,14 @@ def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', v
     Creation date of repo riboviz/riboviz is 2019 5 3.
     Timestamp('2019-05-03 12:15:59+0000', tz='UTC')
     """
-
-    # set up connection
-    repo_conn = ghconn.get_repo_connection(repo_name=repo_name, config_path=config_path, verbose=verbose)
+    # connect to repos api for reponame
+    api_response = ghconnect.get_repo_connection(repo_name=repo_name, config_path=config_path)
+    api_response_json = api_response.json()
+    #print(api_response.url)
 
     # get creation date:
-    repo_creation_date = pd.to_datetime(repo_conn.created_at)
-    repo_creation_date = repo_creation_date.tz_localize(tz='UTC')  # created_at date is UTC but returns as tz naive
+    repo_creation_date = pd.to_datetime(api_response_json.get('created_at'))  # type: pandas._libs.tslibs.timestamps.Timestamp
+    repo_creation_date = repo_creation_date.tz_convert('UTC')  # created_at date now 'intelligently' utc 
 
     if verbose:
         print(f'Creation date of repo {repo_name} is {repo_creation_date.year} {repo_creation_date.month} {repo_creation_date.day}.')
