@@ -52,7 +52,7 @@ class TODOMaker:
             if not isinstance(gh_urls_file_extra_info, str):
                 raise TypeError("Ensure argument is a file location and name in string format (e.g. 'data/gh_urls.csv')")
 
-            self.logger.info(f"Using commandline argument {gh_urls_file_extra_info} as input file of Zenodo IDs to retrieve GH URLs for. Entered as: {sys.argv[1]}")
+            self.logger.info(f"Using commandline argument {gh_urls_file_extra_info} as input file of GitHub URLS to set up TODO file from. Entered as: {sys.argv[1]}")
         else: 
             # default location: data/gh_urls.csv 
             gh_file = f"{read_in_location}{in_filename}.csv"
