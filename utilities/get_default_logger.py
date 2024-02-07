@@ -26,6 +26,8 @@ def get_default_logger(console: bool, set_level_to='INFO', log_name="logs/functi
     fh.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(message)s')
     fh.setFormatter(formatter)
+    if (logger.hasHandlers()):
+        logger.handlers.clear()
     logger.addHandler(fh)
     if console:
         ch = logging.StreamHandler()
@@ -41,5 +43,6 @@ def get_default_logger(console: bool, set_level_to='INFO', log_name="logs/functi
         logger.setLevel(logging.WARNING)
     elif set_level_to == 'ERROR':
         logger.setLevel(logging.ERROR)
+    logger.propagate = False
 
     return logger
