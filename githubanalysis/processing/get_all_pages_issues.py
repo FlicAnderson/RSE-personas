@@ -36,33 +36,38 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     for page in repo_con.get_issues(state=issue_state):
         store_pgs.append(page._rawData)
         # this is currently 'access to a protected member _rawData of a class'... :s
+    
+    # handle empty (ie no closed issues case); return empty df
+    if len(store_pgs) == 0: 
+        all_issues = pd.DataFrame()
+    # handle case with closed issues...
+    else: 
+        # store_pgs holds items in list.
+           # Can pull items out using indices e.g. url of 'first' issue: store_pgs[0]['url']
 
-    # store_pgs holds items in list.
-        # Can pull items out using indices e.g. url of 'first' issue: store_pgs[0]['url']
+        if verbose:
+            print("Total responses:", len(store_pgs))
 
-    if verbose:
-        print("Total responses:", len(store_pgs))
+        all_issues = pd.DataFrame(store_pgs)
 
-    all_issues = pd.DataFrame(store_pgs)
+        if verbose:
+            print("Shape of data:", all_issues.shape)
+            print("Issue state counts:", all_issues.state.value_counts())
 
-    if verbose:
-        print("Shape of data:", all_issues.shape)
-        print("Issue state counts:", all_issues.state.value_counts())
+        # check all important columns are present in the df.
+        wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
+                    'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
+        try:
+            assert all(item in all_issues.columns for item in wanted_cols)
+        except AssertionError as err:
+            print(f"column {[x for x in all_issues.columns if x not in wanted_cols]} not present in all_issues df; {err}")
 
-    # check all important columns are present in the df.
-    wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
-                   'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
-    try:
-        assert all(item in all_issues.columns for item in wanted_cols)
-    except AssertionError as err:
-        print(f"column {[x for x in all_issues.columns if x not in wanted_cols]} not present in all_issues df; {err}")
+        all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
+                                                format='%Y-%m-%dT%H:%M:%S%Z')
+        all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
+                                                format='%Y-%m-%dT%H:%M:%S%Z')
 
-    all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
-                                              format='%Y-%m-%dT%H:%M:%S%Z')
-    all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
-                                             format='%Y-%m-%dT%H:%M:%S%Z')
-
-    all_issues['repo_name'] = repo_name
+        all_issues['repo_name'] = repo_name
 
     return all_issues
 
