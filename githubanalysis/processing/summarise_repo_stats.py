@@ -112,31 +112,31 @@ class RepoStatsSummariser:
             self.logger.error(f"Error in checking number of contributors with repo name {repo_name} and config path {config_path}: {e_countdevs}. API response: {api_response}")
 
 
-        try: 
-            # count total number of commits
-            total_commits = None
+        # try: 
+        #     # count total number of commits
+        #     total_commits = None
 
-            base_commits_url = f"https://api.github.com/repos/{repo_name}/commits?per_page=1"
+        #     base_commits_url = f"https://api.github.com/repos/{repo_name}/commits?per_page=1"
 
-            s = requests.Session()
-            retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
-            s.mount('https://', HTTPAdapter(max_retries=retries))
-            try:
-                api_response = s.get(url=base_commits_url, timeout=10)
-                commit_links = api_response.links
-                commit_links_last = commit_links['last']['url'].split("&page=")[1]
-                total_commits = int(commit_links_last)
+        #     s = requests.Session()
+        #     retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
+        #     s.mount('https://', HTTPAdapter(max_retries=retries))
+        #     try:
+        #         api_response = s.get(url=base_commits_url, timeout=10)
+        #         commit_links = api_response.links
+        #         commit_links_last = commit_links['last']['url'].split("&page=")[1]
+        #         total_commits = int(commit_links_last)
 
-                self.logger.debug(f"API response for getting total commits: {api_response}")
+        #         self.logger.debug(f"API response for getting total commits: {api_response}")
 
-            except Exception as e:
-                self.logger.error(f"API response total_commits_last_year fail exception: {e}; error type {type(e)}.")
+        #     except Exception as e:
+        #         self.logger.error(f"API response total_commits_last_year fail exception: {e}; error type {type(e)}.")
 
-            repo_stats.update({"total_commits": total_commits})
-            self.logger.debug(f"Repo total commits is {repo_stats.get('total_commits')}.")
+        #     repo_stats.update({"total_commits": total_commits})
+        #     self.logger.debug(f"Repo total commits is {repo_stats.get('total_commits')}.")
 
-        except Exception as e_commitstotal:
-            self.logger.error(f"Error in checking total number of commits at repo name {repo_name} and config path {config_path}: {e_commitstotal}. API response: {api_response}")
+        # except Exception as e_commitstotal:
+        #     self.logger.error(f"Error in checking total number of commits at repo name {repo_name} and config path {config_path}: {e_commitstotal}. API response: {api_response}")
 
         # count total commits in last year
         try:
@@ -210,7 +210,7 @@ class RepoStatsSummariser:
                     verbose=False
                 )  # get closed issues from all pages for given repo
 
-                closed_issues = closed_issues.shape[0]  # get number; discard df
+                closed_issues = closed_issues.shape[0]  # get number; discard df (works even if 0 closed issues)
             else:
                 closed_issues = 0
                 #raise AttributeError(f'GitHub repository {repo_name} does not have issues enabled.')
@@ -289,29 +289,29 @@ class RepoStatsSummariser:
         #     "repo_language": "python"
         # }
 
-        # check ALL keys in repo_stats dict:
-        #try: all x in repo_stats = TRUE
-        stat_list = [
-            "repo_name",
-            "issues_enabled",
-            "devs",
-            "total_commits",
-            "total_commits_last_year",
-            "has_PRs",
-            "last_PR_update",
-            "closed_tickets",
-            "repo_age_days",
-            "repo_license",
-            "repo_visibility",
-            "repo_language"
-        ]
-        try:
-            assert all(item in repo_stats for item in stat_list)
-        except AssertionError as err:
-            self.logger.error(f"key(s) {[x for x in repo_stats if x not in stat_list]} are missing; {err}")
+        # # check ALL keys in repo_stats dict:
+        # #try: all x in repo_stats = TRUE
+        # stat_list = [
+        #     "repo_name",
+        #     "issues_enabled",
+        #     "devs",
+        # #    "total_commits",
+        #     "total_commits_last_year",
+        #     "has_PRs",
+        #     "last_PR_update",
+        #     "closed_tickets",
+        #     "repo_age_days",
+        #     "repo_license",
+        #     "repo_visibility",
+        #     "repo_language"
+        # ]
+        # try:
+        #     assert all(item in repo_stats for item in stat_list)
+        # except AssertionError as err:
+        #     self.logger.error(f"key(s) {[x for x in repo_stats if x not in stat_list]} are missing; {err}")
 
-        self.logger.debug(f"Stats for {repo_name}: {repo_stats}")
-        self.logger.debug(f"Returned stats object is shape {repo_stats.shape}")
+        self.logger.info(f"Stats for {repo_name}: {repo_stats}")
+        self.logger.debug(f"Returned stats object has {len(repo_stats)} categories.")
         return repo_stats
 
         # except: something's wrong.
