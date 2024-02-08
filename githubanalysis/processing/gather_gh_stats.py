@@ -32,14 +32,14 @@ class GhStatsGetter:
         Save these records out into a csv file and return all records in a dataframe.
         Logging output to file logs/gather_gh_stats_logs.txt
         """
-        logger.propagate = False
+        #logger.propagate = False
 
         # read-in file setup (accept commandline input for todo_file file if any) 
         if len(sys.argv) == 2:
             todo_file = sys.argv[1]  # use second argv (user-provided by commandline)
 
             if not isinstance(todo_file, str):
-                raise TypeError("Ensure argument is a file location and name in string format (e.g. 'data/zenodo_id.csv')")
+                raise TypeError("Ensure argument is a file location and name in string format (e.g. 'data/todo.csv')")
 
             self.logger.info(f"Using commandline argument {todo_file} as input file of GH Repo names to retrieve GH stats for. Entered as: {sys.argv[1]}")
         else: 
@@ -54,7 +54,6 @@ class GhStatsGetter:
 
         # read in csv file of repo names and zenodo IDs
         gh_repos_df = pd.read_csv(todo_file, header=0, usecols=['ZenodoID', 'repo_name'], dtype={'ZenodoID':'Int64', 'repo_name':'str'})
-        #gh_urls_df.shape
 
         batch_size = 10
         total_records = len(gh_repos_df.index)
