@@ -94,6 +94,7 @@ class GhStatsGetter:
 
             # add the completed chunk of df to a 'total' df:
             gh_stats_df = pd.concat([gh_stats_df, writeable_chunk_df], )
+            writeable_chunk_df = pd.DataFrame() # empty the chunk df 
 
         # complete the script run
         self.logger.info(f"\n ... ENDING RUN. There are {record_count} records with github stats, out of {total_records} records in total; saved out to {write_out_extra_info}.")
