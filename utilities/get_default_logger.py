@@ -21,7 +21,7 @@ def get_default_logger(console: bool, set_level_to='INFO', log_name="logs/functi
     except ValueError as e:
         raise ValueError(f"set_level_to value '{set_level_to}' not recognised; select one of 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'.")
     
-    logger = logging.getLogger('coding-smart-logger')
+    logger = logging.getLogger(log_name)
     fh = logging.FileHandler(log_name)
     fh.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s:%(message)s')
@@ -43,6 +43,6 @@ def get_default_logger(console: bool, set_level_to='INFO', log_name="logs/functi
         logger.setLevel(logging.WARNING)
     elif set_level_to == 'ERROR':
         logger.setLevel(logging.ERROR)
-    logger.propagate = False
+    #logger.propagate = False
 
     return logger
