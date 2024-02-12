@@ -355,10 +355,12 @@ class RepoStatsSummariser:
 
         else: 
             repo_stats.update({"issues_enabled": None})
+            repo_stats.update({"repo_is_fork": None})
             repo_stats.update({"devs": None})
             repo_stats.update({"total_commits_last_year": None})
             repo_stats.update({"has_PRs": None})
             repo_stats.update({"last_PR_update": None})
+            repo_stats.update({"open_tickets": None})
             repo_stats.update({"closed_tickets": None})
             repo_stats.update({"repo_age_days": None})
             repo_stats.update({"repo_license": None})
