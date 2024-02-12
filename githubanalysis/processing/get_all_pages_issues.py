@@ -3,7 +3,7 @@ import pandas as pd
 import githubanalysis.processing.get_repo_connection as ghconnect
 
 
-def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, issue_state='all', verbose=True):
+def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, issue_state='all'):
     """
     Obtains all fields of data from all pages for a given github repo `repo_name`.
     :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
@@ -24,10 +24,11 @@ def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per
     TODO.
     """
 
-    repo_con = ghconnect.get_repo_connection(repo_name, config_path, per_pg, verbose=False)  # create gh repo object to given repo
+    repo_con = ghconnect.get_repo_connection(repo_name, config_path)
+    repo_con = repo_con.json()  # create gh repo object to given repo
     # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
 
-    if hasattr(repo_con, 'has_issues') is False:
+    if repo_con.get('has_issues') != True:
         raise AttributeError(f'GitHub repository {repo_name} does not have issues enabled.')
 
     store_pgs = []
