@@ -131,7 +131,10 @@ $ cd clonezone/coding-smart
 ```
 (Do any git pulls here to get latest content, check branch etc.)
 
+
 2) Get Zenodo record IDs to query  
+![get_software_ids.py](docs/coding-smart-get_software_ids.jpg)
+
 ```
 # get N software record IDs from Zenodo:  
 $ python zenodocode/get_software_ids.py 2500   
@@ -140,7 +143,9 @@ Input: number of software record IDs to return from Zenodo
 Output: csv file of software record IDs: `data/zenodo_ids_xN_YYYY-MM-DD.csv`
 Logging: `logs/get_software_ids_logs.txt` 
 
+
 3) Get metadata for Zenodo IDs, grab all GitHub URLs 
+![get_gh_urls.py](docs/coding-smart-get_gh_urls.jpg)
 ```
 # get github URLs for the zenodo IDs (results in <2500 records since not all have github repos...):
 $ python zenodocode/get_gh_urls.py data/zenodo_ids_x2500_2024-02-08.csv   
@@ -149,7 +154,9 @@ Input: csv file of Zenodo software IDs
 Output: csv file of Github URLs and their Zenodo software record IDs: `data/gh_urls_YYYY-MM-DD.csv`
 Logging: `logs/get_gh_urls_logs.txt` 
 
-4) Create a 'todo' file of GitHub repo names from URLs and collate data gathering info  
+
+4) Create a 'todo' file of GitHub repo names from URLs and collate data gathering info 
+![create_todo_file.py](docs/coding-smart-create_todo_file.jpg) 
 ```
 $ python githubanalysis/processing/create_todo_file.py data/gh_urls_2024-02-08.csv  
 ```
@@ -157,7 +164,9 @@ Input: csv file of Zenodo IDs and GitHub URLs
 Output: csv 'todo' file with repo names, Github URLs, Zenodo IDs and various data gathering task statuses per repo: `data/todo_YYYY-MM-DD.csv`
 Logging: `logs/create_todo_file_logs.txt` 
 
+
 5) Process 'todo' file, get stats for each repo and writing out in blocks of 10  
+![gather_gh_stats.py](docs/coding-smart-gather_gh_stats.jpg)
 ```
 $ python githubanalysis/processing/gather_gh_stats.py data/todo_2024-02-08.csv  
 ```
