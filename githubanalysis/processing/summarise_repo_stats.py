@@ -255,7 +255,7 @@ class RepoStatsSummariser:
                             open_issues = int(issue_links_last)
                             repo_stats.update({"open_tickets": open_issues})    
                         else: 
-                            open_issues = 1
+                            open_issues = 0
                             repo_stats.update({"open_tickets": open_issues})
                 else:
                     open_issues = 0
@@ -282,7 +282,7 @@ class RepoStatsSummariser:
                             closed_issues = int(issue_links_last)
                             repo_stats.update({"closed_tickets": closed_issues})    
                         else: 
-                            closed_issues = 1
+                            closed_issues = 0
                             repo_stats.update({"closed_tickets": closed_issues})
                 else:
                     closed_issues = 0
@@ -311,7 +311,9 @@ class RepoStatsSummariser:
             # get license type
             try: 
                 license_type = repo_con.get('license')
-                license_type = repo_con.get('spdx_id')
+                
+                if license_type is not None: 
+                    license_type = license_type['spdx_id']
             
                 repo_stats.update({"repo_license": license_type})
                 self.logger.debug(f"Repo license type is {repo_stats.get('repo_license')}.")
@@ -321,20 +323,16 @@ class RepoStatsSummariser:
 
             # is repo accessible?
             try:
-                if hasattr(repo_con, 'private'):  # this only checks repo_con HAS the attribute, not if T/F!
-                    if repo_con.private is False:
-                        repo_visibility = True  # if private = false, it's visible :)
-                    else:
-                        repo_visibility = False # if private is true, it's NOT visible
+                repo_vis = repo_con.get('visibility')
+                if repo_vis == 'public':
+                    repo_visibility = True 
                 else:
-                    repo_visibility = False
-                    #raise AttributeError(f'GitHub repository {repo_name} is private.')
-
+                    repo_visibility = False 
                 repo_stats.update({"repo_visibility": repo_visibility})
-                self.logger.debug(f"Repo visibility is {repo_stats.get('repo_visibility')}.")
+                self.logger.debug(f"Repo visibility (~publicness) is {repo_stats.get('repo_visibility')}.")
 
             except Exception as e_visibility:
-                self.logger.error(f"Error in checking visibility of repo at {repo_name} with config path {config_path}: {e_visibility}.")
+                self.logger.error(f"Error in checking visibility of repo at {repo_name} with config path {config_path} - repo_con.get('visibility' returns {repo_con.get('visibility')} :{e_visibility}.")
 
             # does repo contain code
             try: 
