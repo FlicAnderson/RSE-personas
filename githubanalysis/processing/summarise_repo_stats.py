@@ -92,16 +92,29 @@ class RepoStatsSummariser:
                 
             try: 
             # issue tickets enabled y/n:
-                if hasattr(repo_con, 'has_issues') is False:
-                    self.logger.debug(f'GitHub repository {repo_name} does not have issues enabled.')
-                    repo_stats.update({"issues_enabled": False})
+                if repo_con.get('has_issues'):
+                    repo_stats.update({"issues_enabled": repo_con.get('has_issues')})
                 else:
-                    repo_stats.update({"issues_enabled": True})
+                    self.logger.debug(f'GitHub repository {repo_name} does not have issues enabled.')
+                    repo_stats.update({"issues_enabled": repo_con.get('has_issues')})
+
                 self.logger.debug(f"Repo issues enabled is {repo_stats.get('issues_enabled')}")
             except Exception as e_tixenabled: 
-                self.logger.error(f"Error in checking issues enabled with with repo name {repo_name} and config path {config_path}: {e_tixenabled}.")
+                self.logger.error(f"Error in checking issues enabled with repo name {repo_name} and config path {config_path}: {e_tixenabled}.")
 
             # get stats:
+
+            # is the repo a fork of something else?     
+            try: 
+                repo_con.get('fork')
+                if repo_con.get('fork'): 
+                    repo_stats.update({"repo_is_fork": repo_con.get('fork')})
+                else: 
+                    repo_stats.update({"repo_is_fork": repo_con.get('fork')})
+                self.logger.debug(f"Repo is a fork: {repo_stats.get('repo_is_fork')}")
+            except Exception as e_fork: 
+                self.logger.debug(f"Error in checking whether repo is a fork at repo name {repo_name} and config path {config_path}: {e_fork}.")
+                    
 
             # count number of devs (contributors; including anonymous contribs* )
             try: 
@@ -226,27 +239,60 @@ class RepoStatsSummariser:
             except Exception as e_PRs: 
                 self.logger.error(f"Error in checking commits in last year at {repo_name} and config path {config_path}: {e_PRs}. API response: {api_response}")
 
+            
+            # count open issue tickets
+            try: 
+                if repo_con.get('has_issues'):
+                    state='open'
+                    issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
+
+                    api_response = s.get(url=issues_url, headers=headers)
+
+                    if api_response.ok:
+                        issue_links = api_response.links
+                        if 'last' in issue_links:
+                            issue_links_last = issue_links['last']['url'].split("&page=")[1]
+                            open_issues = int(issue_links_last)
+                            repo_stats.update({"open_tickets": open_issues})    
+                        else: 
+                            open_issues = 1
+                            repo_stats.update({"open_tickets": open_issues})
+                else:
+                    open_issues = 0
+                    repo_stats.update({"open_tickets": open_issues})
+
+                repo_stats.update({"open_tickets": open_issues})
+                self.logger.debug(f"Repo number of open issue tickets is {repo_stats.get('open_tickets')}.")
+            except Exception as e_opentix: 
+                self.logger.error(f"Error in checking open issue numbers at {repo_name} and config path {config_path}: {e_opentix}.")            
+            
+            
             # count closed issue tickets
             try: 
-                if hasattr(repo_con, 'has_issues') is True:
+                if repo_con.get('has_issues'):
+                    state='closed'
+                    issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
 
-                    closed_issues = getallissues.get_all_pages_issues(
-                        repo_name=repo_name,
-                        config_path=config_path,
-                        per_pg=100,
-                        issue_state='closed',
-                        verbose=False
-                    )  # get closed issues from all pages for given repo
+                    api_response = s.get(url=issues_url, headers=headers)
 
-                    closed_issues = closed_issues.shape[0]  # get number; discard df (works even if 0 closed issues)
+                    if api_response.ok:
+                        issue_links = api_response.links
+                        if 'last' in issue_links:
+                            issue_links_last = issue_links['last']['url'].split("&page=")[1]
+                            closed_issues = int(issue_links_last)
+                            repo_stats.update({"closed_tickets": closed_issues})    
+                        else: 
+                            closed_issues = 1
+                            repo_stats.update({"closed_tickets": closed_issues})
                 else:
                     closed_issues = 0
-                    #raise AttributeError(f'GitHub repository {repo_name} does not have issues enabled.')
+                    repo_stats.update({"closed_tickets": closed_issues})
 
                 repo_stats.update({"closed_tickets": closed_issues})
-                self.logger.debug(f"Repo number of closed tickets is {repo_stats.get('closed_tickets')}.")
+                self.logger.debug(f"Repo number of closed issue tickets is {repo_stats.get('closed_tickets')}.")
             except Exception as e_closedtix: 
-                self.logger.error(f"Error in checking closed issue numbers at {repo_name} and config path {config_path}: {e_closedtix}.")
+                self.logger.error(f"Error in checking closed issue numbers at {repo_name} and config path {config_path}: {e_closedtix}.")  
+
 
             try:
             # get age of repo
