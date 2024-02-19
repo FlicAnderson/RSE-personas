@@ -1,78 +1,192 @@
 """ Get all data from all pages of issues for a GitHub repo."""
+import sys
+import os
 import pandas as pd
+import datetime
+from datetime import datetime
+from datetime import timezone
+import requests
+from requests.adapters import HTTPAdapter, Retry
+import logging
+
+import utilities.get_default_logger as loggit
+import githubanalysis.processing.setup_github_auth as ghauth
 import githubanalysis.processing.get_repo_connection as ghconnect
+import githubanalysis.processing.repo_name_clean as name_clean
 
 
-def get_all_pages_issues(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, issue_state='all'):
-    """
-    Obtains all fields of data from all pages for a given github repo `repo_name`.
-    :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
-    :type: str
-    :param config_path: file path of config.cfg file. Default=githubanalysis/config.cfg'.
-    :type: str
-    :param per_pg: number of items per page in paginated API requests. Default=100, overwrites GitHub default 30.
-    :type: int
-    :param issue_state: one of 'open', 'closed' or 'all'. GitHub issue API status options. Default: 'all'
-    :type: str
-    :param verbose: whether to print out issue data dimensions and counts. Default: True
-    :type: bool
-    :returns: `all_issues` pd.DataFrame containing 30 fields per issue for given repo `repo_name`.
-    :type: DataFrame
-
-    Examples:
-    ----------
-    TODO.
-    """
-
-    repo_con = ghconnect.get_repo_connection(repo_name, config_path)
-    repo_con = repo_con.json()  # create gh repo object to given repo
-    # contains:  #ghlink = ghauth.setup_github_auth() with config path default to '../config' & per_page=100
-
-    if repo_con.get('has_issues') != True:
-        raise AttributeError(f'GitHub repository {repo_name} does not have issues enabled.')
-
-    store_pgs = []
-
-    # without `state='all'` you only get open issues.
-    for page in repo_con.get_issues(state=issue_state):
-        store_pgs.append(page._rawData)
-        # this is currently 'access to a protected member _rawData of a class'... :s
+class IssueGetter: 
     
-    # handle empty (ie no closed issues case); return empty df
-    if len(store_pgs) == 0: 
+    # if not given a better option, use my default settings for logging
+    logger: logging.Logger
+    def __init__(self, logger: logging.Logger = None) -> None:
+        if logger is None:
+            self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_all_pages_issues_logs.txt')
+        else:
+            self.logger = logger
+
+    def get_all_pages_issues(self, repo_name, config_path='githubanalysis/config.cfg', out_filename='all-issues', write_out_location='data/', issue_state='all'):
+        """
+        Obtains all fields of data from all pages for a given github repo `repo_name`.
+        :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
+        :type: str
+        :param config_path: file path of config.cfg file. Default=githubanalysis/config.cfg'.
+        :type: str
+        :param out_filename: filename suffix indicating issues content (Default: 'issues') 
+        :type: str
+        :param: write_out_location: path of location to write file out to (Default: 'data/')
+        :type: str
+        :param issue_state: one of 'open', 'closed' or 'all'. GitHub issue API status options. Default: 'all'
+        :type: str
+        :returns: `all_issues` pd.DataFrame containing 30 fields per issue for given repo `repo_name`.
+        :type: DataFrame
+
+        Examples:
+        ----------
+        TODO.
+        """
+
+        # write-out file setup     
+        # get date for generating extra filename info
+        current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
+        sanitised_repo_name = repo_name.replace("/", "-")
+        write_out = f'{write_out_location}{out_filename}_{sanitised_repo_name}'
+        write_out_extra_info = f"{write_out}_{current_date_info}.csv"  
+
+        # get auth string 
+        gh_token = ghauth.setup_github_auth(config_path=config_path)
+        headers = {'Authorization': 'token ' + gh_token}
+
+        s = requests.Session()
+        retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+
+        self.logger.debug(f"Repo name is {repo_name}. Getting issues.")
+
+        # create empty df to store issues data
         all_issues = pd.DataFrame()
-    # handle case with closed issues...
-    else: 
-        # store_pgs holds items in list.
-           # Can pull items out using indices e.g. url of 'first' issue: store_pgs[0]['url']
 
-        if verbose:
-            print("Total responses:", len(store_pgs))
+        # count open issue tickets
+        try:    
+            page = 1 # try first page only
+            state=issue_state
+            pulls=False # DO NOT include PRs here
+            issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=100&pulls={pulls}&page={page}"
+                # per_page=30 by default on GH, set to max
+                # default of 'state' is 'open' issues only
 
-        all_issues = pd.DataFrame(store_pgs)
+            api_response = s.get(url=issues_url, headers=headers)
 
-        if verbose:
-            print("Shape of data:", all_issues.shape)
-            print("Issue state counts:", all_issues.state.value_counts())
+        except Exception as e_connect:
+            if api_response.status_code == 404: 
+                self.logger.error(f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?")
+            self.logger.error(f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}.") 
 
-        # check all important columns are present in the df.
-        wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
-                    'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
-        try:
-            assert all(item in all_issues.columns for item in wanted_cols)
-        except AssertionError as err:
-            print(f"column {[x for x in all_issues.columns if x not in wanted_cols]} not present in all_issues df; {err}")
+        if api_response.status_code != 404:     
+            self.logger.debug(f"Getting issues for repo {repo_name}.")
 
-        all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
-                                                format='%Y-%m-%dT%H:%M:%S%Z')
-        all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
-                                                format='%Y-%m-%dT%H:%M:%S%Z')
+            issue_links = api_response.links
+            store_pg = pd.DataFrame()
+            pg_count = 0
 
-        all_issues['repo_name'] = repo_name
+            try: 
+                if 'last' in issue_links:
+                    issue_links_last = issue_links['last']['url'].split("&page=")[1]
+                    pages_issues = int(issue_links_last)
 
-    return all_issues
+                    pg_range = range(1, (pages_issues+1))
 
-    # relevant fields: 'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
-    # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url',
-    # ... 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
+                    for i in pg_range: 
+                        pg_count += 1
+                        self.logger.debug(f">> Running issue grab for repo {repo_name}, in page {pg_count} of {pages_issues}.")
+                        store_pg = pd.read_json(path_or_buf=f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=100&pulls={pulls}&page={i}")
+                        
+                        if len(store_pg.index) > 0:
+                             # write out 'completed' page of issues as df to csv via APPEND (use added date filename with reponame inc)
+                            store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
+                            all_issues = pd.concat([all_issues, store_pg], ) # append this page (df) to main issues df
+                        store_pg = pd.DataFrame() # empty the df of last page
 
+                else: # there's no next page, grab all on this page and proceed.
+                    pg_count += 1
+                    self.logger.debug(f"getting json via request url {issues_url}.")
+                    store_pg = pd.read_json(path_or_buf=issues_url)
+                    all_issues = store_pg
+                     # write out the page content to csv via APPEND (use added date filename)
+                    all_issues.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
+                
+                self.logger.debug(f"Total number of issues grabbed is {len(all_issues.index)} in {pg_count} page(s).")
+                self.logger.debug(f"Issues data written out to file for repo {repo_name} at {write_out_extra_info}.")
+
+
+            except Exception as e_issues:
+                self.logger.error(f"Something failed in getting issues for repo {repo_name}: {e_issues}")
+                
+        
+        # # handle empty (ie no closed issues case); return empty df
+        # if len(store_pg) == 0: 
+        #     all_issues = pd.DataFrame()
+        # # handle case with closed issues...
+        # else: 
+        #     # store_pgs holds items in list.
+        #     # Can pull items out using indices e.g. url of 'first' issue: store_pgs[0]['url']
+
+        #     print("Total responses:", len(store_pg))
+
+        #     all_issues = pd.DataFrame(store_pg)
+
+        #     print("Shape of data:", all_issues.shape)
+        #     print("Issue state counts:", all_issues.state.value_counts())
+
+        #     # check all important columns are present in the df.
+        #     wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
+        #                 'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
+        #     try:
+        #         assert all(item in all_issues.columns for item in wanted_cols)
+        #     except AssertionError as err:
+        #         print(f"column {[x for x in all_issues.columns if x not in wanted_cols]} not present in all_issues df; {err}")
+
+        #     all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
+        #                                             format='%Y-%m-%dT%H:%M:%S%Z')
+        #     all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
+        #                                             format='%Y-%m-%dT%H:%M:%S%Z')
+
+        #     all_issues['repo_name'] = repo_name
+
+        return all_issues
+
+        # relevant fields: 'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
+        # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url',
+        # ... 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
+
+
+
+# this bit
+if __name__ == "__main__":
+    """
+    get issues for specific GH repo. 
+    gather into df 
+    (TODO: writeout to csv)
+    """
+    logger = loggit.get_default_logger(console=True, set_level_to='DEBUG', log_name='logs/get_all_pages_issues_logs.txt')
+
+    issues_getter = IssueGetter(logger)
+
+    if len(sys.argv) == 2:
+        repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
+    else:
+        raise IndexError('Please enter a repo_name.')
+
+    if 'github' in repo_name:
+        repo_name = name_clean.repo_name_clean(repo_name)
+
+    issues_df = pd.DataFrame()
+
+    try: 
+        issues_df = issues_getter.get_all_pages_issues(repo_name=repo_name, config_path='githubanalysis/config.cfg')
+        if len(issues_df) != 0:
+            logger.info(f"Number of issues returned for repo {repo_name} is {len(issues_df.index)}.")
+        else:
+            logger.warning("Getting issues did not work, length of returned records is zero.")
+    except Exception as e:
+        logger.error(f"Exception while running get_all_pages_issues() on repo {repo_name}: {e}")
