@@ -29,7 +29,7 @@ class RepoStatsSummariser:
         else:
             self.logger = logger
 
-    def summarise_repo_stats(self, repo_name, config_path='githubanalysis/config.cfg', per_pg=1, verbose=True):
+    def summarise_repo_stats(self, repo_name, config_path='githubanalysis/config.cfg'):
         """
         Connect to given GitHub repository and get details
         when given 'username' and 'repo_name' repository name.
@@ -41,21 +41,17 @@ class RepoStatsSummariser:
         :type: str
         :param config_path: file path of config.cfg file containing GitHub Access Token. Default = 'githubanalysis/config.cfg'.
         :type: str
-        :param per_pg: number of items per page in paginated API requests. Default = 100, overwrites GitHub default 30.
-        :type: int
-        :param verbose: return status info. Default: True
-        :type: bool
         :returns: repo_stats: dictionary w/ keys: "repo_name", "devs", "total_commits", "tickets", "last_commit", "repo_age_days",
         ... "repo_license", "repo_visibility", "repo_language".
         :type: dict
 
         Examples:
         ----------
-        >>> summarise_repo_stats(repo_name='riboviz/riboviz', per_pg=100, verbose=True)
+        >>> summarise_repo_stats(repo_name='riboviz/riboviz')
         TODO
         """
 
-        # get auth string #### CONTINUE HERE 
+        # get auth string
         gh_token = ghauth.setup_github_auth(config_path=config_path)
         headers = {'Authorization': 'token ' + gh_token}
 
@@ -393,7 +389,7 @@ if __name__ == "__main__":
     output_stats = {}
     # run summarise_repo_stats() on repo_name.
     try: 
-        output_stats = repo_summariser.summarise_repo_stats(repo_name=repo_name, config_path='githubanalysis/config.cfg', per_pg=1, verbose=True)
+        output_stats = repo_summariser.summarise_repo_stats(repo_name=repo_name, config_path='githubanalysis/config.cfg')
         logger.info(f"Stats for repo {repo_name} summarised as: {output_stats}.")
     except Exception as e: 
         logger.error(f"Exception while running summarise_repo_stats(): {e}")
