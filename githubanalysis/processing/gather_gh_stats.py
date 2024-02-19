@@ -133,7 +133,7 @@ if __name__ == "__main__":
     total_stats = pd.DataFrame()
     try: 
         current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
-        gh_stats_file = "data/gh_urls"
+        gh_stats_file = "data/gh_stats"
         gh_stats_file_extra_info = f"{gh_stats_file}_{current_date_info}.csv"
         total_stats = pd.read_csv(gh_stats_file_extra_info, header=0)
     except Exception as e: 
