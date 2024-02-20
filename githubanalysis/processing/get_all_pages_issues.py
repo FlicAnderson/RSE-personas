@@ -91,7 +91,7 @@ class IssueGetter:
         try:    
             page = 1 # try first page only
             state=issue_state
-            pulls=False # DO NOT include PRs here
+            pulls=True # DO NOT include PRs here
             issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=100&pulls={pulls}&page={page}"
                 # per_page=30 by default on GH, set to max
                 # default of 'state' is 'open' issues only
