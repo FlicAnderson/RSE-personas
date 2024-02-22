@@ -125,8 +125,10 @@ class IssueGetter:
                         json_pg = api_response.json()
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
-                        
+                                                
                         if len(store_pg.index) > 0:
+                            store_pg['assigned_devs'] = store_pg[['assignees']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
+                            store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                         
                              # write out 'completed' page of issues as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                             all_issues = pd.concat([all_issues, store_pg], ) # append this page (df) to main issues df
@@ -145,6 +147,7 @@ class IssueGetter:
                 self.logger.debug(f"Issues data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
                 self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
+                self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
 
             except Exception as e_issues:
                 self.logger.error(f"Something failed in getting issues for repo {repo_name}: {e_issues}")
@@ -201,6 +204,7 @@ if __name__ == "__main__":
         if len(issues_df) != 0:
             logger.info(f"Number of issues returned for repo {repo_name} is {len(issues_df.index)}.")
             logger.info(f"There are {issues_df.state.value_counts().open} open issues (~{round(issues_df.state.value_counts(normalize=True).open*100)}%) and {issues_df.state.value_counts().closed} closed issues (~{round(issues_df.state.value_counts(normalize=True).closed*100)}%).")
+            logger.info(f"There are {issues_df['is_PR'].value_counts()[False]} issue tickets (~{round(issues_df['is_PR'].value_counts(normalize=True)[False]*100)}%) and {issues_df['is_PR'].value_counts()[True]} pull requests (~{round(issues_df['is_PR'].value_counts(normalize=True)[True]*100)}%).")
         else:
             logger.warning("Getting issues did not work, length of returned records is zero.")
     except Exception as e:
