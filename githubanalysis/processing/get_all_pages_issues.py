@@ -198,6 +198,7 @@ if __name__ == "__main__":
         repo_name = name_clean.repo_name_clean(repo_name)
 
     issues_df = pd.DataFrame()
+    
     # run the main function to get the issues!
     try: 
         issues_df = issues_getter.get_all_pages_issues(repo_name=repo_name, config_path='githubanalysis/config.cfg')
