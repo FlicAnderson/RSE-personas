@@ -10,7 +10,6 @@ import logging
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.processing.repo_name_clean as name_clean
 
 
@@ -48,7 +47,11 @@ class DevsGetter:
 
             self.logger.info(f"Using commandline argument {repo_name} as repo name to retrieve GH contributors for. Entered as: {sys.argv[1]}")
         else: 
-            self.logger.debug(f"Repo name is {repo_name}. Getting contributors.")
+            try:
+                repo_name = repo_name
+                self.logger.debug(f"Repo name to get contributors from is {repo_name}.")
+            except: 
+                raise IndexError('Please enter a repo_name.')
         
         #set up writeout file
         current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
@@ -89,9 +92,9 @@ class DevsGetter:
             contributors_links = api_response.links
             store_pg = pd.DataFrame()
             pg_count = 0
-
+            
         #handle pages and set up conditional loop
-            try: 
+            try: #get contributors data from page
                 if 'last' in contributors_links:
                     contributors_links_last = contributors_links['last']['url'].split("&page=")[1]
                     pages_contributors = int(contributors_links_last)
@@ -108,10 +111,10 @@ class DevsGetter:
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
                         if len(store_pg.index) > 0:
-                            # store_pg['assigned_devs'] = store_pg[['assignees']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
-                            # store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                         
-                             # write out 'completed' page of contributors as df to csv via APPEND (use added date filename with reponame inc)
+                            #store_pg['login'] = store_pg['login'].replace(to_replace=r'^\s*$', value='Anonymous', regex=True)  # if login is empty, this is likely due to Anonymous user. Fill with 'Anonymous'                         
+                            # write out 'completed' page of contributors as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
+                            #append to storage df
                             contributors_df = pd.concat([contributors_df, store_pg], ) # append this page (df) to main contributors df
                         store_pg = pd.DataFrame() # empty the df of last page
                 
@@ -120,31 +123,27 @@ class DevsGetter:
                     self.logger.debug(f"getting json via request url {contributors_url}.")
                     json_pg = api_response.json()
                     store_pg = pd.DataFrame.from_dict(json_pg)
+                    #store_pg['login'] = store_pg['login'].replace(to_replace=r'^\s*$', value='Anonymous', regex=True)  # if login is empty, this is likely due to Anonymous user. Fill with 'Anonymous'                         
                     contributors_df = store_pg
-                     # write out the page content to csv via APPEND (use added date filename)
+                    # write out the page content to csv via APPEND (use added date filename)
                     contributors_df.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                 
-                self.logger.debug(f"Total number of contributors grabbed is {len(contributors_df.index)} in {pg_count} page(s).")
-                self.logger.debug("ADDITIONAL LOGGING STATS ABOUT CONTRIBUTORS")
+                self.logger.info(f"Total number of contributors grabbed is {len(contributors_df.index)} in {pg_count} page(s).")
+                self.logger.info(f"There are {contributors_df['login'].isna().sum()} anonymous contributors for repo {repo_name}.")
 
             except Exception as e_contributors:
                 self.logger.error(f"Something failed in getting contributors for repo {repo_name}: {e_contributors}")
-        
+
+            #deal with anonymous contributors; announce cases where it's over 500 folks (API case)
+            if contributors_df['login'].isna().sum() > 499:
+                self.logger.warning(f"There are 500+ ({contributors_df['login'].isna().sum()})contributors in repo {repo_name}; GH only lists 500 users fully, the rest will be shown as anonymous (see https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors).")
+
+            #return contributors storage df repo_devs
+            # contributors_df.contributions column =  commits per contributor in descending order. 
             return contributors_df
+
+
         
-        #get contributors.login data from page
-
-        #deal with anonymous contributors; announce cases where it's over 500 folks (API case)
-
-        #append to storage df
-
-        #write out to csv
-
-        #handle any other pages
-
-        #return contributors storage df repo_devs
-
-
 # this bit
 if __name__ == "__main__":
     """
@@ -169,11 +168,13 @@ if __name__ == "__main__":
     
     # run the main function to get the devs!
     try:
-        contributors_df = devs_getter.get_repo_contributors()
+        contributors_df = devs_getter.get_repo_contributors(repo_name, config_path='githubanalysis/config.cfg', out_filename='contributors', write_out_location='data/')
         if len(contributors_df) != 0: 
-            logger.info("OUTPUT MESSAGE")
+            logger.info("Running get_repo_contributors() has run successfully.")
+            #logger.info(f"Number of contributors returned for repo {repo_name} is {len(contributors_df.index)}.")
+            #logger.info(f"There are {contributors_df['login'].isna().sum()} anonymous contributors for repo {repo_name}.")
         else: 
-            logger.warning("WARNING MESSAGE")
+            logger.warning("Getting contributors did not work, length of returned records is zero.")
     except Exception as e: 
         logger.error(f"Exception while running get_repo_contributors() on repo {repo_name}: {e}")
 
