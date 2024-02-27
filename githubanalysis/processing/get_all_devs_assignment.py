@@ -41,6 +41,16 @@ class DevsAssigner:
         :returns: `devs_assignments_df` with key categories 'dev_name' and 'assignment', and assignment counts from issues dataset, as well as 'contributions' counts from contributor dataset.
         :type: pd.df
 
+        Example: 
+        $ python githubanalysis/processing/get_all_devs_assignment.py 'Dallinger/Dallinger' 'all-issues_Dallinger-Dallinger_2024-02-27' 'contributors_Dallinger-Dallinger_2024-02-27'
+
+        INFO:Number of devs given assignment category for repo Dallinger/Dallinger is 30.
+        INFO:Dev assignments: 
+        issues_and_PRs    12
+        neither           11
+        issues_only        4
+        PRs_only           3
+        Name: assignment, dtype: int64.
         """
 
                 # get repo_name from commandline if given (accept commandline input) 
@@ -202,7 +212,7 @@ if __name__ == "__main__":
         devs_assignments_df = devs_assigner.get_all_devs_assignment(repo_name=repo_name, issues_filename=issues_filename, contributors_filename=contributors_filename, read_in_location='data/', out_filename='devs-assignments', write_out_location='data/', config_path='githubanalysis/config.cfg')
         if len(devs_assignments_df) != 0:
             logger.info(f"Number of devs given assignment category for repo {repo_name} is {len(devs_assignments_df.index)}.")
-            logger.info(f"Dev assignments: {devs_assignments_df['assignment'].value_counts()}.")
+            logger.info(f"Dev assignments: \n{devs_assignments_df['assignment'].value_counts()}.")
         else:
             logger.warning("Getting all dev assignments did not work, length of returned records is zero.")
     except Exception as e:
