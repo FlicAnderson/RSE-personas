@@ -72,7 +72,7 @@ class DevsAssigner:
             except:
                 raise IndexError("Please enter a repo_name (NECCESSARY), issues_filename (optional) and contributors_filename (optional) all as 'quoted strings' separated by a space...")
 
-        print(f"{repo_name}; {issues_filename}; {contributors_filename}.")
+        #print(f"{repo_name}; {issues_filename}; {contributors_filename}.")
 
         # write-out file setup     
         # get date for generating extra filename info
@@ -84,7 +84,7 @@ class DevsAssigner:
         #check issues/PRs data file exists already; if not, get that.  
         try:
             issues_filepath = f"{read_in_location}{issues_filename}.csv"
-            print(issues_filepath)
+            #print(issues_filepath)
             try:
                 if os.path.isfile(issues_filename):
                     self.logger.debug("issues filepath seems to exist ok.")
