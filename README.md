@@ -265,5 +265,5 @@ TOTAL                                  17      7    59%
 #### Software License  
 Licensed under BSD 3-Clause "New" or "Revised" License. 
 
-The [tl;dr Legal summary of this license]https://www.tldrlegal.com/license/bsd-3-clause-license-revised) summarises this license as: 
+The [tl;dr Legal summary of this license](https://www.tldrlegal.com/license/bsd-3-clause-license-revised) summarises this license as: 
 >  The BSD 3-clause license allows you almost unlimited freedom with the software so long as you include the BSD copyright and license notice in it (found in Fulltext). 
