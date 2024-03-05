@@ -46,7 +46,7 @@ class DevsAssigner:
 
         INFO:Number of devs given assignment category for repo Dallinger/Dallinger is 30.
         INFO:Dev assignments: 
-        issues_and_PRs    12
+        both    12
         neither           11
         issues_only        4
         PRs_only           3
@@ -163,7 +163,7 @@ class DevsAssigner:
             (devs_assignments_df['PRs'] >=1) & (devs_assignments_df['issues'] == 0),
             (devs_assignments_df['PRs'] == 0) & (devs_assignments_df['issues'] == 0)
         ]
-        choices = ['issues_and_PRs','issues_only', 'PRs_only', 'neither']
+        choices = ['both','issues_only', 'PRs_only', 'neither']
         devs_assignments_df['assignment'] = np.select(conditions, choices, default='error')
 
         # remove non-named-dev entries from joined dataset  
@@ -173,7 +173,7 @@ class DevsAssigner:
         # make assignment a category datatype for easier future work (optional in script probably)
         devs_assignments_df['assignment'] = devs_assignments_df['assignment'].astype('category')
         # set the other categories so whole set is there if not present from data  
-        devs_assignments_df['assignment'].cat.set_categories(['issues_and_PRs','issues_only', 'PRs_only', 'neither'])
+        devs_assignments_df['assignment'].cat.set_categories(['both','issues_only', 'PRs_only', 'neither'])
 
         # change NaNs with no contributions (via join) to 0 to improve means and other stats  
         devs_assignments_df['contributions'] = devs_assignments_df['contributions'].fillna(0)
