@@ -100,7 +100,7 @@ class DevsGetter:
                     pages_contributors = int(contributors_links_last)
 
                     pg_range = range(1, (pages_contributors+1))
-                    
+                    self.logger.debug("has last pg")
                     for i in pg_range: 
                         pg_count += 1
                         self.logger.info(f">> Running contributors grab for repo {repo_name}, in page {pg_count} of {pages_contributors}.")
@@ -108,6 +108,7 @@ class DevsGetter:
                         api_response = s.get(url=contributors_query, headers=headers)
                         json_pg = api_response.json()
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
+                        self.logger.debug("stored_pg")
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
                         if len(store_pg.index) > 0:
@@ -116,17 +117,25 @@ class DevsGetter:
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                             #append to storage df
                             contributors_df = pd.concat([contributors_df, store_pg], ) # append this page (df) to main contributors df
+                            self.logger.debug("transferred to df")
                         store_pg = pd.DataFrame() # empty the df of last page
                 
                 else: # there's no next page, grab all on this page and proceed.
-                    pg_count += 1
-                    self.logger.debug(f"getting json via request url {contributors_url}.")
-                    json_pg = api_response.json()
-                    store_pg = pd.DataFrame.from_dict(json_pg)
-                    #store_pg['login'] = store_pg['login'].replace(to_replace=r'^\s*$', value='Anonymous', regex=True)  # if login is empty, this is likely due to Anonymous user. Fill with 'Anonymous'                         
-                    contributors_df = store_pg
-                    # write out the page content to csv via APPEND (use added date filename)
-                    contributors_df.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
+                    try: 
+                        pg_count += 1
+                        self.logger.debug(f"getting json via request url {contributors_url}.")
+                        json_pg = api_response.json()
+                        self.logger.debug("got json")
+                        self.logger.debug(json_pg)
+                        store_pg = pd.DataFrame.from_dict(json_pg)
+                        self.logger.debug("json to dict")
+                        #store_pg['login'] = store_pg['login'].replace(to_replace=r'^\s*$', value='Anonymous', regex=True)  # if login is empty, this is likely due to Anonymous user. Fill with 'Anonymous'                         
+                        contributors_df = store_pg
+                        # write out the page content to csv via APPEND (use added date filename)
+                        contributors_df.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
+                    except Exception as e_singlepg: 
+                        self.logger.error(f"Single page of contributors getting failed for repo {repo_name}: {e_singlepg}")
+                
                 
                 self.logger.info(f"Total number of contributors grabbed is {len(contributors_df.index)} in {pg_count} page(s).")
                 self.logger.info(f"There are {contributors_df['login'].isna().sum()} anonymous contributors for repo {repo_name}.")
