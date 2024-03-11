@@ -29,7 +29,7 @@ class RepoStatsSummariser:
         else:
             self.logger = logger
 
-    def summarise_repo_stats(self, repo_name, config_path='githubanalysis/config.cfg'):
+    def summarise_repo_stats(self, repo_name, config_path='githubanalysis/config.cfg', per_pg=1):
         """
         Connect to given GitHub repository and get details
         when given 'username' and 'repo_name' repository name.
@@ -47,7 +47,7 @@ class RepoStatsSummariser:
 
         Examples:
         ----------
-        >>> summarise_repo_stats(repo_name='riboviz/riboviz')
+        >>> summarise_repo_stats(repo_name='riboviz/riboviz', per_pg=100)
         TODO
         """
 
@@ -389,7 +389,7 @@ if __name__ == "__main__":
     output_stats = {}
     # run summarise_repo_stats() on repo_name.
     try: 
-        output_stats = repo_summariser.summarise_repo_stats(repo_name=repo_name, config_path='githubanalysis/config.cfg')
+        output_stats = repo_summariser.summarise_repo_stats(repo_name=repo_name, config_path='githubanalysis/config.cfg', per_pg=1)
         logger.info(f"Stats for repo {repo_name} summarised as: {output_stats}.")
     except Exception as e: 
         logger.error(f"Exception while running summarise_repo_stats(): {e}")
