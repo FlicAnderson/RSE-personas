@@ -25,7 +25,7 @@ class GhStatsGetter:
             self.logger = logger
 
 
-    def gather_gh_stats(self, config_path='githubanalysis/config.cfg', in_filename='todo', read_in_location='data/', out_filename='gh_stats', write_out_location='data/', verbose=True):
+    def gather_gh_stats(self, config_path='githubanalysis/config.cfg', in_filename='todo', read_in_location='data/', out_filename='gh_stats', write_out_location='data/'):
         """
         Read in csv of github repo names and their zenodo record IDs; 
         Get github stats for each repo; collate details. 
@@ -79,7 +79,7 @@ class GhStatsGetter:
                 #print(f">> Getting data for repo {repo}, in loop {loop_num}, which is repo {id_count} of {total_records}. <<<")
             
                 try: 
-                    repo_stats = RepoStatsSummariser.summarise_repo_stats(self, repo_name=repo, config_path=config_path, per_pg=1, verbose=True)
+                    repo_stats = RepoStatsSummariser.summarise_repo_stats(self, repo_name=repo, config_path=config_path, per_pg=1)
                     writeable_chunk.append(repo_stats)
                 except Exception as e_repo: 
                     self.logger.error(f"Something failed in getting stats for repo {repo}, in loop {loop_num}, which is repo {id_count} of {total_records}: {e_repo}")
