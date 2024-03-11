@@ -121,7 +121,7 @@ if __name__ == "__main__":
     gh_repos_df = pd.DataFrame()
     try: 
         # returns dataframe and saves to variable
-        gh_repos_df = stat_getter.gather_gh_stats(config_path='githubanalysis/config.cfg', in_filename='todo', read_in_location='data/', out_filename='gh_stats', write_out_location='data/', verbose=False)
+        gh_repos_df = stat_getter.gather_gh_stats(config_path='githubanalysis/config.cfg', in_filename='todo', read_in_location='data/', out_filename='gh_stats', write_out_location='data/')
         if len(gh_repos_df) != 0:
             logger.info("GitHub stats grab complete.")
         else: 
