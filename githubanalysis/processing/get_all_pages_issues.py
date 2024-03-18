@@ -154,7 +154,17 @@ class IssueGetter:
                 self.logger.debug(f"Total number of issues grabbed is {len(all_issues.index)} in {pg_count} page(s).")
                 self.logger.debug(f"Issues data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
-                self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
+                if all_issues['state'].nunique() > 1:
+                    self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
+                else: 
+                    if all_issues['state'][0] == 'closed': # if we have only closed, set open to 0
+                        self.logger.debug(f"There are 0 open issues (0%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
+                    elif all_issues['state'][0] == 'open': # do vice versa!    
+                        self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and 0 closed issues (0).")
+                    else:
+                    self.logger.error("Error in the 'state' column of issues df.")
+                    self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
+                
                 if sum(all_issues['is_PR']) >0:
                     self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
                 else:
