@@ -138,6 +138,7 @@ class IssueGetter:
                     pg_count += 1
                     self.logger.debug(f"getting json via request url {issues_url}.")
                     json_pg = api_response.json()
+                    self.logger.debug(f"Type of result of api_response.json() is {type(json_pg)}.")
                     store_pg = pd.DataFrame.from_dict(json_pg)
                     all_issues = store_pg
                      # write out the page content to csv via APPEND (use added date filename)
