@@ -138,7 +138,9 @@ class IssueGetter:
                     pg_count += 1
                     self.logger.debug(f"getting json via request url {issues_url}.")
                     json_pg = api_response.json()
-                    self.logger.debug(f"Type of result of api_response.json() is {type(json_pg)}.")
+                    if not json_pg: # check emptiness of result.
+                        self.logger.debug(f"Result of api_response.json() is empty list.")
+                        self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
                     store_pg = pd.DataFrame.from_dict(json_pg)
                     all_issues = store_pg
                      # write out the page content to csv via APPEND (use added date filename)
