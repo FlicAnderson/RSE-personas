@@ -142,6 +142,11 @@ class IssueGetter:
                         self.logger.debug(f"Result of api_response.json() is empty list.")
                         self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
                     store_pg = pd.DataFrame.from_dict(json_pg)
+
+                    if len(store_pg.index) > 0:
+                        store_pg['assigned_devs'] = store_pg[['assignees']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
+                        store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                      
+                    
                     all_issues = store_pg
                      # write out the page content to csv via APPEND (use added date filename)
                     all_issues.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
