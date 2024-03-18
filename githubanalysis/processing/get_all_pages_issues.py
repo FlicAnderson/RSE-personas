@@ -150,7 +150,10 @@ class IssueGetter:
                 self.logger.debug(f"Issues data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
                 self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
-                self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
+                if sum(all_issues['is_PR']) >0:
+                    self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
+                else:
+                    self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets and (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and 0 (0%) issues that are PRs.")
 
             except Exception as e_issues:
                 self.logger.error(f"Something failed in getting issues for repo {repo_name}: {e_issues}")
