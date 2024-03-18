@@ -127,8 +127,15 @@ class IssueGetter:
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
                         if len(store_pg.index) > 0:
-                            store_pg['assigned_devs'] = store_pg[['assignees']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
-                            store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                         
+                            store_pg['assigned_devs'] = store_pg[['assignees']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column 
+                            try:
+                                if 'pull_request' in store_pg.columns: 
+                                    store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                      
+                                else:
+                                    store_pg['is_PR'] = False
+                            except Exception as e_noPRs:
+                                self.logger.error(f"Error trying to generate additional boolean is_PR column from data: {e_noPRs}.") 
+                            
                              # write out 'completed' page of issues as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                             all_issues = pd.concat([all_issues, store_pg], ) # append this page (df) to main issues df
@@ -145,7 +152,13 @@ class IssueGetter:
 
                     if len(store_pg.index) > 0:
                         store_pg['assigned_devs'] = store_pg[['assignees']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
-                        store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                      
+                        try:
+                            if 'pull_request' in store_pg.columns: 
+                                store_pg['is_PR'] = store_pg['pull_request'].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.                      
+                            else:
+                                store_pg['is_PR'] = False
+                        except Exception as e_noPRs:
+                            self.logger.error(f"Error trying to generate additional boolean is_PR column from data: {e_noPRs}.")
                     
                     all_issues = store_pg
                      # write out the page content to csv via APPEND (use added date filename)
