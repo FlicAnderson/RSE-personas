@@ -162,8 +162,7 @@ class IssueGetter:
                     elif all_issues['state'][0] == 'open': # do vice versa!    
                         self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and 0 closed issues (0).")
                     else:
-                    self.logger.error("Error in the 'state' column of issues df.")
-                    self.logger.debug(f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%).")
+                        self.logger.error("Error in the 'state' column of issues df.")                    
                 
                 if sum(all_issues['is_PR']) >0:
                     self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
