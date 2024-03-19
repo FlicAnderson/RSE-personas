@@ -177,10 +177,15 @@ class IssueGetter:
                     else:
                         self.logger.error("Error in the 'state' column of issues df.")                    
                 
-                if sum(all_issues['is_PR']) >0:
+                if all_issues['is_PR'].nunique() > 1:
                     self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
                 else:
-                    self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets and (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and 0 (0%) issues that are PRs.")
+                    if all_issues['is_PR'][0] == False:
+                        self.logger.debug(f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets and (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and 0 (0%) issues that are PRs.")
+                    elif all_issues['is_PR'][0] == True:
+                        self.logger.debug(f"There are 0 issue tickets (0%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%).")
+                    else: 
+                        self.logger.error("Error in 'is_PR' field of issues df.")
 
             except Exception as e_issues:
                 self.logger.error(f"Something failed in getting issues for repo {repo_name}: {e_issues}")
