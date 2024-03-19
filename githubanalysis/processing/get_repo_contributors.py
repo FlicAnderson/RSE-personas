@@ -130,7 +130,7 @@ class DevsGetter:
                         store_pg = pd.DataFrame.from_dict(json_pg)
                         self.logger.debug("json to dict")
                         #store_pg['login'] = store_pg['login'].replace(to_replace=r'^\s*$', value='Anonymous', regex=True)  # if login is empty, this is likely due to Anonymous user. Fill with 'Anonymous'                         
-                        self.logger.debug(f"store_pg df contains columns: {store_pg.columns}; 'login' in store_pg df?: {'login' in }")
+                        self.logger.debug(f"store_pg df contains columns: {store_pg.columns}; 'login' in store_pg df?: {'login' in store_pg.columns}.")
                         contributors_df = store_pg
                         # write out the page content to csv via APPEND (use added date filename)
                         contributors_df.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
