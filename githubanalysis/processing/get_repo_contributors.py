@@ -130,6 +130,7 @@ class DevsGetter:
                         store_pg = pd.DataFrame.from_dict(json_pg)
                         self.logger.debug("json to dict")
                         #store_pg['login'] = store_pg['login'].replace(to_replace=r'^\s*$', value='Anonymous', regex=True)  # if login is empty, this is likely due to Anonymous user. Fill with 'Anonymous'                         
+                        self.logger.debug(f"store_pg df contains columns: {store_pg.columns}; 'login' in store_pg df?: {'login' in }")
                         contributors_df = store_pg
                         # write out the page content to csv via APPEND (use added date filename)
                         contributors_df.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
@@ -144,8 +145,12 @@ class DevsGetter:
                 self.logger.error(f"Something failed in getting contributors for repo {repo_name}: {e_contributors}")
 
             #deal with anonymous contributors; announce cases where it's over 500 folks (API case)
-            if contributors_df['login'].isna().sum() > 499:
-                self.logger.warning(f"There are 500+ ({contributors_df['login'].isna().sum()})contributors in repo {repo_name}; GH only lists 500 users fully, the rest will be shown as anonymous (see https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors).")
+            if 'login' in contributors_df.columns:
+                if contributors_df['login'].isna().sum() > 499:
+                    self.logger.warning(f"There are 500+ ({contributors_df['login'].isna().sum()})contributors in repo {repo_name}; GH only lists 500 users fully, the rest will be shown as anonymous (see https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors).")
+            else: 
+                self.logger.warning(f"There is no 'login' in contributors_df; {contributors_df.columns}; adding 'login' column and filling with NA values.")
+                contributors_df['login'] = pd.NA  # this will NOT differentiate between separate Anonymous devs  
 
             #return contributors storage df repo_devs
             # contributors_df.contributions column =  commits per contributor in descending order. 
