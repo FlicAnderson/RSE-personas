@@ -3,6 +3,7 @@
 import sys
 import os
 import pandas as pd
+import numpy as np
 import datetime
 from datetime import datetime
 from datetime import timezone
@@ -118,6 +119,7 @@ class CommitsGetter:
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
                                 store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
                                 store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                                store_pg['same_dev'] = np.where((store_pg['author_dev'] == store_pg['committer_dev']), True, False)
                             except Exception as e_pages: 
                                 self.logger.debug(f"There seems to be some issue: {e_pages}.")
 
@@ -142,6 +144,7 @@ class CommitsGetter:
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
                                 store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
                                 store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                                store_pg['same_dev'] = np.where((store_pg['author_dev'] == store_pg['committer_dev']), True, False)
                             except Exception as e_empty: 
                                 self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}.")
 
