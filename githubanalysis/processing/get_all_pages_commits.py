@@ -117,7 +117,7 @@ class CommitsGetter:
                                 store_pg['repo_name'] = repo_name
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
                                 store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
-                                #store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                                store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
                             except Exception as e_pages: 
                                 self.logger.debug(f"There seems to be some issue: {e_pages}.")
 
