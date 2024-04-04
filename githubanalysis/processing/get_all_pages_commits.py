@@ -104,14 +104,20 @@ class CommitsGetter:
                         commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={i}"
                         api_response = s.get(url=commits_query, headers=headers)
                         json_pg = api_response.json()
+                        if not json_pg: # check emptiness of result.
+                            self.logger.debug(f"Result of api_response.json() is empty list.")
+                            self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
                         if len(store_pg.index) > 0:
-                            store_pg['repo_name'] = repo_name
-                            store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                            store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
-                            store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                            try:
+                                store_pg['repo_name'] = repo_name
+                                store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
+                                #store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
+                                #store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                            except Exception as e_pages: 
+                                self.logger.debug(f"There seems to be some issue: {e_pages}.")
 
                             # write out 'completed' page of commits as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
@@ -132,8 +138,8 @@ class CommitsGetter:
                             try:
                                 store_pg['repo_name'] = repo_name
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                                store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
-                                store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                                # store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
+                                # store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
                             except Exception as e_empty: 
                                 self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}.")
 
