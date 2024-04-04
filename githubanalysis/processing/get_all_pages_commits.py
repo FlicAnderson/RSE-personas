@@ -106,9 +106,9 @@ class CommitsGetter:
                         self.logger.debug(f"Commits query for pg_count{pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
                         json_pg = api_response.json()
-                        #if not json_pg: # check emptiness of result.
-                        #    self.logger.debug(f"Result of api_response.json() is empty list.")
-                        #    self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
+                        if not json_pg: # check emptiness of result.
+                            self.logger.debug(f"Result of api_response.json() is empty list.")
+                            self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
