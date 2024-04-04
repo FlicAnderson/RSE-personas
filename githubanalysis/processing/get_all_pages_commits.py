@@ -136,7 +136,7 @@ class CommitsGetter:
                     all_commits.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                 
                 self.logger.debug(f"Total number of commits grabbed is {len(all_commits.index)} in {pg_count} page(s).")
-                self.logger.debug(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info}.")
+                self.logger.info(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
             except Exception as e_commits:
                 self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}")
