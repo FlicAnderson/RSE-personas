@@ -120,6 +120,9 @@ class CommitsGetter:
                                 store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
                                 store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
                                 store_pg['same_dev'] = np.where((store_pg['author_dev'] == store_pg['committer_dev']), True, False)
+                                store_pg['author_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('author').get('date') for x in x])
+                                store_pg['committer_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('committer').get('date') for x in x])
+                                store_pg['same_date'] = np.where((store_pg['author_date'] == store_pg['committer_date']), True, False)
                             except Exception as e_pages: 
                                 self.logger.debug(f"There seems to be some issue: {e_pages}.")
 
@@ -145,6 +148,9 @@ class CommitsGetter:
                                 store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
                                 store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
                                 store_pg['same_dev'] = np.where((store_pg['author_dev'] == store_pg['committer_dev']), True, False)
+                                store_pg['author_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('author').get('date') for x in x])
+                                store_pg['committer_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('committer').get('date') for x in x])
+                                store_pg['same_date'] = np.where((store_pg['author_date'] == store_pg['committer_date']), True, False)
                             except Exception as e_empty: 
                                 self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}.")
 
@@ -210,16 +216,3 @@ if __name__ == "__main__":
         assert  len(commits_df.index) == len(total_commits.index), f"WARNING! Lengths of returned df ({len(commits_df)}) vs df read in from file ({len(total_commits)}) DO NOT MATCH. Did you append too many records to the gh_urls file??"
     except AssertionError as e:
         logger.error(f"The outputs of running the function and reading back in data DO NOT MATCH; {e}")
-
-        # # get commit messages as new columns in df.
-        # #all_commits['commit_message'] = all_commits['commit'].apply(lambda x: [x.get('message') for x in x])
-
-        # # pull author info into username only `commit_author` column
-        # #all_commits['commit_author'] = all_commits[['author']].apply(lambda x: [x.get('login') for x in x])
-
-        # # convert dates/times w/ pd.to_datetime() if required
-        # #all_commits['commit_date_info'] = all_commits['commit'].apply(lambda x: [x.get('author') for x in x])
-        # #all_commits['commit_date'] = ['commit_date_info'].apply(lambda x: [x.get('date') for x in x])
-
-        # #all_commits['commit_date'] = pd.to_datetime(all_commits['commit_date'])
-        # #all_commits['commit_date'] = all_commits.commit_date.tz_localize(tz='UTC')
