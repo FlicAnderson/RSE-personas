@@ -85,6 +85,7 @@ class CommitsGetter:
 
         if api_response.status_code != 404:     
             self.logger.debug(f"Getting commits for repo {repo_name}.")
+            #self.logger.debug(f"{api_response}")
 
             commit_links = api_response.links
             store_pg = pd.DataFrame()
@@ -102,11 +103,12 @@ class CommitsGetter:
                         self.logger.info(f">> Running commit grab for repo {repo_name}, in page {pg_count} of {pages_commits}.")        
 
                         commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={i}"
+                        self.logger.debug(f"Commits query for pg_count{pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
                         json_pg = api_response.json()
-                        if not json_pg: # check emptiness of result.
-                            self.logger.debug(f"Result of api_response.json() is empty list.")
-                            self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
+                        #if not json_pg: # check emptiness of result.
+                        #    self.logger.debug(f"Result of api_response.json() is empty list.")
+                        #    self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
@@ -154,7 +156,7 @@ class CommitsGetter:
                 self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}")
 
         # reindex df and return;  written out data are NOT reindexed (partly to allow checking whether page is repeated, partly laziness D:)
-        all_commits = all_commits.reset_index(drop=True)  # reindex df; otherwise get indexes N x [0], N x [1] etc where N is number of pages of commits 
+        #all_commits = all_commits.reset_index(drop=True)  # reindex df; otherwise get indexes N x [0], N x [1] etc where N is number of pages of commits 
         return all_commits 
     
 
