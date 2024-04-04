@@ -139,9 +139,9 @@ class CommitsGetter:
                     if len(store_pg.index) > 0:
                             try:
                                 store_pg['repo_name'] = repo_name
-                                #store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                                # store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
-                                # store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
+                                store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
+                                store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
+                                store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
                             except Exception as e_empty: 
                                 self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}.")
 
