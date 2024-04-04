@@ -109,8 +109,6 @@ class CommitsGetter:
                                                 
                         if len(store_pg.index) > 0:
                             store_pg['repo_name'] = repo_name
-                            store_pg['author_dev'] = store_pg[['author']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
-                            store_pg['committer_dev'] = store_pg[['commiter']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
 
                             # write out 'completed' page of commits as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
@@ -130,8 +128,6 @@ class CommitsGetter:
                     if len(store_pg.index) > 0:
                             try:
                                 store_pg['repo_name'] = repo_name
-                                store_pg['author_dev'] = store_pg[['author']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
-                                store_pg['committer_dev'] = store_pg[['commiter']].applymap(lambda x: [x.get('login') for x in x])  # use detail from get_issue_assignees() to create new column  
                             except Exception as e_empty: 
                                 self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}.")
 
@@ -145,8 +141,6 @@ class CommitsGetter:
             except Exception as e_commits:
                 self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}")
 
-        # reindex df and return;  written out data are NOT reindexed (partly to allow checking whether page is repeated, partly laziness D:)
-        all_commits = all_commits.reset_index(drop=True)  # reindex df; otherwise get indexes N x [0], N x [1] etc where N is number of pages of commits 
         return all_commits 
     
 
