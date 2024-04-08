@@ -104,7 +104,7 @@ class CommitsGetter:
                         self.logger.info(f">> Running commit grab for repo {repo_name}, in page {pg_count} of {pages_commits}.")        
 
                         commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={i}"
-                        self.logger.debug(f"Commits query for pg_count{pg_count} is {commits_query}")
+                        self.logger.debug(f"Commits query for page {pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
                         json_pg = api_response.json()
                         if not json_pg: # check emptiness of result.
@@ -158,7 +158,7 @@ class CommitsGetter:
                     # write out the page content to csv via APPEND (use added date filename)
                     all_commits.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                 
-                self.logger.debug(f"Total number of commits grabbed is {len(all_commits.index)} in {pg_count} page(s).")
+                self.logger.info(f"Total number of commits grabbed is {len(all_commits.index)} in {pg_count} page(s).")
                 self.logger.info(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
             except Exception as e_commits:
