@@ -118,8 +118,8 @@ class CommitsGetter:
                             try:
                                 store_pg['repo_name'] = repo_name
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                                store_pg['author_dev'] = np.where((store_pg['author'].notnull()), "", 'Anonymous')  
-                                store_pg['committer_dev'] = np.where((store_pg['committer'].notnull()), "", 'Anonymous')
+                                store_pg['author_dev'] = store_pg['author'].str['login']   # via: @Mozway on SO: https://stackoverflow.com/a/71782066
+                                store_pg['committer_dev'] = store_pg['committer'].str['login'] # via: @Mozway on SO: https://stackoverflow.com/a/71782066
                                 store_pg['author_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('author').get('date') for x in x])
                                 store_pg['committer_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('committer').get('date') for x in x])
                                 store_pg['same_date'] = np.where((store_pg['author_date'] == store_pg['committer_date']), True, False)
@@ -145,8 +145,8 @@ class CommitsGetter:
                             try:
                                 store_pg['repo_name'] = repo_name
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                                store_pg['author_dev'] = np.where((store_pg['author'].notnull()), "", 'Anonymous')  
-                                store_pg['committer_dev'] = np.where((store_pg['committer'].notnull()), "", 'Anonymous')
+                                store_pg['author_dev'] = store_pg['author'].str['login']   # via: @Mozway on SO: https://stackoverflow.com/a/71782066
+                                store_pg['committer_dev'] = store_pg['committer'].str['login'] # via: @Mozway on SO: https://stackoverflow.com/a/71782066
                                 store_pg['author_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('author').get('date') for x in x])
                                 store_pg['committer_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('committer').get('date') for x in x])
                                 store_pg['same_date'] = np.where((store_pg['author_date'] == store_pg['committer_date']), True, False)
