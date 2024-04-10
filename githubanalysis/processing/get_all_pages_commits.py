@@ -10,6 +10,7 @@ from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
+import traceback
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
@@ -82,7 +83,7 @@ class CommitsGetter:
         except Exception as e_connect:
             if api_response.status_code == 404: 
                 self.logger.error(f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?")
-            self.logger.error(f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}.") 
+            self.logger.error(f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}. Traceback: {traceback.format_exc()}") 
 
         if api_response.status_code != 404:     
             self.logger.debug(f"Getting commits for repo {repo_name}.")
@@ -109,7 +110,7 @@ class CommitsGetter:
                         json_pg = api_response.json()
                         if not json_pg: # check emptiness of result.
                             self.logger.debug(f"Result of api_response.json() is empty list.")
-                            self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
+                            self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely. Traceback: {traceback.format_exc()}")
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
                                                 
@@ -117,14 +118,13 @@ class CommitsGetter:
                             try:
                                 store_pg['repo_name'] = repo_name
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                                store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
-                                store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
-                                store_pg['same_dev'] = np.where((store_pg['author_dev'] == store_pg['committer_dev']), True, False)
+                                store_pg['author_dev'] = np.where((store_pg['author'].notnull()), "", 'Anonymous')  
+                                store_pg['committer_dev'] = np.where((store_pg['committer'].notnull()), "", 'Anonymous')
                                 store_pg['author_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('author').get('date') for x in x])
                                 store_pg['committer_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('committer').get('date') for x in x])
                                 store_pg['same_date'] = np.where((store_pg['author_date'] == store_pg['committer_date']), True, False)
                             except Exception as e_pages: 
-                                self.logger.debug(f"There seems to be some issue: {e_pages}.")
+                                self.logger.debug(f"There seems to be some issue: {e_pages}. Traceback: {traceback.format_exc()}")
 
                             # write out 'completed' page of commits as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
@@ -138,21 +138,20 @@ class CommitsGetter:
                     json_pg = api_response.json()
                     if not json_pg: # check emptiness of result.
                         self.logger.debug(f"Result of api_response.json() is empty list.")
-                        self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
+                        self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely. Traceback: {traceback.format_exc()}")
                     store_pg = pd.DataFrame.from_dict(json_pg)
 
                     if len(store_pg.index) > 0:
                             try:
                                 store_pg['repo_name'] = repo_name
                                 store_pg['commit_message'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('message') for x in x])
-                                store_pg['author_dev'] = pd.DataFrame.from_dict(store_pg['author']).apply(lambda x: [x.get('login') for x in x])
-                                store_pg['committer_dev'] = pd.DataFrame.from_dict(store_pg['committer']).apply(lambda x: [x.get('login') for x in x])
-                                store_pg['same_dev'] = np.where((store_pg['author_dev'] == store_pg['committer_dev']), True, False)
+                                store_pg['author_dev'] = np.where((store_pg['author'].notnull()), "", 'Anonymous')  
+                                store_pg['committer_dev'] = np.where((store_pg['committer'].notnull()), "", 'Anonymous')
                                 store_pg['author_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('author').get('date') for x in x])
                                 store_pg['committer_date'] = pd.DataFrame.from_dict(store_pg['commit']).apply(lambda x: [x.get('committer').get('date') for x in x])
                                 store_pg['same_date'] = np.where((store_pg['author_date'] == store_pg['committer_date']), True, False)
                             except Exception as e_empty: 
-                                self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}.")
+                                self.logger.debug(f"There seem to be no commits on the only page of the query... {e_empty}. Traceback: {traceback.format_exc()}")
 
                     all_commits = store_pg
                     # write out the page content to csv via APPEND (use added date filename)
@@ -162,7 +161,7 @@ class CommitsGetter:
                 self.logger.info(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
             except Exception as e_commits:
-                self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}")
+                self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}. Traceback: {traceback.format_exc()}")
 
         # reindex df and return;  written out data are NOT reindexed (partly to allow checking whether page is repeated, partly laziness D:)
         #all_commits = all_commits.reset_index(drop=True)  # reindex df; otherwise get indexes N x [0], N x [1] etc where N is number of pages of commits 
@@ -199,7 +198,7 @@ if __name__ == "__main__":
         else:
             logger.warning("Getting commits did not work, length of returned records is zero.")
     except Exception as e:
-        logger.error(f"Exception while running get_all_pages_commits() on repo {repo_name}: {e}")
+        logger.error(f"Exception while running get_all_pages_commits() on repo {repo_name}: {e}. Traceback: {traceback.format_exc()}")
 
     # generate filename and try to read file in for comparison.
     total_commits = pd.DataFrame()
@@ -210,7 +209,7 @@ if __name__ == "__main__":
         commits_file_extra_info = f"{commits_file}_{sanitised_repo_name}_{current_date_info}.csv"
         total_commits = pd.read_csv(commits_file_extra_info, header=0)
     except Exception as e:
-        logger.error(f"There's been an exception while trying to read back in data generated by get_all_pages_commits() from {commits_file_extra_info}: {e}")
+        logger.error(f"There's been an exception while trying to read back in data generated by get_all_pages_commits() from {commits_file_extra_info}: {e}. Traceback: {traceback.format_exc()}")
 
     try:
         assert  len(commits_df.index) == len(total_commits.index), f"WARNING! Lengths of returned df ({len(commits_df)}) vs df read in from file ({len(total_commits)}) DO NOT MATCH. Did you append too many records to the gh_urls file??"
