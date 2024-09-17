@@ -94,6 +94,9 @@ class CommitsGetter:
             pg_count = 0
 
             try: 
+
+                commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={i}"
+
                 if 'last' in commit_links:
                     commit_links_last = commit_links['last']['url'].split("&page=")[1]
                     pages_commits = int(commit_links_last)
@@ -104,7 +107,6 @@ class CommitsGetter:
                         pg_count += 1
                         self.logger.info(f">> Running commit grab for repo {repo_name}, in page {pg_count} of {pages_commits}.")        
 
-                        commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={i}"
                         self.logger.debug(f"Commits query for page {pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
                         json_pg = api_response.json()
