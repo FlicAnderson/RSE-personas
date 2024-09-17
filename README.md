@@ -8,9 +8,6 @@ PhD research software research code.
 
 Code was written in a Linux Ubuntu 22.04 LTS environment within [conda version `23.11.0`](https://docs.conda.io/projects/miniconda/en/latest/miniconda-other-installer-links.html) for `Python 3.10`.  A conda environment yaml file containing exact package versions required for running this code is stored within the repo within the main `coding-smart` repo folder as `coding-smart-github.yml`.   
 
-Code was developed locally and run on a remote [EIDF data science Virtual Machine](https://edinburgh-international-data-facility.ed.ac.uk/services/computing/virtual-desktops) using ssh to connect and run, and git version control to push/pull code versions back and forth between remote VM and local development environment.  
-This required setting up SSH keys between local, remote machines and Github ([GH's ssh setup details here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)). 
-
 
 ## Installation & Setup  
 
@@ -88,6 +85,92 @@ Successfully installed githubanalysis-1.0
 1) Check that the installation and setup has worked by running the setup test script ([TODO - issue ticket exists](https://github.com/FlicAnderson/coding-smart/issues/48)). 
 
 
+## Developing / Running This Code
+
+Code was developed locally in [WSL2:Ubuntu](https://learn.microsoft.com/en-us/windows/wsl/setup/environment) within [VS Code IDE](https://code.visualstudio.com/docs/remote/wsl) and run on a remote [EIDF data science Virtual Machine](https://edinburgh-international-data-facility.ed.ac.uk/services/computing/virtual-desktops) using ssh to connect and run, and git version control to push/pull code versions back and forth between remote VM and local development environment.  
+
+This required setting up SSH keys between local, remote machines and Github ([GH's ssh setup details here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)). 
+
+The following details how the code was developed and run, and should be adjusted if your operating system or filesystem setups vary from those used by @FlicAnderson!   
+
+Further details on my WSL setup and SSH key setup process:   
+```
+# in WSL: 
+# check git installed (installed git for Windows, but it's a default in Ubuntu) 
+
+    git --version
+    git config --global credential.helper "/mnt/c/Program\ Files/Git/mingw64/bin/git-credential-manager.exe"
+
+# update programs etc  
+    sudo apt update && sudo apt upgrade
+
+# checked the security certificates were up to date, they were.
+    sudo apt-get install wget ca-certificates
+    sudo apt-get update
+
+# generate RSA SSH key using new hostname (this is for adding to SAFE to connect to EIDF VM)
+    cat .ssh/id_rsa.pub
+    ssh-keygen
+    cat .ssh/id_rsa.pub
+
+# checked I can connect to EIDF VM; created the ssh config file:
+    ssh -J flic@eidf-gateway.lo.ca.ti.on flic@00.00.0.00
+    nano .ssh/config
+
+# make clonezone directory to clone repos into
+    mkdir clonezone
+    cd clonezone/
+
+# create GPG key to add to GitHub 
+    gpg --full-generate-key
+    gpg --list-secret-keys --keyid-format=long
+    gpg --armor --export 00000000000000000
+
+# create more detailed SSH key to add to GitHub  
+    ssh-keygen -t ed25519 -C "email@ad.re.ss"
+    cat ~/.ssh/id_ed25519.pub
+
+# clone the git repo finally (within clonezone folder) 
+    git clone git@github.com:FlicAnderson/coding-smart.git
+
+```
+Local SSH `config` file example contents (within WSL2: Ubuntu filesystem):
+```
+# file at ~/.ssh/config
+Host eidf
+User flic
+Hostname 00.00.0.00
+Proxyjump flic@eidf-gateway.lo.ca.ti.on
+ProxyCommand ssh -W %h:%p eidf-gateway@epcc.ed.ac.uk
+LocalForward 8888 localhost:8888
+IdentityFile ~/.ssh/id_rsa
+```
+
+This config allows the EIDF VM to be connected to by running `ssh eidf` in the local terminal.  It also allows jupyter notebook server to forward to the local browser using port forwarding.  
+
+Files can be pulled from the remote EIDF VM by `scp` for example by running  `scp eidf:/home/eidf103/eidf103/flic/clonezone/coding-smart/data/big20top10-dev_assignments_2024-03-11.csv ./data/` to pull a data csv file from the remote VM to local `data` folder.
+
+Code was developed with the following set up:   
+
+    A) a remote terminal connected to the EIDF system - this runs a matching [conda](https://anaconda.org/anaconda/conda) environment `coding-smart-github`, activated using `conda activate coding-smart-github`;  `tmux` terminal sessions, listed using `tmux list-sessions`, and `tmux attach` to create a new session 'notebook' which runs the jupyter notebook in one session, and can be switched away from without exiting by using `Ctrl + b` then `d` to detatch from that session which lets me exit the ssh VM and keeps the notebook running; scripts are run from a separate tmux terminal session, for example `python githubanalysis/processing/get_all_devs_assignment.py 'JeschkeLab/DeerLab' 'all-issues_JeschkeLab-DeerLab_2024-03-11' 'contributors_JeschkeLab-DeerLab_2024-03-11'`. 
+
+    B) a local terminal running WSL2: Ubuntu, for git pushing/pulling from local. This could be done from VS Code IDE (C), but it's easier to keep track of file changes separately in the terminal.   
+
+    C) a local VS Code IDE connected to the WSL2: Ubuntu install, also connected to the local `coding-smart` repository folder, for editing the code files. Changes are made in this program, then saved, then pushed to the remote repo on GH.   
+
+Development process example: 
+
+A code change would be made to the file (for example `README.md`) in local VS Code IDE (C) and the change saved.    
+Local terminal (B) would show these changes when `git status` is run on the repo folder.   
+The changes would be committed and pushed from here (B).   
+Swapping to remote terminal (A), in a tmux session that isn't already running a jupyter notebook server, `git pull` would collect the code change from GitHub, and allow the newly updated code to be run (either within a jupyter notebook after attaching that tmux session, or via the terminal with python) on the EIDF VM system.  
+
+**NOTE: Changes are made locally first, rather than changes made remotely on the VM and pulled down.**   
+It IS possible to connect locally running VS Code to a remote VM and develop remotely that way, but it's more hassle to keep everything connected nicely and creates more headaches. 
+
+Care needs to be taken when developing in git branches to avoid confusion!
+
+
 ## Filesystem  
 
 Within `coding-smart` repo, the key folders are:  
@@ -103,7 +186,6 @@ Within `githubanalysis` folder, subfolders will hold submodules of python code w
  - `analysis` - subpackage of code for data analysis.  
  - `visualisation` - subpackage of code for data viz.
  
-
 
 #### GitHub Authentication  
 
