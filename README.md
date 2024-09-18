@@ -146,7 +146,16 @@ LocalForward 8888 localhost:8888
 IdentityFile ~/.ssh/id_rsa
 ```
 
-This config allows the EIDF VM to be connected to by running `ssh eidf` in the local terminal.  It also allows jupyter notebook server to forward to the local browser using port forwarding.  
+This config allows the EIDF VM to be connected to by running `ssh eidf` in the local terminal.  It also allows jupyter notebook server to forward to the local browser using port forwarding.  The jupyter notebook can be viewed in the local browser by clicking through to the localhost link which can be found by sending a cancel command (`Ctrl + C`) in the terminal session running the notebook server to view the links and selecting `n` to prevent shutdown of the server. The links should open in the local browser if the port forwarding is set up correctly.
+```
+Serving notebooks from local directory: /home/eidf103/eidf103/flic/clonezone/coding-smart/githubanalysis/notebooks
+3 active kernels
+Jupyter Notebook 6.5.2 is running at:
+http://localhost:8888/?token=0123401234abcdabcdabcd012340123401234abcdabcd
+ or http://127.0.0.1:8888/?token=0123401234abcdabcdabcd012340123401234abcdabcd
+Shutdown this notebook server (y/[n])? n
+resuming operation...
+```
 
 Files can be pulled from the remote EIDF VM by `scp` for example by running  `scp eidf:/home/eidf103/eidf103/flic/clonezone/coding-smart/data/big20top10-dev_assignments_2024-03-11.csv ./data/` to pull a data csv file from the remote VM to local `data` folder.
 
