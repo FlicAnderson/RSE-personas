@@ -80,6 +80,7 @@ class CommitsGetter:
                 # per_page=30 by default on GH, set to max (100)  
             # important bit: API request with auth headers  
             api_response = s.get(url=commits_url, headers=headers)
+            assert api_response.status_code != 401, f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {commits_url} is {api_response}"
 
         except Exception as e_connect404:
             if api_response.status_code == 404: 
