@@ -173,7 +173,10 @@ class CommitsGetter:
                     # write out the page content to csv via APPEND (use added date filename)
                     all_commits.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
 
+                    self.logger.info(f"Path of JSON is {write_out_extra_info_json}")
                     all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records', date_format='iso', lines=True, mode='w')
+                    
+                    self.logger.info(f"JSON file exists: {os.path.exists(write_out_extra_info_json)}")
                     # read json file back in using pd.read_json(path_or_buf="path/to/file/testfile.json", orient='records')
 
                 self.logger.info(f"Total number of commits grabbed is {len(all_commits.index)} in {pg_count} page(s).")
