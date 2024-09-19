@@ -62,6 +62,8 @@ class CommitsGetter:
         write_out = f'{write_out_location}{out_filename}_{sanitised_repo_name}'
         write_out_extra_info = f"{write_out}_{current_date_info}.csv"  
 
+        write_out_extra_info_json = f"{write_out}_{current_date_info}.json"
+
         # get auth string 
         gh_token = ghauth.setup_github_auth(config_path=config_path)
         headers = {'Authorization': 'token ' + gh_token}
@@ -111,7 +113,7 @@ class CommitsGetter:
                         pg_count += 1
                         self.logger.info(f">> Running commit grab for repo {repo_name}, in page {pg_count} of {pages_commits}.")        
                         page = i
-                        commits_query = commits_url ##### Start here again!!
+                        commits_query = commits_url
 
                         self.logger.debug(f"Commits query for page {pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
@@ -166,9 +168,12 @@ class CommitsGetter:
                     all_commits = store_pg
                     # write out the page content to csv via APPEND (use added date filename)
                     all_commits.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
-                
+
+                    all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records')
+                    # read json file back in using pd.read_json(path_or_buf="path/to/file/testfile.json", orient='records')
+
                 self.logger.info(f"Total number of commits grabbed is {len(all_commits.index)} in {pg_count} page(s).")
-                self.logger.info(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info}.")
+                self.logger.info(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info} and {write_out_extra_info_json}.")
 
             except Exception as e_commits:
                 self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}. API response was: {api_response}. Traceback: {traceback.format_exc()}")
