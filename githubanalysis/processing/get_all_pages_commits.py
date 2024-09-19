@@ -113,7 +113,7 @@ class CommitsGetter:
                         pg_count += 1
                         self.logger.info(f">> Running commit grab for repo {repo_name}, in page {pg_count} of {pages_commits}.")        
                         page = i
-                        commits_query = commits_url
+                        commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={page}"
 
                         self.logger.debug(f"Commits query for page {pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
