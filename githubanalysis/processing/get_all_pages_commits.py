@@ -180,7 +180,7 @@ class CommitsGetter:
                 self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}. API response was: {api_response}. Traceback: {traceback.format_exc()}")
 
         self.logger.info(f"Path of JSON is {write_out_extra_info_json}")
-        all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records', date_format='iso', lines=True, mode='w')
+        all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records', date_format='iso', lines=True)
         self.logger.info(f"JSON file exists: {os.path.exists(write_out_extra_info_json)}")
 
         # reindex df and return;  written out data are NOT reindexed (partly to allow checking whether page is repeated, partly laziness D:)
