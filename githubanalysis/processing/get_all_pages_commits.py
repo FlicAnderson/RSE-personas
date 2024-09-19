@@ -75,7 +75,8 @@ class CommitsGetter:
 
         try:    
             page = 1 # try first page only
-            commits_url = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={page}"
+            repos_api_url = "https://api.github.com/repos/"
+            commits_url = f"{repos_api_url}{repo_name}/commits?per_page={per_pg}&page={page}"
                 # per_page=30 by default on GH, set to max (100)  
             # important bit: API request with auth headers  
             api_response = s.get(url=commits_url, headers=headers)
@@ -94,8 +95,8 @@ class CommitsGetter:
             pg_count = 0
 
             try: 
-                pg = 1
-                commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={pg}"
+                # pg = 1
+                # commits_query = f"https://api.github.com/repos/{repo_name}/commits?per_page={per_pg}&page={pg}"
 
                 if 'last' in commit_links:
                     commit_links_last = commit_links['last']['url'].split("&page=")[1]
@@ -104,9 +105,11 @@ class CommitsGetter:
                     pg_range = range(1, (pages_commits+1))
 
                     for i in pg_range: 
-                        pg = i
+                        #pg = i
                         pg_count += 1
                         self.logger.info(f">> Running commit grab for repo {repo_name}, in page {pg_count} of {pages_commits}.")        
+                        page = i
+                        commits_query = commits_url ##### Start here again!!
 
                         self.logger.debug(f"Commits query for page {pg_count} is {commits_query}")
                         api_response = s.get(url=commits_query, headers=headers)
