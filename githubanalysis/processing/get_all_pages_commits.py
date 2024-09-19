@@ -139,7 +139,7 @@ class CommitsGetter:
                             # write out 'completed' page of commits as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(write_out_extra_info, mode='a', index=True, header= not os.path.exists(write_out_extra_info))
                             # write out 'completed' page of commits as df to JSON via APPEND (use added date filename with reponame inc)
-                            all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records', date_format='iso', lines=True, mode='a')
+                            #all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records', date_format='iso', lines=True, mode='a')
                             # read json file back in using pd.read_json(path_or_buf="path/to/file/testfile.json", orient='records')
 
                             all_commits = pd.concat([all_commits, store_pg], ) # append this page (df) to main commits df
