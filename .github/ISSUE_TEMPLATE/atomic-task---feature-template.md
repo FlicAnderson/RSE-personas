@@ -27,7 +27,7 @@ A clear and concise description of what the problem is.
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
 
-** How will I know when it's done?** - *When should this task/feature be considered 'finished'?*    
+**How will I know when it's done?** - *When should this task/feature be considered 'finished'?*    
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.  
 
 **Any other details of relevance?** - *Extra info, relevant links, prioritisation discussion etc.* 
