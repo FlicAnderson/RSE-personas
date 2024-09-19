@@ -86,7 +86,11 @@ class CommitsGetter:
                 self.logger.error(f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?")
             self.logger.error(f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}. Traceback: {traceback.format_exc()}") 
 
-        if api_response.status_code != 404:     
+            if api_response.status_code == 401: 
+                self.logger.error(f"401 error in connecting to {repo_name}. Are your GitHub Token permissions valid, or has your token expired?")
+            self.logger.error(f"Error in authorising repo connection with repo name {repo_name} and config path {config_path}: {e_connect}. Traceback: {traceback.format_exc()}") 
+
+        if api_response.status_code != (404 or 401):     
             self.logger.debug(f"Getting commits for repo {repo_name}.")
             #self.logger.debug(f"{api_response}")
 
@@ -140,7 +144,9 @@ class CommitsGetter:
 
                 else: # there's no next page, grab all on this page and proceed.
                     pg_count += 1
+                    commits_query = commits_url
                     self.logger.debug(f"getting json via request url {commits_query}.")
+                    api_response = s.get(url=commits_query, headers=headers)
                     json_pg = api_response.json()
                     if not json_pg: # check emptiness of result.
                         self.logger.debug(f"Result of api_response.json() is empty list.")
