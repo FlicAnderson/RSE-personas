@@ -81,14 +81,16 @@ class CommitsGetter:
             # important bit: API request with auth headers  
             api_response = s.get(url=commits_url, headers=headers)
 
-        except Exception as e_connect:
+        except Exception as e_connect404:
             if api_response.status_code == 404: 
                 self.logger.error(f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?")
-            self.logger.error(f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}. Traceback: {traceback.format_exc()}") 
+            self.logger.error(f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect404}. Traceback: {traceback.format_exc()}") 
 
+        except Exception as e_connect401:
             if api_response.status_code == 401: 
                 self.logger.error(f"401 error in connecting to {repo_name}. Are your GitHub Token permissions valid, or has your token expired?")
-            self.logger.error(f"Error in authorising repo connection with repo name {repo_name} and config path {config_path}: {e_connect}. Traceback: {traceback.format_exc()}") 
+            self.logger.error(f"Error in authorising repo connection with repo name {repo_name} and config path {config_path}: {e_connect401}. Traceback: {traceback.format_exc()}") 
+            raise # raising as unauthorise is more likely to stop whole run than 404 which may apply to given repo only
 
         if api_response.status_code != (404 or 401):     
             self.logger.debug(f"Getting commits for repo {repo_name}.")
