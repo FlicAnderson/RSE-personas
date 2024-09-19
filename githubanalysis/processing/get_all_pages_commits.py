@@ -179,9 +179,9 @@ class CommitsGetter:
             except Exception as e_commits:
                 self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}. API response was: {api_response}. Traceback: {traceback.format_exc()}")
 
-        self.logger.info(f"Path of JSON is {write_out_extra_info_json}")
         all_commits.to_json(path_or_buf=write_out_extra_info_json, orient='records', date_format='iso', lines=True)
-        self.logger.info(f"JSON file exists: {os.path.exists(write_out_extra_info_json)}")
+        if not os.path.exists(write_out_extra_info_json):
+            self.logger.error(f"JSON file does NOT exist at path: {os.path.exists(write_out_extra_info_json)}")
 
         # reindex df and return;  written out data are NOT reindexed (partly to allow checking whether page is repeated, partly laziness D:)
         #all_commits = all_commits.reset_index(drop=True)  # reindex df; otherwise get indexes N x [0], N x [1] etc where N is number of pages of commits 
