@@ -175,7 +175,7 @@ class CommitsGetter:
                 self.logger.info(f"Commits data written out to file for repo {repo_name} at {write_out_extra_info}.")
 
             except Exception as e_commits:
-                self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}. Traceback: {traceback.format_exc()}")
+                self.logger.error(f"Something failed in getting commits for repo {repo_name}: {e_commits}. API response was: {api_response}. Traceback: {traceback.format_exc()}")
 
         # reindex df and return;  written out data are NOT reindexed (partly to allow checking whether page is repeated, partly laziness D:)
         #all_commits = all_commits.reset_index(drop=True)  # reindex df; otherwise get indexes N x [0], N x [1] etc where N is number of pages of commits 
