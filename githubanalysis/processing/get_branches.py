@@ -22,7 +22,7 @@ class BranchesGetter:
     logger: logging.Logger
     def __init__(self, logger: logging.Logger = None) -> None:
         if logger is None:
-            self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_all_pages_commits_logs.txt')
+            self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_branches_logs.txt')
         else:
             self.logger = logger
 
