@@ -46,25 +46,27 @@ class AllBranchesCommitsGetter:
         
 
         # write-out file setup     
-        current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run commits
-        sanitised_repo_name = repo_name.replace("/", "-")
-        write_out = f'{write_out_location}{out_filename}_{sanitised_repo_name}'
-        write_out_extra_info = f"{write_out}_{current_date_info}.csv"  
+        ##current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run commits
+        ##sanitised_repo_name = repo_name.replace("/", "-")
+        ##write_out = f'{write_out_location}{out_filename}_{sanitised_repo_name}'
+        ##write_out_extra_info = f"{write_out}_{current_date_info}.csv"  
 
-        write_out_extra_info_json = f"{write_out}_{current_date_info}.json"
+        ##write_out_extra_info_json = f"{write_out}_{current_date_info}.json"
 
         # get auth string 
-        gh_token = ghauth.setup_github_auth(config_path=config_path)
-        headers = {'Authorization': 'token ' + gh_token}
+        ##gh_token = ghauth.setup_github_auth(config_path=config_path)
+        ##headers = {'Authorization': 'token ' + gh_token}
 
         s = requests.Session()
         retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
         s.mount('https://', HTTPAdapter(max_retries=retries))
 
         # create empty df to store commits data
-        all_commits = pd.DataFrame()
+        ##all_commits = pd.DataFrame()
 
         branches_info = branchgetter.get_branches(repo_name, config_path, per_pg)
 
         print(len(branches_info))
+
+        ##headers
     
