@@ -48,6 +48,8 @@ class AllBranchesCommitsGetter:
         self.s.mount("https://", HTTPAdapter(max_retries=retries))
         self.gh_token = ghauth.setup_github_auth(config_path=config_path)
         self.headers = {"Authorization": "token " + self.gh_token}
+        self.config_path = config_path
+
 
     def __del__(self):
         self.s.close()
@@ -100,7 +102,6 @@ class AllBranchesCommitsGetter:
     def get_all_branches_commits(
         self,
         repo_name,
-        config_path="githubanalysis/config.cfg",
         per_pg=100,
         out_filename="all-branches-commits",
         write_out_location="data/",
@@ -109,10 +110,7 @@ class AllBranchesCommitsGetter:
         Obtain all commits data from all API request pages for ALL BRANCHES of a given GitHub repo `repo_name`.
         cf: get_all_pages_commits( ) which only returns main branch commits.
 
-
         :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
-        :type: str
-        :param config_path: file path of config.cfg file. Default=githubanalysis/config.cfg'.
         :type: str
         :param per_pg: number of items per page in paginated GitHub API requests. Default=100 (GH's default= 30)
         :type: int
@@ -125,7 +123,7 @@ class AllBranchesCommitsGetter:
         """
         all_branches_commits = pd.DataFrame()
 
-        branches_info = branchgetter.get_branches(repo_name, config_path, per_pg)
+        branches_info = branchgetter.get_branches(repo_name, self.config_path, per_pg)
 
         for branch in branches_info.branch_sha:
             branch = _normalise_default_branch_name(branch)
