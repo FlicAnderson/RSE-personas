@@ -21,7 +21,7 @@ def get_default_logger(
     """
     try:
         set_level_to in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    except ValueError as e:
+    except ValueError:
         raise ValueError(
             f"set_level_to value '{set_level_to}' not recognised; select one of 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'."
         )

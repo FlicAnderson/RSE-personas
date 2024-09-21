@@ -1,6 +1,5 @@
 """Workflow for getting GitHub repo urls from Zenodo to create a 'Research Software repo dataset'."""
 
-import sys
 import zenodocode.setup_zenodo_auth as znconnect
 import zenodocode.get_zenodo_ids as zngetids
 import zenodocode.get_gh_urls as zngetghurls

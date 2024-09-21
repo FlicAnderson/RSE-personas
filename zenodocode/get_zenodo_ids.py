@@ -4,7 +4,6 @@ import requests
 import csv
 from ratelimit import limits, sleep_and_retry
 
-import zenodocode.setup_zenodo_auth as znconnect
 
 # using ratelimit library, set things to 100 calls per minute (secs) time (Authenticated user limits here https://developers.zenodo.org/#rate-limiting)
 CALLS = 80

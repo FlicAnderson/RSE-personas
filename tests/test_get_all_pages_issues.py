@@ -1,7 +1,6 @@
 """Test function for getting all pages of items for issues for a given repository."""
 
 import pytest
-from github import Github
 import pandas as pd
 import requests
 import githubanalysis.processing.get_repo_connection as ghconn

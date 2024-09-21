@@ -92,7 +92,7 @@ class SoftwareIDsGetter:
                 total_records = int(
                     sys.argv[1]
                 )  # use second argv (user-provided by commandline)
-            except ValueError as e:
+            except ValueError:
                 raise TypeError("Bad input. Ensure argument is an integer number.")
             self.logger.info(
                 f"Using commandline argument {total_records} as number of software IDs to get from zenodo."
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         # print(f"There's been an exception while trying to run get_software_ids(): {e}")
 
     if len(software_ids) != 0:
-        logger.info(f"Record ID grab complete.")
+        logger.info("Record ID grab complete.")
     else:
         logger.error(
             "Record ID grab did not work, length of software_ids returned is zero."

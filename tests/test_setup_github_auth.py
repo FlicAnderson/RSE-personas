@@ -1,7 +1,6 @@
 """Test github auth setup function"""
 
 import pytest
-from pathlib import Path
 from githubanalysis.processing import setup_github_auth
 
 

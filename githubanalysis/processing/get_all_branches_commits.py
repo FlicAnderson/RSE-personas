@@ -1,7 +1,5 @@
 """ Function to retrieve all commits across ALL branches for a given GitHub repository and remove duplicates. """
 
-import sys
-import os
 import pandas as pd
 import datetime
 from datetime import datetime
