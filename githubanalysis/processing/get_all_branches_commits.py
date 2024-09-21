@@ -69,6 +69,8 @@ class AllBranchesCommitsGetter:
         # create empty df to store commits data
         all_commits = pd.DataFrame()
 
-        branches_info = BranchesGetter().get_branches(repo_name=repo_name, config_path=config_path, per_pg=per_pg)
+        logger = loggit.get_default_logger()
+        branch_getter = BranchesGetter(logger)
+        branches_info = branch_getter.get_branches(repo_name=repo_name, config_path=config_path, per_pg=per_pg)
 
         print(len(branches_info))
