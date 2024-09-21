@@ -116,7 +116,6 @@ class TODOMaker:
         # repo_data_df['assigned_devs'] = repo_data_df[['assignees']].applymap(lambda x: [x.get('login') for x in x])
 
         # add task columns with 'Not started' info
-        nowtime = datetime.now().strftime("%Y-%m-%d, %H:%M")
         gh_urls_df["check_uses_tickets"] = (
             f"NOT Started @ {datetime.now().strftime('%Y-%m-%d, %H:%M')}"
         )

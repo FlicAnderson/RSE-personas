@@ -3,7 +3,6 @@
 import sys
 import pandas as pd
 import datetime
-from datetime import datetime
 from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
