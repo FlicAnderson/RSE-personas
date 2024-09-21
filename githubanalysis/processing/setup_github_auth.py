@@ -41,7 +41,7 @@ def setup_github_auth(config_path="githubanalysis/config.cfg", verbose=True):
     try:
         Github(
             access_token,
-        )  # type is github.MainClass.Github; 
+        )  # type is github.MainClass.Github;
         return access_token
 
     except RuntimeError:
