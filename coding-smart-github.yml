@@ -1,7 +1,7 @@
 name: coding-smart-github
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
   - _openmp_mutex=5.1=1_gnu
@@ -21,8 +21,8 @@ dependencies:
   - brotli-bin=1.0.9=h5eee18b_7
   - brotlipy=0.7.0=py310h7f8727e_1002
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2023.11.17=hbcca054_0
-  - certifi=2023.11.17=pyhd8ed1ab_0
+  - ca-certificates=2024.8.30=hbcca054_0
+  - certifi=2024.8.30=pyhd8ed1ab_0
   - cffi=1.15.1=py310h5eee18b_3
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - colorama=0.4.6=pyhd8ed1ab_0
@@ -177,6 +177,7 @@ dependencies:
   - ratelimit=2.2.1=pyhd8ed1ab_0
   - readline=8.2=h5eee18b_0
   - requests=2.28.1=py310h06a4308_0
+  - ruff=0.3.5=py310hab49468_0
   - scikit-learn=1.2.1=py310h6a678d5_0
   - scipy=1.10.0=py310hd5efca6_1
   - seaborn=0.12.2=hd8ed1ab_0
@@ -215,4 +216,4 @@ dependencies:
   - zstd=1.5.2=ha4553b6_0
   - pip:
       - pyqt5-sip==12.11.0
-prefix: /home/flic/miniconda3/envs/coding-smart-github
+prefix: /home/eidf103/eidf103/flic/.conda/envs/coding-smart-github
