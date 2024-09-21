@@ -41,7 +41,7 @@ class BranchesGetter:
         :type: DataFrame
         
         """
-        
+
         repos_api_url = "https://api.github.com/repos/"
         api_call = f"{repos_api_url}{repo_name}/branches"
 
@@ -60,5 +60,6 @@ class BranchesGetter:
         # assertion check on 401 only as unauthorise is more likely to stop whole run than 404 which may apply to given repo only
 
         branches = pd.DataFrame.from_dict(api_response.json())
+        branches['branch_sha'] = pd.DataFrame.from_dict(branches['commit']).apply(lambda x: [x.get('sha') for x in x])  # pull sha out of commit field as separate field
 
         return branches
