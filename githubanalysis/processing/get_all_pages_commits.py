@@ -5,7 +5,6 @@ import os
 import pandas as pd
 import numpy as np
 import datetime
-from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
