@@ -47,7 +47,7 @@ def repo_name_clean(repo_url):
 
         except ValueError:
             print(
-                f"Could not clean repo_url into username/repo_name format. Confirm input is correct (and if url is given that it starts 'https://github.com/').")
+                "Could not clean repo_url into username/repo_name format. Confirm input is correct (and if url is given that it starts 'https://github.com/').")
 
     # finish
         #print(repo_name)

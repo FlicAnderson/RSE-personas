@@ -1,16 +1,8 @@
 """Inclusion/Exclusion workflow to create test set for GitHub repo analysis."""
 
-import sys
-import random
-import seaborn as sns
-import seaborn.objects as so
 
-import pandas as pd
 
-import githubanalysis.processing.repo_name_clean as name_clean
-import githubanalysis.processing.setup_github_auth as ghauth
 
-import githubanalysis.processing.get_repo_creation_date as createdate
 
 
 def main():

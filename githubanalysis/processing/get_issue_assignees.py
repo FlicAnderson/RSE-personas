@@ -1,6 +1,5 @@
 """ Function to pull out assignee usernames from issue ticket data for a repo."""
 
-import pandas as pd
 
 
 def get_issue_assignees(repo_data_df, verbose=True):
@@ -15,7 +14,7 @@ def get_issue_assignees(repo_data_df, verbose=True):
     """
 
     if repo_data_df.empty:  # if read_in hasn't worked and dataframe is empty
-        print(f"Dataframe is empty.")
+        print("Dataframe is empty.")
 
     if verbose:
         print(f"Dataframe has original dimensions: {repo_data_df.shape}.")

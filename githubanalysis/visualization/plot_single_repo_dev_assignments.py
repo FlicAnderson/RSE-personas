@@ -2,9 +2,7 @@
 
 import sys
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
-import seaborn as sns
 import seaborn.objects as so
 import datetime
 from datetime import datetime

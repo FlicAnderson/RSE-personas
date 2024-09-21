@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import datetime
 from datetime import datetime
-from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
@@ -14,7 +13,6 @@ import traceback
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.repo_name_clean as name_clean
 
 
 class CommitsGetter: 
@@ -119,7 +117,7 @@ class CommitsGetter:
                         api_response = s.get(url=commits_query, headers=headers)
                         json_pg = api_response.json()
                         if not json_pg: # check emptiness of result.
-                            self.logger.debug(f"Result of api_response.json() is empty list.")
+                            self.logger.debug("Result of api_response.json() is empty list.")
                             self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely. Traceback: {traceback.format_exc()}")
                         store_pg = pd.DataFrame.from_dict(json_pg)  # convert json to pd.df
                           # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling 
@@ -153,7 +151,7 @@ class CommitsGetter:
                     api_response = s.get(url=commits_query, headers=headers)
                     json_pg = api_response.json()
                     if not json_pg: # check emptiness of result.
-                        self.logger.debug(f"Result of api_response.json() is empty list.")
+                        self.logger.debug("Result of api_response.json() is empty list.")
                         self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely. Traceback: {traceback.format_exc()}")
                     store_pg = pd.DataFrame.from_dict(json_pg)
 
@@ -225,7 +223,7 @@ if __name__ == "__main__":
     try: 
         current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
         sanitised_repo_name = repo_name.replace("/", "-")
-        commits_file = f"data/all-commits"
+        commits_file = "data/all-commits"
         commits_file_extra_info = f"{commits_file}_{sanitised_repo_name}_{current_date_info}.csv"
         total_commits = pd.read_csv(commits_file_extra_info, header=0)
     except Exception as e:

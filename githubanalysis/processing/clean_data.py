@@ -2,8 +2,6 @@
 
 import sys
 import random
-import seaborn as sns
-import seaborn.objects as so
 
 import pandas as pd
 
@@ -14,7 +12,6 @@ import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.analysis.calc_issue_close_time as calcclose
 import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
-import githubanalysis.visualization.plot_repo_issues_counts_devs as plotissuedevs
 import githubanalysis.processing.get_repo_creation_date as createdate
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 import githubanalysis.processing.get_release_dates as getreleases
@@ -188,7 +185,7 @@ def main():
         # print(repo_releases['releases_before_repo_creation'])
 
         if pd.Series(repo_releases['releases_before_repo_creation']).any():
-            print(f"BE AWARE: Some releases were created before the 'official' repo creation date.")
+            print("BE AWARE: Some releases were created before the 'official' repo creation date.")
 
         # print(repo_releases.columns)
 

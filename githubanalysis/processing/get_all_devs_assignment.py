@@ -10,9 +10,6 @@ from ast import literal_eval
 import logging
 
 import utilities.get_default_logger as loggit
-import githubanalysis.processing.get_all_pages_issues
-from githubanalysis.processing.get_all_pages_issues import IssueGetter
-from githubanalysis.processing.get_repo_contributors import DevsGetter
 
 class DevsAssigner:
 

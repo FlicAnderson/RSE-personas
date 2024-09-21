@@ -4,14 +4,12 @@ import os
 import pandas as pd
 import datetime
 from datetime import datetime
-from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.get_repo_connection as ghconnect
 import githubanalysis.processing.repo_name_clean as name_clean
 
 
@@ -146,8 +144,8 @@ class IssueGetter:
                     self.logger.debug(f"getting json via request url {issues_url}.")
                     json_pg = api_response.json()
                     if not json_pg: # check emptiness of result.
-                        self.logger.debug(f"Result of api_response.json() is empty list.")
-                        self.logger.error(f"Result of API request is an empty json. Error - cannot currently handle this result nicely.")
+                        self.logger.debug("Result of api_response.json() is empty list.")
+                        self.logger.error("Result of API request is an empty json. Error - cannot currently handle this result nicely.")
                     store_pg = pd.DataFrame.from_dict(json_pg)
 
                     if len(store_pg.index) > 0:
@@ -254,7 +252,7 @@ if __name__ == "__main__":
     try: 
         current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
         sanitised_repo_name = repo_name.replace("/", "-")
-        issues_file = f"data/all-issues"
+        issues_file = "data/all-issues"
         issues_file_extra_info = f"{issues_file}_{sanitised_repo_name}_{current_date_info}.csv"
         total_issues = pd.read_csv(issues_file_extra_info, header=0)
     except Exception as e:

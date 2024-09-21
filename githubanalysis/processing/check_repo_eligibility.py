@@ -1,6 +1,5 @@
 """ Checks whether given GitHub repository is eligible for analysis."""
 
-import githubanalysis.processing.setup_github_auth as ghauth
 
 
 def check_repo_eligibility(in_filename='gh_stats', read_in_location='data/'):

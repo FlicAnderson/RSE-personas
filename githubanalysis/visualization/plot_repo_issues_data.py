@@ -5,7 +5,6 @@ import seaborn as sns
 from pathlib import Path
 from pandas.errors import EmptyDataError
 
-import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 def plot_repo_issues_data(repo_data_df, repo_name, xaxis='ticket_number', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/'):
     """

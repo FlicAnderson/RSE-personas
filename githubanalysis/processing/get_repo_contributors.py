@@ -197,7 +197,7 @@ if __name__ == "__main__":
     try:
         current_date_info = datetime.now().strftime("%Y-%m-%d") # run this at start of script not in loop to avoid midnight/long-run issues
         sanitised_repo_name = repo_name.replace("/", "-")
-        contributors_file = f"data/contributors"
+        contributors_file = "data/contributors"
         contributors_file_extra_info = f"{contributors_file}_{sanitised_repo_name}_{current_date_info}.csv"
         total_contributors = pd.read_csv(contributors_file_extra_info, header=0)
     except Exception as e:

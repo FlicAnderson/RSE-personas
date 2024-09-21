@@ -1,6 +1,5 @@
 """ Function to calculate average issue close times per assigned dev username from issue ticket data for a repo."""
 
-import pandas as pd
 
 
 def calc_per_dev_mean_close_time(repo_data_df):

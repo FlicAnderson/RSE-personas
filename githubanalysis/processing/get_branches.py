@@ -1,18 +1,9 @@
 """ Function to retrieve and return branches info for a given GitHub repository. """
 
-import sys
-import os
 import pandas as pd
-import numpy as np
-import datetime
-from datetime import datetime
-from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
-import logging
-import traceback
 
-import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
 

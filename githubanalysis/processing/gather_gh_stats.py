@@ -2,8 +2,6 @@
 
 import sys
 import os
-import requests
-from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
 import logging
 import math
@@ -11,7 +9,6 @@ from datetime import datetime
 
 import utilities.chunker as chunker
 import utilities.get_default_logger as loggit
-import githubanalysis.processing.summarise_repo_stats
 from githubanalysis.processing.summarise_repo_stats import RepoStatsSummariser
 
 

@@ -8,13 +8,10 @@ from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
-import urllib3
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.get_repo_connection as ghconnect
-import githubanalysis.processing.get_all_pages_issues as getallissues
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 
