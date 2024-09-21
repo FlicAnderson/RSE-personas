@@ -88,7 +88,7 @@ class AllBranchesCommitsGetter:
             )
             page = i
             commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page)
-            api_response = self.sget(url=commits_url, headers=self.headers)
+            api_response = self.s.get(url=commits_url, headers=self.headers)
 
             print(api_response)
             print(commits_url)
@@ -133,7 +133,7 @@ class AllBranchesCommitsGetter:
                 commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page)
 
                 # important bit: API request with auth headers
-                api_response = self.sget(url=commits_url, headers=self.headers)
+                api_response = self.s.get(url=commits_url, headers=self.headers)
                 assert (
                     api_response.status_code != 401
                 ), f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {commits_url} is {api_response}"
