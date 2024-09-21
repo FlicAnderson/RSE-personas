@@ -18,13 +18,13 @@ import githubanalysis.processing.setup_github_auth as ghauth
 
 class BranchesGetter: 
 
-        # if not given a better option, use my default settings for logging
-    logger: logging.Logger
-    def __init__(self, logger: logging.Logger = None) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_branches_logs.txt')
-        else:
-            self.logger = logger
+    #     # if not given a better option, use my default settings for logging
+    # logger: logging.Logger
+    # def __init__(self, logger: logging.Logger = None) -> None:
+    #     if logger is None:
+    #         self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_branches_logs.txt')
+    #     else:
+    #         self.logger = logger
 
 
     def get_branches(self, repo_name, config_path='githubanalysis/config.cfg', per_pg=100):
