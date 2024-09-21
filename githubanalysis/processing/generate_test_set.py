@@ -1,10 +1,6 @@
 """Inclusion/Exclusion workflow to create test set for GitHub repo analysis."""
 
 
-
-
-
-
 def main():
     """
     Workflow to process and check input data (csv of github repo URLs),
@@ -19,31 +15,30 @@ def main():
     # count input repo urls
 
     # for each repo:
-        # summarise stats using: summarise_repo_stats(repo_name):
+    # summarise stats using: summarise_repo_stats(repo_name):
 
-            # count number of devs
+    # count number of devs
 
-            # count number of commits
+    # count number of commits
 
-            # count closed issue tickets
+    # count closed issue tickets
 
-            # get date of last commit
+    # get date of last commit
 
-            # get age of repo
+    # get age of repo
 
-            # get license type
+    # get license type
 
-            # is repo accessible?
+    # is repo accessible?
 
-            # does repo contain code
-            # repo languages include: python, (C, C++), (shell?, R?, FORTRAN?)
+    # does repo contain code
+    # repo languages include: python, (C, C++), (shell?, R?, FORTRAN?)
 
-            # ? repo architecture?
+    # ? repo architecture?
 
+    # check eligibility of each repo using: check_repo_eligibility(repo_name)
 
-        # check eligibility of each repo using: check_repo_eligibility(repo_name)
-
-        # collate eligible repos, discard ineligible ones.
+    # collate eligible repos, discard ineligible ones.
 
     # count eligible repos total
 

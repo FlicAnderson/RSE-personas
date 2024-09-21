@@ -1,10 +1,13 @@
-""" Set up GitHub API connection for given GitHub repository."""
+"""Set up GitHub API connection for given GitHub repository."""
 
 import pandas as pd
 
 import githubanalysis.processing.get_repo_connection as ghconnect
 
-def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True):
+
+def get_repo_creation_date(
+    repo_name, config_path="githubanalysis/config.cfg", verbose=True
+):
     """
     Get creation date of GitHub repo using get_repo_connection().
     Use for plotting and analysis.
@@ -28,15 +31,21 @@ def get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', v
     Timestamp('2019-05-03 12:15:59+0000', tz='UTC')
     """
     # connect to repos api for reponame
-    api_response = ghconnect.get_repo_connection(repo_name=repo_name, config_path=config_path)
+    api_response = ghconnect.get_repo_connection(
+        repo_name=repo_name, config_path=config_path
+    )
     api_response_json = api_response.json()
-    #print(api_response.url)
+    # print(api_response.url)
 
     # get creation date:
-    repo_creation_date = pd.to_datetime(api_response_json.get('created_at'))  # type: pandas._libs.tslibs.timestamps.Timestamp
-    repo_creation_date = repo_creation_date.tz_convert('UTC')  # created_at date now 'intelligently' utc 
+    repo_creation_date = pd.to_datetime(api_response_json.get("created_at"))  # type: pandas._libs.tslibs.timestamps.Timestamp
+    repo_creation_date = repo_creation_date.tz_convert(
+        "UTC"
+    )  # created_at date now 'intelligently' utc
 
     if verbose:
-        print(f'Creation date of repo {repo_name} is {repo_creation_date.year} {repo_creation_date.month} {repo_creation_date.day}.')
+        print(
+            f"Creation date of repo {repo_name} is {repo_creation_date.year} {repo_creation_date.month} {repo_creation_date.day}."
+        )
 
     return repo_creation_date

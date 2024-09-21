@@ -2,6 +2,7 @@
 
 import re
 
+
 def repo_name_clean(repo_url):
     """
     Remove trailing slashes and github url root from string repo names.
@@ -26,34 +27,31 @@ def repo_name_clean(repo_url):
 
     # handle bad input types
     if isinstance(repo_url, list):
-        raise TypeError('Ensure input url is a string. If list of repos, use list comprension e.g. `[repo_name_clean(x) for x in repo_list]`.')
+        raise TypeError(
+            "Ensure input url is a string. If list of repos, use list comprension e.g. `[repo_name_clean(x) for x in repo_list]`."
+        )
 
     if isinstance(repo_url, int):
-        raise TypeError('Ensure input url is a string.')
+        raise TypeError("Ensure input url is a string.")
 
     if isinstance(repo_url, str):
-
         # if "," in repo_url:
         #     raise ValueError('Input contains commas - ensure input is string of ONE repo only.')
         # if ";" in repo_url:
         #     raise ValueError('Input contains semicolons - ensure input is string of ONE repo only.')
 
-    # do repo url cleaning
+        # do repo url cleaning
         try:
             repo_url = (repo_url.split("https://github.com/"))[1]
-            if "tree" in repo_url: 
-                repo_url = re.split('(^[\.\w-]+\/[\.\w-]+)', repo_url)[1]
+            if "tree" in repo_url:
+                repo_url = re.split("(^[\.\w-]+\/[\.\w-]+)", repo_url)[1]
             repo_name = repo_url
 
         except ValueError:
             print(
-                "Could not clean repo_url into username/repo_name format. Confirm input is correct (and if url is given that it starts 'https://github.com/').")
+                "Could not clean repo_url into username/repo_name format. Confirm input is correct (and if url is given that it starts 'https://github.com/')."
+            )
 
-    # finish
-        #print(repo_name)
+        # finish
+        # print(repo_name)
         return repo_name
-
-
-
-
-

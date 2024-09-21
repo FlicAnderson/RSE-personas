@@ -1,9 +1,8 @@
-""" Function to get contributor commit stats data for a GitHub repo."""
+"""Function to get contributor commit stats data for a GitHub repo."""
 
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter, Retry
-
 
 
 def get_contributor_commits_stats(repo_name, verbose=True):
@@ -21,15 +20,17 @@ def get_contributor_commits_stats(repo_name, verbose=True):
     """
 
     # handle API responses:
-    base_contributor_stats_url = f"https://api.github.com/repos/{repo_name}/stats/contributors"
+    base_contributor_stats_url = (
+        f"https://api.github.com/repos/{repo_name}/stats/contributors"
+    )
     # approach via: https://stackoverflow.com/a/35636367
 
-    #if verbose:
+    # if verbose:
     #    logging.basicConfig(level=logging.DEBUG)  # might be able to remove this as it doesn't affect the requests code
 
     s = requests.Session()
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[202, 502, 503, 504])
-    s.mount('https://', HTTPAdapter(max_retries=retries))
+    s.mount("https://", HTTPAdapter(max_retries=retries))
 
     api_response = s.get(url=base_contributor_stats_url, timeout=10)
 
@@ -48,12 +49,15 @@ def get_contributor_commits_stats(repo_name, verbose=True):
                 raise Exception(f"Repo {repo_name} contains NO contributor stats.")
 
             # pull author username out from rest of author data
-            contributor_commits_stats['contributor_author'] = contributor_commits_stats[['author']].apply(
-                lambda x: [x.get('login') for x in x])
+            contributor_commits_stats["contributor_author"] = contributor_commits_stats[
+                ["author"]
+            ].apply(lambda x: [x.get("login") for x in x])
 
-            contributor_commits_stats['repo_name'] = repo_name
+            contributor_commits_stats["repo_name"] = repo_name
 
-            contributor_commits_stats = contributor_commits_stats.sort_values(by='total', axis=0, ascending=False)
+            contributor_commits_stats = contributor_commits_stats.sort_values(
+                by="total", axis=0, ascending=False
+            )
 
             return contributor_commits_stats
 
@@ -63,18 +67,23 @@ def get_contributor_commits_stats(repo_name, verbose=True):
             return contributor_commits_stats
 
     elif api_response.status_code == 202 and verbose:
-        print(f'API response status "Accepted": {api_response}. Data not yet been cached, need to retry request shortly.')
+        print(
+            f'API response status "Accepted": {api_response}. Data not yet been cached, need to retry request shortly.'
+        )
         # Wait further, then retry...
-        print('Retrying same function recursively; this could go infinitely wrong... Cancel if uncertain tbh!')
+        print(
+            "Retrying same function recursively; this could go infinitely wrong... Cancel if uncertain tbh!"
+        )
         get_contributor_commits_stats(repo_name, verbose=True)
 
-
     elif api_response.status_code == 204 and verbose:
-        print(f'API response status "A header with no content is returned": {api_response}')
+        print(
+            f'API response status "A header with no content is returned": {api_response}'
+        )
         contributor_commits_stats = pd.DataFrame()
         return contributor_commits_stats
 
     else:
-        print(f'Something else is wrong; API response: {api_response}')
+        print(f"Something else is wrong; API response: {api_response}")
         contributor_commits_stats = pd.DataFrame()
         return contributor_commits_stats

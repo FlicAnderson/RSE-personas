@@ -1,4 +1,5 @@
-""" Test function for writing dataframes of data from a given GitHub repo to a file. """
+"""Test function for writing dataframes of data from a given GitHub repo to a file."""
+
 import pytest
 import pandas as pd
 from pandas.errors import EmptyDataError
@@ -25,51 +26,74 @@ def read_write_samples(repo_name_5=repo_name_5):
     # TODO: find 'more pytest' way of doing this?
     all_issues = issuepages.get_all_pages_issues(
         repo_name=repo_name_5,
-        config_path='githubanalysis/config.cfg',
+        config_path="githubanalysis/config.cfg",
         per_pg=100,
-        issue_state='all',
-        verbose=True
+        issue_state="all",
+        verbose=True,
     )  # get all issues from all pages for given repo
 
     # write out issues data to file and return/save filename and path to write_out object
     write_out = writeout.write_out_repo_data(
         repo_data_df=all_issues,
         repo_name=repo_name_5,
-        filename='all_issues',
-        write_out_as='json',
-        write_out_location='data/',
-        write_orientation='table',
-        verbose=True
+        filename="all_issues",
+        write_out_as="json",
+        write_out_location="data/",
+        write_orientation="table",
+        verbose=True,
     )
 
     write_out = Path(write_out)
 
-    read_in_df = pd.read_json(path_or_buf=write_out, orient='table', typ='frame', dtype=None, convert_dates=False,
-                              keep_default_dates=False, precise_float=False, date_unit='s')
+    read_in_df = pd.read_json(
+        path_or_buf=write_out,
+        orient="table",
+        typ="frame",
+        dtype=None,
+        convert_dates=False,
+        keep_default_dates=False,
+        precise_float=False,
+        date_unit="s",
+    )
     # check dates aren't borked up because there's conversions possible in the to_json() and read_json() functions.
 
     # create 5% sample dfs from post-read_in df for comparison:
-    read_in_sample = read_in_df.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
-                                   ignore_index=True)
+    read_in_sample = read_in_df.sample(
+        frac=0.05,
+        replace=False,
+        weights=None,
+        random_state=25,
+        axis="index",
+        ignore_index=True,
+    )
 
     # create 5% sample dfs from all_issues pre-write-out df and post-read_in df for comparison:
-    write_out_sample = all_issues.sample(frac=0.05, replace=False, weights=None, random_state=25, axis='index',
-                                     ignore_index=True)
+    write_out_sample = all_issues.sample(
+        frac=0.05,
+        replace=False,
+        weights=None,
+        random_state=25,
+        axis="index",
+        ignore_index=True,
+    )
 
-    return(all_issues, write_out, read_in_df, read_in_sample, write_out_sample)
+    return (all_issues, write_out, read_in_df, read_in_sample, write_out_sample)
 
 
 @pytest.fixture()
 def empty_df():
-    empty_df = pd.DataFrame({'A': []})
+    empty_df = pd.DataFrame({"A": []})
     return empty_df
 
-#@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_empty_df(empty_df):
     # test what happens writing out an empty df.
 
     with pytest.raises(EmptyDataError):
-        writeout.write_out_repo_data(repo_data_df=empty_df, repo_name=repo_name_1, filename=filename_1)
+        writeout.write_out_repo_data(
+            repo_data_df=empty_df, repo_name=repo_name_1, filename=filename_1
+        )
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -91,7 +115,9 @@ def test_write_out_reversible_url():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['url'].equals(write_out_sample['url']), 'Sampled urls do not match'
+    assert read_in_sample["url"].equals(
+        write_out_sample["url"]
+    ), "Sampled urls do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -103,7 +129,9 @@ def test_write_out_reversible_repo_url():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['repository_url'].equals(write_out_sample['repository_url']), 'Sampled repository_urls do not match'
+    assert read_in_sample["repository_url"].equals(
+        write_out_sample["repository_url"]
+    ), "Sampled repository_urls do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -115,7 +143,9 @@ def test_write_out_reversible_id():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['id'].equals(write_out_sample['id']), 'Sampled ids do not match'
+    assert read_in_sample["id"].equals(
+        write_out_sample["id"]
+    ), "Sampled ids do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -127,7 +157,9 @@ def test_write_out_reversible_number():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['number'].equals(write_out_sample['number']), 'Sampled numbers do not match'
+    assert read_in_sample["number"].equals(
+        write_out_sample["number"]
+    ), "Sampled numbers do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -139,7 +171,9 @@ def test_write_out_reversible_title():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['title'].equals(write_out_sample['title']), 'Sampled titles do not match'
+    assert read_in_sample["title"].equals(
+        write_out_sample["title"]
+    ), "Sampled titles do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -151,7 +185,9 @@ def test_write_out_reversible_state():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['state'].equals(write_out_sample['state']), 'Sampled states do not match'
+    assert read_in_sample["state"].equals(
+        write_out_sample["state"]
+    ), "Sampled states do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -163,7 +199,9 @@ def test_write_out_reversible_assignees():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['assignees'].equals(write_out_sample['assignees']), 'Sampled assignees do not match'
+    assert read_in_sample["assignees"].equals(
+        write_out_sample["assignees"]
+    ), "Sampled assignees do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -175,7 +213,9 @@ def test_write_out_reversible_created_at():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['created_at'].equals(write_out_sample['created_at']), 'Sampled created_at dates do not match'
+    assert read_in_sample["created_at"].equals(
+        write_out_sample["created_at"]
+    ), "Sampled created_at dates do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -187,7 +227,9 @@ def test_write_out_reversible_closed_at():
     read_in_sample = read_write_samples(repo_name_5=repo_name_5)[3]
     write_out_sample = read_write_samples(repo_name_5=repo_name_5)[4]
 
-    assert read_in_sample['closed_at'].equals(write_out_sample['closed_at']), 'Sampled closed_at dates do not match'
+    assert read_in_sample["closed_at"].equals(
+        write_out_sample["closed_at"]
+    ), "Sampled closed_at dates do not match"
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -202,39 +244,39 @@ def test_write_out_reversible_df_shape():
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_file_schema_matches():
-    # confirm that schema of json or csv file matches that of the written-out schema (and ideally the GH-pulled data).
-
-
-#@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_filename_correct():
-    # test that file is created with name as expected
-    # test with repo names including dashes, dots, spaces.
-    # given a filename, repo_name, does actual filename match?
+# def test_file_schema_matches():
+# confirm that schema of json or csv file matches that of the written-out schema (and ideally the GH-pulled data).
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_filetype_json():
-    # test json file is created if write_out_as='json'.
+# def test_filename_correct():
+# test that file is created with name as expected
+# test with repo names including dashes, dots, spaces.
+# given a filename, repo_name, does actual filename match?
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_filetype_json():
-    # test json file is created if write_out_as='json'.
+# def test_filetype_json():
+# test json file is created if write_out_as='json'.
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_write_out_location():
-    # test that file is created at expected location.
+# def test_filetype_json():
+# test json file is created if write_out_as='json'.
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_write_orientation_json():
-    # test that the data structure written out is as expected when set using 'write_orientation' param
-    # test for json files.
+# def test_write_out_location():
+# test that file is created at expected location.
 
 
 # @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-#def test_write_orientation_json():
-    # test that the data structure written out is as expected when set using 'write_orientation' param
-    # test for json files.
+# def test_write_orientation_json():
+# test that the data structure written out is as expected when set using 'write_orientation' param
+# test for json files.
+
+
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+# def test_write_orientation_json():
+# test that the data structure written out is as expected when set using 'write_orientation' param
+# test for json files.

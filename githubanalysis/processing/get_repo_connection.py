@@ -1,4 +1,4 @@
-""" Set up GitHub API connection for given GitHub repository."""
+"""Set up GitHub API connection for given GitHub repository."""
 
 import requests
 
@@ -20,7 +20,7 @@ def get_repo_connection(repo_name, config_path):
     :type: str
     :param verbose: return status info. Default: True
     :type: bool
-    :returns: `api_response` 
+    :returns: `api_response`
     :type: requests.models.Response
 
     Examples:
@@ -30,9 +30,9 @@ def get_repo_connection(repo_name, config_path):
 
     # auth setup
     gh_token = ghauth.setup_github_auth(config_path=config_path)
-    headers = {'Authorization': 'token ' + gh_token}
+    headers = {"Authorization": "token " + gh_token}
 
-    # get repo api response  
+    # get repo api response
     base_repo_url = "https://api.github.com/repos"
     connect_to = f"{base_repo_url}/{repo_name}"
 

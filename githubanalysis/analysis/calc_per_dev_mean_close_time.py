@@ -1,5 +1,4 @@
-""" Function to calculate average issue close times per assigned dev username from issue ticket data for a repo."""
-
+"""Function to calculate average issue close times per assigned dev username from issue ticket data for a repo."""
 
 
 def calc_per_dev_mean_close_time(repo_data_df):
@@ -20,12 +19,12 @@ def calc_per_dev_mean_close_time(repo_data_df):
     # for each dev in dev_list:
     #   identify each issue where dev is assigned
 
-        #   get close_time for issue
+    #   get close_time for issue
 
-        #   add dev, close_time and issue number and repo_number to df 'all_devs_close_times'
-        #   calculate mean from all_devs_close_times for dev
+    #   add dev, close_time and issue number and repo_number to df 'all_devs_close_times'
+    #   calculate mean from all_devs_close_times for dev
 
-        #   return ?df? for dev to output (+/- repo_name?)
+    #   return ?df? for dev to output (+/- repo_name?)
 
     # calc summary per_dev stats (% of issues assigned; lone-wolf vs team-worker; mean_close_time; min/max issue close_time
     # print each (dev, per_dev_mean_close_time) tuple if verbose

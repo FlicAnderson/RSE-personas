@@ -1,11 +1,18 @@
-""" Takes pd.DataFrame repo dataset (e.g. issues data) and writes out to file. ."""
+"""Takes pd.DataFrame repo dataset (e.g. issues data) and writes out to file. ."""
+
 import pandas as pd
 from pandas.errors import EmptyDataError
 
 
-def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
-                        write_out_as='json', write_out_location='data/',
-                        write_orientation='table', verbose=True):
+def write_out_repo_data(
+    repo_data_df,
+    repo_name,
+    filename="all_issues",
+    write_out_as="json",
+    write_out_location="data/",
+    write_orientation="table",
+    verbose=True,
+):
     """
     Takes pd.DataFrame repo dataset (e.g. issues data) and writes out to file.
     :param repo_data_df: pd.DataFrame containing data for given repo `repo_name`.
@@ -42,39 +49,39 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
 
     # verify input is df
     if not isinstance(repo_data_df, pd.DataFrame):
-        raise TypeError('Ensure input data is pd.DataFrame format.')
+        raise TypeError("Ensure input data is pd.DataFrame format.")
 
     if repo_data_df.empty is True:
-        raise EmptyDataError('There is no data in dataframe repo_data_df.')
+        raise EmptyDataError("There is no data in dataframe repo_data_df.")
 
     # check there's a repo_name
     if repo_name is None:
-        raise ValueError('repo_name must be supplied for filename.')
+        raise ValueError("repo_name must be supplied for filename.")
     if not isinstance(repo_name, str):
-        raise ValueError('repo_name must be a string.')
+        raise ValueError("repo_name must be a string.")
 
     # parse & check file write out location
-        # check it's not empty
-        # check it's valid and exists.
+    # check it's not empty
+    # check it's valid and exists.
 
     # create filename from repo_name
     write_out_filename = f'{filename}__{repo_name.replace("/", "_")}'
     print(write_out_filename)
 
     # build path + filename + file extension string
-    write_out = f'{write_out_location}{write_out_filename}.{write_out_as}'
+    write_out = f"{write_out_location}{write_out_filename}.{write_out_as}"
 
     # which method:
-    if write_out_as not in ('json', 'csv'):
+    if write_out_as not in ("json", "csv"):
         raise ValueError('write_out_as must be one of "csv" or "json".')
 
     # TODO: write out and read in datatypes explicitly!
-    if write_out_as == 'json':
+    if write_out_as == "json":
         repo_data_df.to_json(
             path_or_buf=write_out,
             orient=write_orientation,
-            date_format='iso',
-            date_unit='s',
+            date_format="iso",
+            date_unit="s",
             index=False,
             indent=4,
         )
@@ -85,6 +92,8 @@ def write_out_repo_data(repo_data_df, repo_name, filename='all_issues',
         # these are all 'string' in the written-out json file, and read in as float64. :s
 
     if verbose:
-        print(f'file saved out as: {write_out_filename}.{write_out_as} at {write_out_location}')
+        print(
+            f"file saved out as: {write_out_filename}.{write_out_as} at {write_out_location}"
+        )
 
-    return(write_out)  # write_out filename and path.
+    return write_out  # write_out filename and path.

@@ -7,8 +7,9 @@ import pandas as pd
 
 import githubanalysis.processing.repo_name_clean as name_clean
 import githubanalysis.processing.get_all_pages_issues as getallissues
-#import githubanalysis.processing.write_out_repo_data as writeout
-#import githubanalysis.processing.read_in_repo_data as readin
+
+# import githubanalysis.processing.write_out_repo_data as writeout
+# import githubanalysis.processing.read_in_repo_data as readin
 import githubanalysis.analysis.calc_issue_close_time as calcclose
 import githubanalysis.processing.get_issue_assignees as issuedevs
 import githubanalysis.visualization.plot_repo_issues_data as plotissues
@@ -18,7 +19,6 @@ import githubanalysis.processing.get_release_dates as getreleases
 import githubanalysis.processing.get_contributor_commits_stats as getcontributorstats
 import githubanalysis.visualization.plot_repo_contributor_commits_stats as plotcontributorcommits
 import githubanalysis.processing.get_all_pages_commits as getallcommits
-
 
 
 def main():
@@ -34,17 +34,19 @@ def main():
         repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
     elif len(sys.argv) == 1:
         # use of a specified list of test repos.
-        repo_name = random.choice([
-            'https://github.com/jtimonen/lgpr/',
-            'https://github.com/tnanri/cotocoa/',
-            'https://github.com/pkeys/WAM2layersPython'
-            'https://github.com/STBrinkmann/GVI',
-            'https://github.com/neelsoumya/rlib',
-            'https://github.com/sunpy/sunkit-instruments',
-            'https://github.com/Zibunas/Towards-circular-plastics-within-planetary-boundaries-Q-matrix/',
-            'https://github.com/restrepo/anomalies',
-            'https://github.com/awickert/terrapin/'
-        ])
+        repo_name = random.choice(
+            [
+                "https://github.com/jtimonen/lgpr/",
+                "https://github.com/tnanri/cotocoa/",
+                "https://github.com/pkeys/WAM2layersPython"
+                "https://github.com/STBrinkmann/GVI",
+                "https://github.com/neelsoumya/rlib",
+                "https://github.com/sunpy/sunkit-instruments",
+                "https://github.com/Zibunas/Towards-circular-plastics-within-planetary-boundaries-Q-matrix/",
+                "https://github.com/restrepo/anomalies",
+                "https://github.com/awickert/terrapin/",
+            ]
+        )
         # riboviz ~314 closed issues,
         # dwctaxon has 49 closed issues, 6 open
         # prog_models has 147 closed issues, 127 open.
@@ -67,13 +69,12 @@ def main():
         # ipt has 1757 closed, 130 open
 
     else:
-        raise IndexError('Please enter a repo_name.')
+        raise IndexError("Please enter a repo_name.")
 
-    if 'github' in repo_name:
+    if "github" in repo_name:
         repo_name = name_clean.repo_name_clean(repo_name)
 
-
-# ISSUES DATA:
+    # ISSUES DATA:
 
     # all_issues = getallissues.get_all_pages_issues(
     #     repo_name,
@@ -94,112 +95,141 @@ def main():
     # )  # write out issues data to file
 
     # read data back in from file & return tuple: read_in_df, repo_name
-    #all_issues_new = readin.read_in_repo_data(read_in='data/all_issues__riboviz_riboviz.json', repo_name=None, read_in_as='json', read_orientation='table', verbose=True)
-        ## remember that read_in_repo_data() returns tuple. Access as follows:
-        # e.g. print(all_issues_new[0].shape, all_issues_new[1])
-
+    # all_issues_new = readin.read_in_repo_data(read_in='data/all_issues__riboviz_riboviz.json', repo_name=None, read_in_as='json', read_orientation='table', verbose=True)
+    ## remember that read_in_repo_data() returns tuple. Access as follows:
+    # e.g. print(all_issues_new[0].shape, all_issues_new[1])
 
     # calculate issue close times
 
     closed_issues = getallissues.get_all_pages_issues(
         repo_name=repo_name,
-        config_path='githubanalysis/config.cfg',
+        config_path="githubanalysis/config.cfg",
         per_pg=100,
-        issue_state='closed',
-        verbose=True
+        issue_state="closed",
+        verbose=True,
     )  # get closed issues from all pages for given repo
 
-    #print(closed_issues.dtypes)
+    # print(closed_issues.dtypes)
 
     # calculate close_time for each closed issue
-    closed_issues['close_time'] = closed_issues.apply(lambda x: calcclose.calc_issue_close_time(x.created_at, x.closed_at, return_in='decimal_days'), axis=1)
+    closed_issues["close_time"] = closed_issues.apply(
+        lambda x: calcclose.calc_issue_close_time(
+            x.created_at, x.closed_at, return_in="decimal_days"
+        ),
+        axis=1,
+    )
 
     # Get average close time in DF of repo issues to 3 decimal places.
-    repo_issue_close_mean = round(closed_issues['close_time'].mean(), 3)
+    repo_issue_close_mean = round(closed_issues["close_time"].mean(), 3)
 
-    print(f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days")
+    print(
+        f"For repo {repo_name}, average issue closure time was {repo_issue_close_mean} days"
+    )
     # 73.047... days to close (average) 314 closed issue tickets @ riboviz/riboviz
 
     # parse out assignee data from issues df as new column:
     closed_issues = issuedevs.get_issue_assignees(closed_issues)
 
     # get creation date of repo:
-    repo_creation_date = createdate.get_repo_creation_date(repo_name, config_path='githubanalysis/config.cfg', verbose=True)
+    repo_creation_date = createdate.get_repo_creation_date(
+        repo_name, config_path="githubanalysis/config.cfg", verbose=True
+    )
 
     # calculate days_since_start for each closed issue
-    closed_issues['days_since_start'] = closed_issues.apply(lambda x: dayssince.calc_days_since_repo_creation(x.closed_at, x.repo_name, since_date=repo_creation_date, return_in='whole_days', config_path='githubanalysis/config.cfg'), axis=1)
+    closed_issues["days_since_start"] = closed_issues.apply(
+        lambda x: dayssince.calc_days_since_repo_creation(
+            x.closed_at,
+            x.repo_name,
+            since_date=repo_creation_date,
+            return_in="whole_days",
+            config_path="githubanalysis/config.cfg",
+        ),
+        axis=1,
+    )
 
     # add column with boolean for PR status
-    closed_issues['pull_request_bool'] = closed_issues['pull_request'].notna()
+    closed_issues["pull_request_bool"] = closed_issues["pull_request"].notna()
 
     # scatterplot of time to close issue tickets, X AXIS: DAYS SINCE REPO CREATION, with mean closure time xline
-    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+    # plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
     # separate Pull Requests (PRs) from data
     # where closed_issues['pull_request'] IS *NOT* NaN (ie it IS a pull request) => PRs.
 
-    closed_pull_requests = closed_issues.loc[closed_issues['pull_request'].notna()]
+    closed_pull_requests = closed_issues.loc[closed_issues["pull_request"].notna()]
 
-    closed_issues_only = closed_issues.loc[closed_issues['pull_request'].isna()]
+    closed_issues_only = closed_issues.loc[closed_issues["pull_request"].isna()]
 
-    print(f"For repo {repo_name}, there are {len(closed_issues_only.index)} closed issue tickets and {len(closed_pull_requests.index)} closed pull requests.")
-
+    print(
+        f"For repo {repo_name}, there are {len(closed_issues_only.index)} closed issue tickets and {len(closed_pull_requests.index)} closed pull requests."
+    )
 
     # plot ticket_number for closed_issues (closed issues and PRs together, coloured by PR status)
-    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='ticket_number', add_events=False,
+    # plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='ticket_number', add_events=False,
     #                                 save_out=True, save_name='pull_requests_data_plot', save_type='png', save_out_location='images/')
 
-
     # plot issue ticket data by project_time (closed issues and PRs together, coloured by PR status)
-    #plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
+    # plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=False, save_out=True, save_name='issues_data_plot', save_type='png', save_out_location='images/')
 
     # issues & assigned devs:
-    #plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='pull_requests_counts_devs_plot', save_type='png', save_out_location='images/')
+    # plotissuedevs.plot_repo_issues_counts_devs(closed_issues, repo_name, save_name='pull_requests_counts_devs_plot', save_type='png', save_out_location='images/')
 
-# OTHER DATA (e.g. COMMITS, METRICS):
+    # OTHER DATA (e.g. COMMITS, METRICS):
     # other bits.
 
     # # get release dates for repo
     repo_releases = getreleases.get_release_dates(repo_name, verbose=True)
-    #print(repo_releases)
-    #print(repo_releases.shape)
-    #print(repo_releases.columns)
+    # print(repo_releases)
+    # print(repo_releases.shape)
+    # print(repo_releases.columns)
 
     # calculate 'days since' date equivalents for release dates if there were any:
     if len(repo_releases.columns) != 0:
-
-        repo_releases['release_date_since_repo_creation'] = repo_releases.apply(
+        repo_releases["release_date_since_repo_creation"] = repo_releases.apply(
             lambda x: dayssince.calc_days_since_repo_creation(
                 x.published_at,
                 x.repo_name,
                 since_date=repo_creation_date,
-                return_in='whole_days',
-                config_path='githubanalysis/config.cfg'
-            ), axis=1
+                return_in="whole_days",
+                config_path="githubanalysis/config.cfg",
+            ),
+            axis=1,
         )
         # print(repo_releases['release_date_since_repo_creation'])
 
-        repo_releases['releases_before_repo_creation'] = repo_releases['created_at'].apply(
-            lambda x: 'True' if x < repo_creation_date else 'False')
+        repo_releases["releases_before_repo_creation"] = repo_releases[
+            "created_at"
+        ].apply(lambda x: "True" if x < repo_creation_date else "False")
 
         # print(repo_releases['releases_before_repo_creation'])
 
-        if pd.Series(repo_releases['releases_before_repo_creation']).any():
-            print("BE AWARE: Some releases were created before the 'official' repo creation date.")
+        if pd.Series(repo_releases["releases_before_repo_creation"]).any():
+            print(
+                "BE AWARE: Some releases were created before the 'official' repo creation date."
+            )
 
         # print(repo_releases.columns)
 
-        release_events = repo_releases['release_date_since_repo_creation']
-        print(f'release events: {release_events}')
-        print(f'type release events: {type(release_events)}')
+        release_events = repo_releases["release_date_since_repo_creation"]
+        print(f"release events: {release_events}")
+        print(f"type release events: {type(release_events)}")
 
         # plot issues data WITH RELEASE DATE LINES
-        plotissues.plot_repo_issues_data(closed_issues, repo_name, xaxis='project_time', add_events=release_events,
-                                         save_out=True, save_name='releases_issues_data_plot', save_type='png',
-                                         save_out_location='images/')
+        plotissues.plot_repo_issues_data(
+            closed_issues,
+            repo_name,
+            xaxis="project_time",
+            add_events=release_events,
+            save_out=True,
+            save_name="releases_issues_data_plot",
+            save_type="png",
+            save_out_location="images/",
+        )
 
     # get contributor stats for repo:
-    contributor_commits_stats = getcontributorstats.get_contributor_commits_stats(repo_name, verbose=True)
+    contributor_commits_stats = getcontributorstats.get_contributor_commits_stats(
+        repo_name, verbose=True
+    )
     if contributor_commits_stats is not None:
         print(contributor_commits_stats.head())
         print(type(contributor_commits_stats))
@@ -207,18 +237,19 @@ def main():
         # plot contributor stats for repo:
         plotcontributorcommits.plot_repo_contributor_commits_stats(
             repo_data_df=contributor_commits_stats,
-            repo_name = repo_name,
+            repo_name=repo_name,
             save_out=True,
-            save_name='contributor_commits_totals_plot',
-            save_type='png',
-            save_out_location='images/',
-            verbose=True
+            save_name="contributor_commits_totals_plot",
+            save_type="png",
+            save_out_location="images/",
+            verbose=True,
         )
-
 
     print(f"Getting commits from {repo_name}...")
     # get all commits for repo:
-    all_commits = getallcommits.get_all_pages_commits(repo_name, config_path='githubanalysis/config.cfg', per_pg=100, verbose=True)
+    all_commits = getallcommits.get_all_pages_commits(
+        repo_name, config_path="githubanalysis/config.cfg", per_pg=100, verbose=True
+    )
     type(all_x)
     print(f"{len(all_commits.columns)} commits returned")
 
@@ -242,7 +273,6 @@ def main():
     #
     #     if pd.Series(all_commits['commits_before_repo_creation']).any():
     #         print(f"BE AWARE: Some commits were made before the 'official' repo creation date.")
-
 
 
 # this bit
