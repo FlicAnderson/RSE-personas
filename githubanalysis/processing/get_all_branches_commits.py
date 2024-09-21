@@ -69,6 +69,6 @@ class AllBranchesCommitsGetter:
         # create empty df to store commits data
         all_commits = pd.DataFrame()
 
-        branches_info = branchgetter.get_branches(self, repo_name, config_path, per_pg)
+        branches_info = branchgetter.get_branches(repo_name, config_path, per_pg)
 
         print(len(branches_info))
