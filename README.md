@@ -84,6 +84,18 @@ Successfully installed githubanalysis-1.0
  ```
 1) Check that the installation and setup has worked by running the setup test script ([TODO - issue ticket exists](https://github.com/FlicAnderson/coding-smart/issues/48)). 
 
+### Regenerating environment setup files 
+
+If adding a new package to the conda enviroment, create a NEW **updated environment yaml file for conda** in the repo directory by running `conda env export > coding-smart-github.yml` after the new package has been installed.  
+This file contains the precise package builds used on the system, allowing closer reproducibility.
+The repository also contains a `requirements.txt` file which contains less specific package information, which may be easier to use on other systems. 
+
+To update the **`requirements.txt` pip file**, run `pip list --format=freeze | grep -vE "^mkl-.*" | grep -vE "^githubanalysis.*" > requirements.txt` from the repo directory root.  
+This creates the requirements file, but removes any packages starting `mkl-`, and the `githubanalysis` package created by the setup script and generated via `pip install -e .`. 
+Leaving those packages in breaks the Github Actions Continuous Build/Integration environment, so this will avoid those issues.  
+The standard command is `pip list --format=freeze > requirements.txt`
+
+
 
 ## Developing / Running This Code
 
@@ -178,6 +190,20 @@ Swapping to remote terminal (A), in a tmux session that isn't already running a 
 It IS possible to connect locally running VS Code to a remote VM and develop remotely that way, but it's more hassle to keep everything connected nicely and creates more headaches. 
 
 Care needs to be taken when developing in git branches to avoid confusion!
+
+### Linting and Formatting
+
+[`ruff`](https://docs.astral.sh/ruff/) is installed and used in developing this code, and has been set up to run on a GitHub Actions Continuous Build/Integration setup, but can also be run manually.  
+
+For linting checks:  
+  - `python -m ruff check [folderpath]` from the repository folder (e.g. `python -m ruff check githubanalysis/` will run **linting checks** on all non-excluded file types within the githubanalysis folder)   
+  - `python -m ruff check [folderpath] --fix` will MAKE the proposed non-risky changes (leaving potentially dangerous ones out) 
+
+For formatting checks: 
+  - `python -m ruff format --diff` can be run to SHOW the diffs of potential **formatting changes** but they will not be made  
+  - `python -m ruff format` will actually MAKE the formatting changes which would be compared using the `--diff` flag.    
+
+Running these periodically and applying the suggested fixes is recommended.  
 
 
 ## Filesystem  
