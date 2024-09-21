@@ -1,14 +1,10 @@
 """ Function to retrieve all commits across ALL branches for a given GitHub repository and remove duplicates. """
 
-import pandas as pd
-import datetime
-from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 
 import utilities.get_default_logger as loggit
-import githubanalysis.processing.setup_github_auth as ghauth
 
 import githubanalysis.processing.get_branches as branchgetter
 
