@@ -4,7 +4,6 @@ import sys
 import os
 import pandas as pd
 import datetime
-from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
@@ -254,11 +253,11 @@ class IssueGetter:
                         f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%)."
                     )
                 else:
-                    if all_issues["is_PR"][0] == False:
+                    if not all_issues["is_PR"][0]:
                         self.logger.debug(
                             f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets and (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and 0 (0%) issues that are PRs."
                         )
-                    elif all_issues["is_PR"][0] == True:
+                    elif all_issues["is_PR"][0] is True:
                         self.logger.debug(
                             f"There are 0 issue tickets (0%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%)."
                         )
