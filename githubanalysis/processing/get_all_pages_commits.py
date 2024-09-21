@@ -130,7 +130,7 @@ class CommitsGetter:
             commit_links = api_response.links
             store_pg = pd.DataFrame()
             pg_count = 0
-            
+
             try:
                 if "last" in commit_links:
                     commit_links_last = commit_links["last"]["url"].split("&page=")[1]
