@@ -30,7 +30,7 @@ class CommitsGetter:
 
     def get_all_pages_commits(self, repo_name, config_path='githubanalysis/config.cfg', per_pg=100, out_filename='all-commits', write_out_location='data/'):
         """
-        Obtain all commits data from all pages for a given GitHub repo `repo_name`.
+        Obtain all commits data from all pages for MAIN BRANCH of a given GitHub repo `repo_name`.
         :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
         :type: str
         :param config_path: file path of config.cfg file. Default=githubanalysis/config.cfg'.
