@@ -39,9 +39,9 @@ def setup_github_auth(config_path="githubanalysis/config.cfg", verbose=True):
         raise KeyError("Config file access token info not correct somehow.")
 
     try:
-        ghlink = Github(
+        Github(
             access_token,
-        )  # type(ghlink) is github.MainClass.Github; ghlink.per_page should return 100
+        )  # type is github.MainClass.Github; 
         return access_token
 
     except RuntimeError:
