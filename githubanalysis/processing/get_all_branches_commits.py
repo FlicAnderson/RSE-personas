@@ -15,7 +15,7 @@ import traceback
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
-from githubanalysis.processing.get_branches import BranchesGetter
+import githubanalysis.processing.get_branches as branchgetter
 
 
 class AllBranchesCommitsGetter: 
@@ -69,6 +69,6 @@ class AllBranchesCommitsGetter:
         # create empty df to store commits data
         all_commits = pd.DataFrame()
 
-        branches_info = BranchesGetter.get_branches(repo_name=repo_name, config_path=config_path, per_pg=per_pg)
+        branches_info = branchgetter.get_branches(self, repo_name=repo_name, config_path=config_path, per_pg=per_pg)
 
         print(len(branches_info))
