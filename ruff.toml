@@ -22,6 +22,9 @@ fixable = ["ALL"]
 unfixable = []
 
 [format]
+
+exclude = ["*.ipynb"]
+
 # Like Black, use double quotes for strings.
 quote-style = "double"
 
