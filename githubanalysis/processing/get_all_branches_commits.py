@@ -6,11 +6,12 @@ from requests.adapters import HTTPAdapter, Retry
 import logging
 import pandas as pd
 import datetime
+import json
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
 import githubanalysis.processing.get_branches as branchgetter
-import githubanalysis.processing.deduplicate_commits as dedupcommits
+# import githubanalysis.processing.deduplicate_commits as dedupcommits
 
 
 def _normalise_default_branch_name(branch):
@@ -70,7 +71,7 @@ class AllBranchesCommitsGetter:
 
     def _singlepage_commit_grabber(
         self, repos_api_url: str, repo_name: str, branch: str, per_pg: str
-    ):
+    ) -> list[dict]:
         commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page=1)
 
         self.logger.info(
@@ -80,10 +81,7 @@ class AllBranchesCommitsGetter:
         # logger.debug(f"getting json via request url {commits_url}.")
         api_response = self.s.get(url=commits_url, headers=self.headers)
 
-        json_pg = api_response.json()
-
-        all_commits = pd.DataFrame.from_dict(json_pg)
-        all_commits["branchname"] = branch
+        all_commits = api_response.json()
 
         return all_commits
 
@@ -94,12 +92,12 @@ class AllBranchesCommitsGetter:
         repo_name: str,
         branch: str,
         per_pg: str,
-    ):
+    ) -> list[dict]:
         commit_links_last = commit_links["last"]["url"].split("&page=")[1]
         pages_commits = int(commit_links_last)
 
         all_commits = pd.DataFrame()
-
+        all_commits = []
         pg_range = range(1, (pages_commits + 1))
         for i in pg_range:
             self.logger.info(
@@ -113,9 +111,7 @@ class AllBranchesCommitsGetter:
             self.logger.info(f"API is checking url: {commits_url}")
 
             json_pg = api_response.json()
-
-            all_commits = pd.concat([all_commits, pd.DataFrame.from_dict(json_pg)])
-            all_commits["branchname"] = branch
+            all_commits.extend(json_pg)
 
         return all_commits
 
@@ -166,13 +162,13 @@ class AllBranchesCommitsGetter:
         else:
             write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
 
-        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
+        # write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
-
-        all_branches_commits = pd.DataFrame()
 
         branches_info = branchgetter.get_branches(repo_name, self.config_path, per_pg)
 
+
+        all_branches = {}
         for branch in branches_info.branch_sha:
             branch = _normalise_default_branch_name(branch)
             try:
@@ -200,61 +196,61 @@ class AllBranchesCommitsGetter:
                     all_commits = self._singlepage_commit_grabber(
                         repos_api_url, repo_name, branch, per_pg
                     )
+                
+                all_branches[branch] = all_commits
 
-                # write this BRANCH of commits out.
-                all_commits.to_csv(
-                    write_out_extra_info,
-                    mode="a",
-                    index=True,
-                    header=not os.path.exists(write_out_extra_info),
-                )
+                # self.logger.info(
+                #     f"There are {len(all_branches_commits)} after getting commits from branch {branch}."
+                # )
+            
 
-                all_branches_commits = pd.concat([all_branches_commits, all_commits])
-                self.logger.info(
-                    f"There are {len(all_branches_commits)} after getting commits from branch {branch}."
-                )
 
             except Exception as e:
                 self.logger.error(f"Error: {e}")
                 raise
 
-        self.logger.info(
-            f"Repo {repo_name} has {len(all_branches_commits)} commits total after getting commits from ALL {len(branches_info)} BRANCHES."
-        )
+        with open(write_out_extra_info_json, "w") as json_file:
+            json.dump(all_branches, json_file)
 
-        # save out dataframe of ALL BRANCHES commits
-        all_branches_commits.to_json(
-            path_or_buf=write_out_extra_info_json,
-            orient="records",
-            date_format="iso",
-            lines=True,
-        )
+        # self.logger.info(
+        #     f"Repo {repo_name} has {len(all_branches_commits)} commits total after getting commits from ALL {len(branches_info)} BRANCHES."
+        # )
+
+        # # save out dataframe of ALL BRANCHES commits
+        # all_branches_commits.to_json(
+        #     path_or_buf=write_out_extra_info_json,
+        #     orient="records",
+        #     date_format="iso",
+        #     lines=True,
+        # )
         if not os.path.exists(write_out_extra_info_json):
             self.logger.error(
                 f"JSON file does NOT exist at path: {os.path.exists(write_out_extra_info_json)}"
             )
 
         self.logger.info(
-            f"Commits data written out to file for repo {repo_name} at {write_out_extra_info} and {write_out_extra_info_json}."
+            f"Commits data written out to file for repo {repo_name} {write_out_extra_info_json}."
         )
 
         # drop non-unique commit hashes
-        unique_commits_all_branches = dedupcommits.deduplicate_commits(
-            all_branches_commits
-        )
+        # unique_commits_all_branches = dedupcommits.deduplicate_commits(
+        #     all_branches_commits
+        # )
 
-        write_out_extra_info_dedup = (
-            f"{write_out}_{self.current_date_info}_deduplicated.csv"
-        )
+        # write_out_extra_info_dedup = (
+        #     f"{write_out}_{self.current_date_info}_deduplicated.csv"
+        # )
         # write the deduplicated set of commits out to csv
-        unique_commits_all_branches.to_csv(
-            write_out_extra_info_dedup,
-            mode="a",
-            index=True,
-            header=not os.path.exists(write_out_extra_info_dedup),
-        )
-        self.logger.info(
-            f"{len(unique_commits_all_branches)} UNIQUE (deduplicated) commits data written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
-        )
+        # unique_commits_all_branches.to_csv(
+        #     write_out_extra_info_dedup,
+        #     mode="w",
+        #     index=True,
+        #     header=not os.path.exists(write_out_extra_info_dedup),
+        # )
+        # self.logger.info(
+        #     f"{len(unique_commits_all_branches)} UNIQUE (deduplicated) commits data written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
+        # )
 
-        return unique_commits_all_branches
+        # return unique_commits_all_branches
+
+        return all_branches
