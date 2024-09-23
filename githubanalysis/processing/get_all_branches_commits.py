@@ -201,7 +201,7 @@ class AllBranchesCommitsGetter:
                 raise
 
         self.logger.info(
-            f"Repo {repo_name} has {len(all_branches_commits)} commits total after getting commits from ALL {len(branches_info)}BRANCHES."
+            f"Repo {repo_name} has {len(all_branches_commits)} commits total after getting commits from ALL {len(branches_info)} BRANCHES."
         )
 
         # save out dataframe of ALL BRANCHES commits
