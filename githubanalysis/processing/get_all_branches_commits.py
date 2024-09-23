@@ -178,7 +178,7 @@ class AllBranchesCommitsGetter:
 
                 # write this BRANCH of commits out.
                 all_commits.to_csv(
-                    self.write_out_extra_info,
+                    write_out_extra_info,
                     mode="a",
                     index=True,
                     header=not os.path.exists(write_out_extra_info),
