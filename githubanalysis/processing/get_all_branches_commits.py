@@ -55,7 +55,7 @@ class AllBranchesCommitsGetter:
         self.config_path = config_path
 
         # write-out file setup
-        self.current_date_info = datetime.now().strftime(
+        self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
