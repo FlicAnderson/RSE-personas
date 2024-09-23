@@ -1,9 +1,11 @@
 """Function to retrieve all commits across ALL branches for a given GitHub repository and remove duplicates."""
 
+import os
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 import pandas as pd
+import datetime
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
@@ -27,7 +29,9 @@ class AllBranchesCommitsGetter:
     # if not given a better option, use my default settings for logging
     logger: logging.Logger
 
-    def __init__(self, config_path: str, logger: logging.Logger = None) -> None:
+    def __init__(
+        self, repo_name, config_path: str, logger: logging.Logger = None
+    ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
                 console=False,
@@ -50,6 +54,12 @@ class AllBranchesCommitsGetter:
         self.headers = {"Authorization": "token " + self.gh_token}
         self.config_path = config_path
 
+        # write-out file setup
+        self.current_date_info = datetime.now().strftime(
+            "%Y-%m-%d"
+        )  # run this at start of script not in loop to avoid midnight/long-run commits
+        self.sanitised_repo_name = repo_name.replace("/", "-")
+
     def __del__(self):
         self.s.close()
 
@@ -58,6 +68,10 @@ class AllBranchesCommitsGetter:
     ):
         commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page=1)
 
+        self.logger.info(
+            f">> Running commit grab for repo {repo_name}, on branch {branch}, in page 1 of 1."
+        )
+
         # logger.debug(f"getting json via request url {commits_url}.")
         api_response = self.s.get(url=commits_url, headers=self.headers)
 
@@ -65,6 +79,7 @@ class AllBranchesCommitsGetter:
 
         all_commits = pd.DataFrame.from_dict(json_pg)
         all_commits["branchname"] = branch
+
         return all_commits
 
     def _multipage_commit_grabber(
@@ -82,20 +97,21 @@ class AllBranchesCommitsGetter:
 
         pg_range = range(1, (pages_commits + 1))
         for i in pg_range:
-            print(
+            self.logger.info(
                 f">> Running commit grab for repo {repo_name}, on branch {branch}, in page {i} of {pages_commits}."
             )
             page = i
             commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page)
             api_response = self.s.get(url=commits_url, headers=self.headers)
 
-            print(api_response)
-            print(commits_url)
+            self.logger.info(f"API response is: {api_response}")
+            self.logger.info(f"API is checking url: {commits_url}")
 
             json_pg = api_response.json()
 
             all_commits = pd.concat([all_commits, pd.DataFrame.from_dict(json_pg)])
             all_commits["branchname"] = branch
+
         return all_commits
 
     def get_all_branches_commits(
@@ -120,6 +136,14 @@ class AllBranchesCommitsGetter:
         :return: `all_branches_commits` pd.DataFrame for repo `repo_name`.
         :type: DataFrame
         """
+
+        self.logger.debug(f"Getting commits for repo {repo_name}.")
+
+        write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
+        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
+
+        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
+
         all_branches_commits = pd.DataFrame()
 
         branches_info = branchgetter.get_branches(repo_name, self.config_path, per_pg)
@@ -141,9 +165,6 @@ class AllBranchesCommitsGetter:
                 if api_response.status_code != 200:
                     continue
 
-                # logger.debug(f"Getting commits for repo {repo_name} for branch {branch}.")
-                # self.logger.debug(f"{api_response}")
-
                 commit_links = api_response.links
 
                 if "last" in commit_links:
@@ -155,11 +176,41 @@ class AllBranchesCommitsGetter:
                         repos_api_url, repo_name, branch, per_pg
                     )
 
+                # write this BRANCH of commits out.
+                all_commits.to_csv(
+                    self.write_out_extra_info,
+                    mode="a",
+                    index=True,
+                    header=not os.path.exists(write_out_extra_info),
+                )
+
                 all_branches_commits = pd.concat([all_branches_commits, all_commits])
-                print(len(all_branches_commits))
+                self.logger.info(
+                    f"There are {len(all_branches_commits)} after getting commits from branch {branch}."
+                )
 
             except Exception as e:
-                print(f"Error: {e}")
+                self.logger.error(f"Error: {e}")
                 raise
+
+        self.logger.info(
+            f"Repo {repo_name} has {len(all_branches_commits)} commits total after getting commits from ALL {len(branches_info)}BRANCHES."
+        )
+
+        # save out dataframe of ALL BRANCHES commits
+        all_branches_commits.to_json(
+            path_or_buf=write_out_extra_info_json,
+            orient="records",
+            date_format="iso",
+            lines=True,
+        )
+        if not os.path.exists(write_out_extra_info_json):
+            self.logger.error(
+                f"JSON file does NOT exist at path: {os.path.exists(write_out_extra_info_json)}"
+            )
+
+        self.logger.info(
+            f"Commits data written out to file for repo {repo_name} at {write_out_extra_info} and {write_out_extra_info_json}."
+        )
 
         return all_branches_commits
