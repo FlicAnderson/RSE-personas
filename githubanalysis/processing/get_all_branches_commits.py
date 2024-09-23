@@ -10,6 +10,7 @@ import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
 import githubanalysis.processing.get_branches as branchgetter
+import githubanalysis.processing.deduplicate_commits as dedupcommits
 
 
 def _normalise_default_branch_name(branch):
@@ -137,7 +138,7 @@ class AllBranchesCommitsGetter:
         :type: str
         :param: write_out_location: path of location to write file out to (Default: 'data/')
         :type: str
-        :return: `all_branches_commits` pd.DataFrame for repo `repo_name`.
+        :return: `unique_commits_all_branches` pd.DataFrame for repo `repo_name`.
         :type: DataFrame
 
         Example:
@@ -237,4 +238,23 @@ class AllBranchesCommitsGetter:
             f"Commits data written out to file for repo {repo_name} at {write_out_extra_info} and {write_out_extra_info_json}."
         )
 
-        return all_branches_commits
+        # drop non-unique commit hashes
+        unique_commits_all_branches = dedupcommits.deduplicate_commits(
+            all_branches_commits
+        )
+
+        write_out_extra_info_dedup = (
+            f"{write_out}_{self.current_date_info}_deduplicated.csv"
+        )
+        # write the deduplicated set of commits out to csv
+        unique_commits_all_branches.to_csv(
+            write_out_extra_info_dedup,
+            mode="a",
+            index=True,
+            header=not os.path.exists(write_out_extra_info_dedup),
+        )
+        self.logger.info(
+            f"UNIQUE (deduplicated) commits data written out for {repo_name} at {write_out_extra_info_dedup}."
+        )
+
+        return unique_commits_all_branches
