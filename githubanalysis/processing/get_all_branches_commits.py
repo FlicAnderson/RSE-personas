@@ -127,8 +127,6 @@ class AllBranchesCommitsGetter:
                     modified[branch_name].append(commit)
         return modified
 
-                
-
     def get_all_branches_commits(
         self,
         repo_name,
@@ -137,19 +135,19 @@ class AllBranchesCommitsGetter:
         write_out_location="data/",
     ):
         """
-        Obtain all commits data from all API request pages for ALL BRANCHES of a given GitHub repo `repo_name`.
+        Obtain all DEDUPLICATED commits data from all API request pages for ALL BRANCHES of a given GitHub repo `repo_name`.
         cf: get_all_pages_commits( ) which only returns main branch commits.
 
         :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
         :type: str
         :param per_pg: number of items per page in paginated GitHub API requests. Default=100 (GH's default= 30)
         :type: int
-        :param out_filename: filename suffix indicating commits content (Default: 'all-commits')
+        :param out_filename: filename suffix indicating commits content (Default: 'all-branches-commits')
         :type: str
         :param: write_out_location: path of location to write file out to (Default: 'data/')
         :type: str
-        :return: `unique_commits_all_branches` pd.DataFrame for repo `repo_name`.
-        :type: DataFrame
+        :return: `unique_commits_all_branches` dict of lists for repo `repo_name`.
+        :type: dict
 
         Example:
 
@@ -164,7 +162,9 @@ class AllBranchesCommitsGetter:
 
         # run function
         all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(repo_name=repo_name)
-        len(all_branches_commits) # 5679
+        # ... response info from logger
+        INFO:Commits data written out to file for repo JeschkeLab/DeerLab ../../data/all-branches-commits_JeschkeLab-DeerLab_2024-09-23.json.
+        INFO:566 UNIQUE (deduplicated) commits data written out for all branches of JeschkeLab/DeerLab at ../../data/all-branches-commits_JeschkeLab-DeerLab_2024-09-23_deduplicated.json.
         """
 
         self.logger.debug(
@@ -176,15 +176,12 @@ class AllBranchesCommitsGetter:
         else:
             write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
 
-        # write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
         branches_info = branchgetter.get_branches(repo_name, self.config_path, per_pg)
 
-
- 
-
         all_branches_commits = {}
+
         for branch in branches_info.branch_sha:
             branch = _normalise_default_branch_name(branch)
             try:
@@ -212,14 +209,8 @@ class AllBranchesCommitsGetter:
                     all_commits = self._singlepage_commit_grabber(
                         repos_api_url, repo_name, branch, per_pg
                     )
-                
+
                 all_branches_commits[branch] = all_commits
-
-                # self.logger.info(
-                #     f"There are {len(all_branches_commits)} after getting commits from branch {branch}."
-                # )
-            
-
 
             except Exception as e:
                 self.logger.error(f"Error: {e}")
@@ -234,9 +225,8 @@ class AllBranchesCommitsGetter:
         with open(write_out_extra_info_json, "w") as json_file:
             json.dump(all_branches_commits, json_file)
 
-        with open(write_out_extra_info_dedup, "w") as json_file: 
+        with open(write_out_extra_info_dedup, "w") as json_file:
             json.dump(unique_commits_all_branches, json_file)
-
 
         if not os.path.exists(write_out_extra_info_json):
             self.logger.error(
@@ -244,14 +234,16 @@ class AllBranchesCommitsGetter:
             )
 
         self.logger.info(
-            f"Commits data written out to file for repo {repo_name} {write_out_extra_info_json}."
+            f"Raw repo commits data (including duplicates) from all branches written out to file for repo {repo_name} {write_out_extra_info_json}."
         )
 
-        total_commit_count = sum(len(commits_list) for commits_list in unique_commits_all_branches.values())
+        # calculate number of unique commits
+        total_commit_count = sum(
+            len(commits_list) for commits_list in unique_commits_all_branches.values()
+        )
 
         self.logger.info(
-            f"{total_commit_count} UNIQUE (deduplicated) commits data written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
+            f"{total_commit_count} UNIQUE (deduplicated) commits written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
         )
-
 
         return unique_commits_all_branches
