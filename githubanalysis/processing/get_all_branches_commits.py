@@ -50,7 +50,6 @@ class AllBranchesCommitsGetter:
         self.headers = {"Authorization": "token " + self.gh_token}
         self.config_path = config_path
 
-
     def __del__(self):
         self.s.close()
 
