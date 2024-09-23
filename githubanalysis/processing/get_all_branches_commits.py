@@ -139,9 +139,26 @@ class AllBranchesCommitsGetter:
         :type: str
         :return: `all_branches_commits` pd.DataFrame for repo `repo_name`.
         :type: DataFrame
+
+        Example:
+
+        # setting up logger
+        logger = loggit.get_default_logger(console=True, set_level_to='DEBUG', log_name='../../logs/get_all_branches_commits_NOTEBOOK_logs.txt')
+
+        # set example repo_name
+        repo_name = 'JeschkeLab/DeerLab'
+
+        # set up the class details for running inside jupyter notebook
+        allbranchescommitsgetter = AllBranchesCommitsGetter(repo_name = repo_name, in_notebook=True, config_path='../../githubanalysis/config.cfg', logger=logger)
+
+        # run function
+        all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(repo_name=repo_name)
+        len(all_branches_commits) # 5679
         """
 
-        self.logger.debug(f"Getting commits for repo {repo_name}.")
+        self.logger.debug(
+            f"Getting commits for repo {repo_name}, running within notebook is {self.in_notebook}."
+        )
 
         if self.in_notebook:
             write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}"  # look further up for correct path
