@@ -30,7 +30,7 @@ class AllBranchesCommitsGetter:
     logger: logging.Logger
 
     def __init__(
-        self, repo_name, config_path: str, logger: logging.Logger = None
+        self, repo_name, in_notebook:bool, config_path: str, logger: logging.Logger = None
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -53,7 +53,7 @@ class AllBranchesCommitsGetter:
         self.gh_token = ghauth.setup_github_auth(config_path=config_path)
         self.headers = {"Authorization": "token " + self.gh_token}
         self.config_path = config_path
-
+        self.in_notebook = in_notebook
         # write-out file setup
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
@@ -139,10 +139,14 @@ class AllBranchesCommitsGetter:
 
         self.logger.debug(f"Getting commits for repo {repo_name}.")
 
-        write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
-        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
+        if self.in_notebook: 
+            write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}" # look further up for correct path
+        else: 
+            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
 
+        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
+
 
         all_branches_commits = pd.DataFrame()
 
