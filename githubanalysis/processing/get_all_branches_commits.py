@@ -254,7 +254,7 @@ class AllBranchesCommitsGetter:
             header=not os.path.exists(write_out_extra_info_dedup),
         )
         self.logger.info(
-            f"UNIQUE (deduplicated) commits data written out for {repo_name} at {write_out_extra_info_dedup}."
+            f"{len(unique_commits_all_branches)} UNIQUE (deduplicated) commits data written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
         )
 
         return unique_commits_all_branches
