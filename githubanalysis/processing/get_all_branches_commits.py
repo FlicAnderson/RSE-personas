@@ -115,6 +115,20 @@ class AllBranchesCommitsGetter:
 
         return all_commits
 
+    def _deduplicate_commits(self, all_branches_commits: dict[str, list]):
+        shas = set()
+        modified: dict[str, list] = {}
+        for branch_name, commits in all_branches_commits.items():
+            modified[branch_name] = []
+            for commit in commits:
+                sha = commit["sha"]
+                if sha not in shas:
+                    shas.add(sha)
+                    modified[branch_name].append(commit)
+        return modified
+
+                
+
     def get_all_branches_commits(
         self,
         repo_name,
@@ -168,7 +182,9 @@ class AllBranchesCommitsGetter:
         branches_info = branchgetter.get_branches(repo_name, self.config_path, per_pg)
 
 
-        all_branches = {}
+ 
+
+        all_branches_commits = {}
         for branch in branches_info.branch_sha:
             branch = _normalise_default_branch_name(branch)
             try:
@@ -197,7 +213,7 @@ class AllBranchesCommitsGetter:
                         repos_api_url, repo_name, branch, per_pg
                     )
                 
-                all_branches[branch] = all_commits
+                all_branches_commits[branch] = all_commits
 
                 # self.logger.info(
                 #     f"There are {len(all_branches_commits)} after getting commits from branch {branch}."
@@ -209,20 +225,19 @@ class AllBranchesCommitsGetter:
                 self.logger.error(f"Error: {e}")
                 raise
 
+        unique_commits_all_branches = self._deduplicate_commits(all_branches_commits)
+
+        write_out_extra_info_dedup = (
+            f"{write_out}_{self.current_date_info}_deduplicated.json"
+        )
+
         with open(write_out_extra_info_json, "w") as json_file:
-            json.dump(all_branches, json_file)
+            json.dump(all_branches_commits, json_file)
 
-        # self.logger.info(
-        #     f"Repo {repo_name} has {len(all_branches_commits)} commits total after getting commits from ALL {len(branches_info)} BRANCHES."
-        # )
+        with open(write_out_extra_info_dedup, "w") as json_file: 
+            json.dump(unique_commits_all_branches, json_file)
 
-        # # save out dataframe of ALL BRANCHES commits
-        # all_branches_commits.to_json(
-        #     path_or_buf=write_out_extra_info_json,
-        #     orient="records",
-        #     date_format="iso",
-        #     lines=True,
-        # )
+
         if not os.path.exists(write_out_extra_info_json):
             self.logger.error(
                 f"JSON file does NOT exist at path: {os.path.exists(write_out_extra_info_json)}"
@@ -232,25 +247,11 @@ class AllBranchesCommitsGetter:
             f"Commits data written out to file for repo {repo_name} {write_out_extra_info_json}."
         )
 
-        # drop non-unique commit hashes
-        # unique_commits_all_branches = dedupcommits.deduplicate_commits(
-        #     all_branches_commits
-        # )
+        total_commit_count = sum(len(commits_list) for commits_list in unique_commits_all_branches.values())
 
-        # write_out_extra_info_dedup = (
-        #     f"{write_out}_{self.current_date_info}_deduplicated.csv"
-        # )
-        # write the deduplicated set of commits out to csv
-        # unique_commits_all_branches.to_csv(
-        #     write_out_extra_info_dedup,
-        #     mode="w",
-        #     index=True,
-        #     header=not os.path.exists(write_out_extra_info_dedup),
-        # )
-        # self.logger.info(
-        #     f"{len(unique_commits_all_branches)} UNIQUE (deduplicated) commits data written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
-        # )
+        self.logger.info(
+            f"{total_commit_count} UNIQUE (deduplicated) commits data written out for all branches of {repo_name} at {write_out_extra_info_dedup}."
+        )
 
-        # return unique_commits_all_branches
 
-        return all_branches
+        return unique_commits_all_branches
