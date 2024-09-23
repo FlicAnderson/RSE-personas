@@ -75,9 +75,9 @@ class CommitReformatter:
         """
 
         if self.in_notebook:
-            write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}"  # look further up for correct path
+            write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"  # look further up for correct path
         else:
-            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
+            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
         if self.reformatted_commits is not None:
             self.reformatted_commits.to_csv(
