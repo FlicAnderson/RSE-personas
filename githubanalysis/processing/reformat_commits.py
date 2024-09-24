@@ -49,7 +49,7 @@ class CommitReformatter:
             "commit_message",
             "author_field",
             "comitter_field",
-            "committer_commit_date"
+            "committer_commit_date",
         ]
         frame = []
 
