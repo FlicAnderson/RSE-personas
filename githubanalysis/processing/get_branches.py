@@ -7,17 +7,6 @@ from requests.adapters import HTTPAdapter, Retry
 import githubanalysis.processing.setup_github_auth as ghauth
 
 
-# class BranchesGetter:
-
-#     #     # if not given a better option, use my default settings for logging
-#     # logger: logging.Logger
-#     # def __init__(self, logger: logging.Logger = None) -> None:
-#     #     if logger is None:
-#     #         self.logger = loggit.get_default_logger(console=False, set_level_to='INFO', log_name='logs/get_branches_logs.txt')
-#     #     else:
-#     #         self.logger = logger
-
-
 def get_branches(repo_name, config_path="githubanalysis/config.cfg", per_pg=100):
     """
     Get branch info for given repo repo_name and return it.
