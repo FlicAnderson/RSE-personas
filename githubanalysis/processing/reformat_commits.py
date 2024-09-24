@@ -38,14 +38,18 @@ class CommitReformatter:
         """
         Reformat previously-made commit data (from get_all_branches_commits() ) into pd.DataFrame.
         """
+        repo_name = self.sanitised_repo_name.replace("-", "/")
 
         columns = [
+            "repo_name",
             "branch_sha",
             "commit_sha",
-            "dev_author_name",
+            "author_fullname",
             "author_commit_date",
             "commit_message",
-            "dev_author",
+            "author_username",
+            "comitter_username",
+            "committer_commit_date"
         ]
         frame = []
 
@@ -53,12 +57,15 @@ class CommitReformatter:
             for commit in commits:
                 frame.append(
                     [
+                        repo_name,
                         branch,
                         commit["sha"],
                         commit["commit"]["author"]["name"],
                         commit["commit"]["author"]["date"],
-                        commit["message"],
+                        commit["commit"]["message"],
                         commit["author"]["login"],
+                        commit["committer"]["login"],
+                        commit["commit"]["committer"]["date"],
                     ]
                 )
 
