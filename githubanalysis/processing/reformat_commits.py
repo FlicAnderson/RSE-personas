@@ -39,7 +39,14 @@ class CommitReformatter:
         Reformat previously-made commit data (from get_all_branches_commits() ) into pd.DataFrame.
         """
 
-        columns = ["branch_sha", "commit_sha", "dev_author", "commit_date"]
+        columns = [
+            "branch_sha",
+            "commit_sha",
+            "dev_author_name",
+            "author_commit_date",
+            "commit_message",
+            "dev_author",
+        ]
         frame = []
 
         for branch, commits in unique_commits_all_branches.items():
@@ -50,6 +57,8 @@ class CommitReformatter:
                         commit["sha"],
                         commit["commit"]["author"]["name"],
                         commit["commit"]["author"]["date"],
+                        commit["message"],
+                        commit["author"]["login"],
                     ]
                 )
 
