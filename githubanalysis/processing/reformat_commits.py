@@ -47,8 +47,8 @@ class CommitReformatter:
             "author_fullname",
             "author_commit_date",
             "commit_message",
-            "author_username",
-            "comitter_username",
+            "author_field",
+            "comitter_field",
             "committer_commit_date"
         ]
         frame = []
@@ -63,8 +63,8 @@ class CommitReformatter:
                         commit["commit"]["author"]["name"],
                         commit["commit"]["author"]["date"],
                         commit["commit"]["message"],
-                        commit["author"]["login"],
-                        commit["committer"]["login"],
+                        commit["commit"]["author"],
+                        commit["commit"]["committer"],
                         commit["commit"]["committer"]["date"],
                     ]
                 )
