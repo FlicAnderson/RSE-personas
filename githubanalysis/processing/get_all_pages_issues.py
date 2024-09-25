@@ -3,7 +3,7 @@
 import sys
 import os
 import pandas as pd
-import datetime
+from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
