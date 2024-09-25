@@ -46,26 +46,30 @@ class CommitReformatter:
             "commit_sha",
             "author_fullname",
             "author_commit_date",
+            "comitter_commit_date",
             "commit_message",
-            "author_field",
-            "comitter_field",
-            "committer_commit_date",
+            "author_username",
+            "comitter_username",
         ]
         frame = []
 
-        for branch, commits in unique_commits_all_branches.items():
-            for commit in commits:
+        for branch, commit_records in unique_commits_all_branches.items():
+            for record in commit_records:
+                author = record["author"]
+                committer = record["committer"]
+                commit = record["commit"]
                 frame.append(
                     [
                         repo_name,
                         branch,
-                        commit["sha"],
-                        commit["commit"]["author"]["name"],
-                        commit["commit"]["author"]["date"],
-                        commit["commit"]["message"],
-                        commit["commit"]["author"],
-                        commit["commit"]["committer"],
-                        commit["commit"]["committer"]["date"],
+                        # get_from_dict(record, "sha"),
+                        record["sha"],
+                        commit["author"]["name"],
+                        commit["author"]["date"],
+                        commit["committer"]["date"],
+                        commit["message"],
+                        author["login"] if author is not None else None,
+                        committer["login"] if committer is not None else None,
                     ]
                 )
 
