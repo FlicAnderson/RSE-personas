@@ -58,20 +58,37 @@ class CommitReformatter:
                 author = record["author"]
                 committer = record["committer"]
                 commit = record["commit"]
-                frame.append(
-                    [
-                        repo_name,
-                        branch,
-                        # get_from_dict(record, "sha"),
-                        record["sha"],
-                        commit["author"]["name"],
-                        commit["author"]["date"],
-                        commit["committer"]["date"],
-                        commit["message"],
-                        author["login"] if author is not None else None,
-                        committer["login"] if committer is not None else None,
-                    ]
+
+                record_list = [
+                    repo_name,
+                    branch,
+                    record["sha"],
+                ]
+
+                if commit:
+                    record_list.append(
+                        commit["author"]["name"]
+                        if commit["author"] is not None
+                        else None
+                    )
+                    record_list.append(
+                        commit["author"]["date"]
+                        if commit["author"] is not None
+                        else None
+                    )
+                    record_list.append(
+                        commit["committer"]["date"]
+                        if commit["committer"] is not None
+                        else None
+                    )
+                    record_list.append(commit["message"])
+
+                record_list.append(author["login"] if author is not None else None)
+                record_list.append(
+                    committer["login"] if committer is not None else None
                 )
+
+                frame.append(record_list)
 
         self.reformatted_commits = pd.DataFrame(frame, columns=columns)
 
