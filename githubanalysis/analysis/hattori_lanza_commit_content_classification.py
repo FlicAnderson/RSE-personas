@@ -133,7 +133,7 @@ class Hattori_Lanza_Content_Classification:
 
         else:
             for keyword in self.mgmt:
-                match_result = re.search(keyword, commit_message)
+                match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
                     print(match_result)
                     return "management"
@@ -142,7 +142,7 @@ class Hattori_Lanza_Content_Classification:
                     continue
 
             for keyword in self.re_eng:
-                match_result = re.search(keyword, commit_message)
+                match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
                     print(match_result)
                     return "reengineering"
@@ -151,7 +151,7 @@ class Hattori_Lanza_Content_Classification:
                     continue
 
             for keyword in self.cor_eng:
-                match_result = re.search(keyword, commit_message)
+                match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
                     print(match_result)
                     return "corrective_engineering"
@@ -160,7 +160,7 @@ class Hattori_Lanza_Content_Classification:
                     continue
 
             for keyword in self.fwd_eng:
-                match_result = re.search(keyword, commit_message)
+                match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
                     print(match_result)
                     return "forward_engineering"
