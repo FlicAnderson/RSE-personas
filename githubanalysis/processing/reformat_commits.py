@@ -51,6 +51,7 @@ class CommitReformatter:
             "author_username",
             "comitter_username",
         ]
+
         frame = []
 
         for branch, commit_records in unique_commits_all_branches.items():
