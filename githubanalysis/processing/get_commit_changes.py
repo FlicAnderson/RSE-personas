@@ -64,7 +64,7 @@ class CommitChanges:
 
         commit_changes_dict = [
             {
-                "commit_hash": "",
+                "commit_hash": commit_hash,
                 "filename": commit["filename"],
                 "changes": commit["changes"],
                 "additions": commit["additions"],
