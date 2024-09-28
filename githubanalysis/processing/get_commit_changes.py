@@ -78,11 +78,11 @@ class CommitChanges:
         return commit_changes_df
 
     def get_commit_total_changes(self, commit_changes_df: pd.DataFrame) -> int:
-        commit_changes = sum(commit_changes_df.changes)
+        n_commit_changes = sum(commit_changes_df.changes)
 
-        return commit_changes
+        return n_commit_changes
 
     def get_commit_files_changed(self, commit_changes_df: pd.DataFrame) -> int:
-        commit_files_n = commit_changes_df.filename.nunique()
+        n_commit_files = commit_changes_df.filename.nunique()
 
-        return commit_files_n
+        return n_commit_files
