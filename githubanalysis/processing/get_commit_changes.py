@@ -54,9 +54,9 @@ class CommitChanges:
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
 
-    def get_commit_changes(self, repo_name: str, commit_hash: str) -> pd.DataFrame:
+    def get_commit_changes(self, commit_hash: str) -> pd.DataFrame:
         repos_api_url = "https://api.github.com/repos/"
-        commit_url = make_commit_url(repos_api_url, repo_name, commit_hash)
+        commit_url = make_commit_url(repos_api_url, self.repo_name, commit_hash)
 
         api_response = self.s.get(url=commit_url, headers=self.headers)
 
