@@ -54,6 +54,9 @@ class CommitChanges:
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
 
+    def __del__(self):
+        self.s.close()
+
     def get_commit_changes(self, commit_hash: str) -> pd.DataFrame:
         repos_api_url = "https://api.github.com/repos/"
         commit_url = make_commit_url(repos_api_url, self.repo_name, commit_hash)
@@ -77,12 +80,16 @@ class CommitChanges:
 
         return commit_changes_df
 
-    def get_commit_total_changes(self, commit_changes_df: pd.DataFrame) -> int:
+    def get_commit_total_changes(
+        self, commit_changes_df: pd.DataFrame
+    ) -> tuple[int, str]:
         n_commit_changes = sum(commit_changes_df.changes)
 
-        return n_commit_changes
+        return n_commit_changes, commit_changes_df.commit_hash[0]
 
-    def get_commit_files_changed(self, commit_changes_df: pd.DataFrame) -> int:
+    def get_commit_files_changed(
+        self, commit_changes_df: pd.DataFrame
+    ) -> tuple[int, str]:
         n_commit_files = commit_changes_df.filename.nunique()
 
-        return n_commit_files
+        return n_commit_files, commit_changes_df.commit_hash[0]
