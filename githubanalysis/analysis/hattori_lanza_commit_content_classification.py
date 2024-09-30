@@ -123,9 +123,12 @@ class Hattori_Lanza_Content_Classification:
         3) reengineering, 4) corrective engineering, 5) forward engineering.
         Return  the 'first' category match in that order, or, if NO matches:
         then return "no_categorisation".
+        doi: 10.1109/ASEW.2008.4686322.
 
         :param commit_message: text in string format to compare for keyword matches
         :type: str
+        :return: str word indicating which category has been matched to the commit, or none.
+        :rtype: str
         """
 
         if commit_message is None or commit_message == "":
