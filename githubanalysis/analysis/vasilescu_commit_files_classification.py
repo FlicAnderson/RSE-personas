@@ -1,7 +1,6 @@
 """Application of Vasilescu et al. 2014 method of classifying commits by filetypes of files changed, using pre-obtained github commit data for Research Software repositories"""
 
 import logging
-import datetime
 
 import utilities.get_default_logger as loggit
 
