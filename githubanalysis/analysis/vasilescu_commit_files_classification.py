@@ -1,6 +1,8 @@
 """Application of Vasilescu et al. 2014 method of classifying commits by filetypes of files changed, using pre-obtained github commit data for Research Software repositories"""
 
 import logging
+import pandas as pd
+import re
 
 import utilities.get_default_logger as loggit
 
@@ -223,22 +225,218 @@ class Vasilescu_Commit_Classifier:
             ".*\.desktop",
         ]
 
-    def vasilescu_commit_files_classification(self, commit_changes_df):
+    def vasilescu_check_category(self, category: str, filestr: str) -> str:
+        """
+        This checks a given filename string `filestr` against a specified
+        `category` or `any` to check against ALL categories.
+
+        The rules are assessed in this order: unknown, doc, img, l10n, ui,
+        media, code, meta, config, build, devdoc, db, test, lib
+
+        """
+
+        cat_list = [
+            "doc",
+            "img",
+            "l10n",
+            "ui",
+            "media",
+            "code",
+            "test",
+            "meta",
+            "config",
+            "build",
+            "devdoc",
+            "db",
+            "lib",
+            "unknown",
+        ]
+
+        assert (
+            category in cat_list or category == "any"
+        ), f"WARNING! Your category must match one of the following: {cat_list} OR 'any' to search ALL categories."
+        assert isinstance(filestr, str)
+
+        v_cat = "no_categorisation"
+        search_cat = category
+
+        if search_cat == "doc":
+            for filetype in self.cat_doc:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "img":
+            for filetype in self.cat_img:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "l10n":
+            for filetype in self.cat_l10n:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "ui":
+            for filetype in self.cat_ui:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "media":
+            for filetype in self.cat_media:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "code":
+            for filetype in self.cat_code:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "test":
+            for filetype in self.cat_test:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "meta":
+            for filetype in self.cat_media:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "config":
+            for filetype in self.cat_config:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "build":
+            for filetype in self.cat_build:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "devdoc":
+            for filetype in self.cat_devdoc:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "db":
+            for filetype in self.cat_db:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "lib":
+            for filetype in self.cat_lib:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "unknown":
+            for filetype in self.cat_unknown:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if (
+            search_cat == "any"
+        ):  # run ALL the search categories in the order specified, using this function recursively.
+            for cat in cat_list:
+                check_rslt = self.vasilescu_check_category(
+                    self, category=cat, filestr=filestr
+                )
+                if check_rslt != "no_categorisation":
+                    v_cat = check_rslt
+                    return v_cat
+                    break  # break means we're returning the FIRST matching category.
+
+        return v_cat
+
+    def vasilescu_commit_files_classification(
+        self, commit_changes_df: pd.DataFrame
+    ) -> list[str]:
         """
         Function to classify commit based on filetypes according to method in Vasilescu et al. 2014,
         with additions by Milewicz, Pinto and Rodeghero 2019 (https://doi.org/10.1109/MSR.2019.00069)
 
-        Uses file types of files changed per commit to assign to categories.
+        Method Uses file types of files changed per commit to assign to categories.
+        For each filename, check type and assign to matching category, or "no_categorisation" if no matches.
+
         """
 
         # get files changed info as pandas dataframe `commit_changes_df` generated by get_commit_changes( ) when running: `commit_changes_df = commitchanges.get_commit_changes(commit_hash = commit)`
 
         # if there are NO files, or filename is empty:
-        v_cat = None
+        assert (
+            len(commit_changes_df) >= 1
+        ), "WARNING! Dataframe of files changed is empty. Check if this should be the case."
 
-        # for each filename, check type and assign to matching category, or "no_categorisation" if no matches.
+        v_cat = []
 
-        # for filename in commit_changes_df['filename']:
-        # check v_cat 1
+        if len(commit_changes_df) == 1:  # only single file change to check
+            filestr = commit_changes_df["filename"][0]
+            v_cat = self.vasilescu_check_category(category="any", filestr=filestr)
+
+        elif len(commit_changes_df) > 1:  # check multiple files from one commit hash
+            files_results = []
+            for file in commit_changes_df["filename"]:
+                # this_filestr = file
+                rslt = self.vasilescu_check_category(category="any", filestr=file)
+                files_results.append(rslt)
+
+            unique_categories = set(files_results)
+            if len(unique_categories) == 1:
+                return len(unique_categories)
+            else:
+                print("TIE-BREAKER REQUIRED")
+                return unique_categories
 
         return v_cat
