@@ -391,7 +391,7 @@ class Vasilescu_Commit_Classifier:
         ):  # run ALL the search categories in the order specified, using this function recursively.
             for cat in cat_list:
                 check_rslt = self.vasilescu_check_category(
-                    self, category=cat, filestr=filestr
+                    category=cat, filestr=filestr
                 )
                 if check_rslt != "no_categorisation":
                     v_cat = check_rslt
