@@ -1,19 +1,10 @@
 """Workflow for running commits processing and analysis code for 1 repo."""
 
-import os
-from os import path
 import logging
-import configparser
-from github import Github
 import pandas as pd
-import requests
 import datetime
-from pprint import pprint
-import re
-from requests.adapters import HTTPAdapter, Retry
 
 import utilities.get_default_logger as loggit
-import githubanalysis.processing.setup_github_auth as ghauth
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
 from githubanalysis.processing.get_commit_changes import CommitChanges
 from githubanalysis.processing.reformat_commits import CommitReformatter
