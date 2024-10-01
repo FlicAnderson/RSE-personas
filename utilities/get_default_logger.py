@@ -33,6 +33,7 @@ def get_default_logger(
     :returns: logger
     :type: ~logger
     """
+    console = console or in_notebook
 
     if set_level_to not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
         raise ValueError(
