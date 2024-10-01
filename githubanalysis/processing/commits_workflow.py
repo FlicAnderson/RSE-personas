@@ -25,13 +25,14 @@ class RunCommits:
         repo_name,
         in_notebook: bool,
         config_path: str,
+        write_read_location=str,
         logger: logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="INFO",
-                log_name="logs/vasilescu_commit_files_classification_logs.txt",
+                log_name="logs/commits_workflow_logs.txt",
             )
         else:
             self.logger = logger
@@ -44,7 +45,7 @@ class RunCommits:
         )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
-        self.write_read_location = "/data/"
+        self.write_read_location = write_read_location
         self.in_notebook = in_notebook
 
     def getallcommits(
