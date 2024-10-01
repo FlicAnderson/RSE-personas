@@ -22,6 +22,7 @@ class Vasilescu_Commit_Classifier:
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/vasilescu_commit_files_classification_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger
