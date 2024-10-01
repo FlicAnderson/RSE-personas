@@ -234,162 +234,35 @@ class Vasilescu_Commit_Classifier:
         media, code, meta, config, build, devdoc, db, test, lib, unknown.
 
         """
-
-        cat_list = [
-            "doc",
-            "img",
-            "l10n",
-            "ui",
-            "media",
-            "code",
-            "meta",
-            "config",
-            "build",
-            "devdoc",
-            "db",
-            "test",
-            "lib",
-            "unknown",
-        ]
+        cat_list_dict = {
+            "doc": self.cat_doc,
+            "img": self.cat_img,
+            "l10n": self.cat_l10n,
+            "ui": self.cat_ui,
+            "media": self.cat_media,
+            "code": self.cat_code,
+            "meta": self.cat_meta,
+            "config": self.cat_config,
+            "build": self.cat_build,
+            "devdoc": self.cat_devdoc,
+            "db": self.cat_db,
+            "test": self.cat_test,
+            "lib": self.cat_lib,
+            "unknown": self.cat_unknown,
+        }
 
         assert (
-            category in cat_list or category == "any"
-        ), f"WARNING! Your category must match one of the following: {cat_list} OR 'any' to search ALL categories."
+            category in cat_list_dict.keys() or category == "any"
+        ), f"WARNING! Your category must match one of the following: {cat_list_dict.keys()} OR 'any' to search ALL categories."
         assert isinstance(filestr, str)
 
         v_cat = "no_categorisation"
         search_cat = category
 
-        if search_cat == "doc":
-            for filetype in self.cat_doc:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "img":
-            for filetype in self.cat_img:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "l10n":
-            for filetype in self.cat_l10n:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "ui":
-            for filetype in self.cat_ui:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "media":
-            for filetype in self.cat_media:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "code":
-            for filetype in self.cat_code:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "meta":
-            for filetype in self.cat_media:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "config":
-            for filetype in self.cat_config:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "build":
-            for filetype in self.cat_build:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "devdoc":
-            for filetype in self.cat_devdoc:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "db":
-            for filetype in self.cat_db:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "test":
-            for filetype in self.cat_test:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "lib":
-            for filetype in self.cat_lib:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
-        if search_cat == "unknown":
-            for filetype in self.cat_unknown:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
         if (
             search_cat == "any"
         ):  # run ALL the search categories in the order specified, using this function recursively.
-            for cat in cat_list:
+            for cat in cat_list_dict.keys():
                 check_rslt = self.vasilescu_check_category(
                     category=cat, filestr=filestr
                 )
@@ -397,6 +270,15 @@ class Vasilescu_Commit_Classifier:
                     v_cat = check_rslt
                     return v_cat
                     break  # break means we're returning the FIRST matching category.
+
+        else:
+            for filetype in cat_list_dict[search_cat]:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
 
         return v_cat
 
