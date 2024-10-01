@@ -225,6 +225,23 @@ class Vasilescu_Commit_Classifier:
             ".*\.desktop",
         ]
 
+        self.cat_list_dict = {  # category acronyms, and their Activity Type (t):
+            "doc": self.cat_doc,  # Documentation
+            "img": self.cat_img,  # Images
+            "l10n": self.cat_l10n,  # Localization
+            "ui": self.cat_ui,  # User Interface
+            "media": self.cat_media,  # Multimedia
+            "code": self.cat_code,  # Coding
+            "meta": self.cat_meta,  # Metadata
+            "config": self.cat_config,  # Configuration
+            "build": self.cat_build,  # Building
+            "devdoc": self.cat_devdoc,  # Development Documentation
+            "db": self.cat_db,  # Databases / Data
+            "test": self.cat_test,  # Testing
+            "lib": self.cat_lib,  # Library
+            "unknown": self.cat_unknown,  # Unknown
+        }
+
     def vasilescu_check_category(self, category: str, filestr: str) -> str:
         """
         This checks a given filename string `filestr` against a specified
@@ -232,28 +249,11 @@ class Vasilescu_Commit_Classifier:
 
         The rules are assessed in this order: doc, img, l10n, ui,
         media, code, meta, config, build, devdoc, db, test, lib, unknown.
-
         """
-        cat_list_dict = {
-            "doc": self.cat_doc,
-            "img": self.cat_img,
-            "l10n": self.cat_l10n,
-            "ui": self.cat_ui,
-            "media": self.cat_media,
-            "code": self.cat_code,
-            "meta": self.cat_meta,
-            "config": self.cat_config,
-            "build": self.cat_build,
-            "devdoc": self.cat_devdoc,
-            "db": self.cat_db,
-            "test": self.cat_test,
-            "lib": self.cat_lib,
-            "unknown": self.cat_unknown,
-        }
 
         assert (
-            category in cat_list_dict.keys() or category == "any"
-        ), f"WARNING! Your category must match one of the following: {cat_list_dict.keys()} OR 'any' to search ALL categories."
+            category in self.cat_list_dict.keys() or category == "any"
+        ), f"WARNING! Your category must match one of the following: {self.cat_list_dict.keys()} OR 'any' to search ALL categories."
         assert isinstance(filestr, str)
 
         v_cat = "no_categorisation"
@@ -262,7 +262,7 @@ class Vasilescu_Commit_Classifier:
         if (
             search_cat == "any"
         ):  # run ALL the search categories in the order specified, using this function recursively.
-            for cat in cat_list_dict.keys():
+            for cat in self.cat_list_dict.keys():
                 check_rslt = self.vasilescu_check_category(
                     category=cat, filestr=filestr
                 )
@@ -272,7 +272,7 @@ class Vasilescu_Commit_Classifier:
                     break  # break means we're returning the FIRST matching category.
 
         else:
-            for filetype in cat_list_dict[search_cat]:
+            for filetype in self.cat_list_dict[search_cat]:
                 if re.search(filetype, filestr, flags=re.IGNORECASE):
                     v_cat = search_cat
                     return v_cat
@@ -304,20 +304,24 @@ class Vasilescu_Commit_Classifier:
 
         if len(commit_changes_df) == 1:  # only single file change to check
             filestr = commit_changes_df["filename"][0]
-            v_cat = self.vasilescu_check_category(self, category="any", filestr=filestr)
+            v_cat = self.vasilescu_check_category(category="any", filestr=filestr)
 
         elif len(commit_changes_df) > 1:  # check multiple files from one commit hash
             files_results = []
             for file in commit_changes_df["filename"]:
                 # this_filestr = file
-                rslt = self.vasilescu_check_category(self, category="any", filestr=file)
+                rslt = self.vasilescu_check_category(category="any", filestr=file)
                 files_results.append(rslt)
 
             unique_categories = set(files_results)
             if len(unique_categories) == 1:
-                return len(unique_categories)
-            else:
-                print("TIE-BREAKER REQUIRED")
                 return unique_categories
+            else:
+                # print("TIE-BREAKER REQUIRED")
+                v_cat = sorted(
+                    unique_categories,
+                    key=lambda x: list(self.cat_list_dict.keys()).index(x),
+                )[0]  # get lowest index'd category returned
+                return v_cat
 
         return v_cat
