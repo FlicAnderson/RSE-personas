@@ -54,7 +54,7 @@ def get_default_logger(
         ch.setLevel(logging.INFO)
         formatter_console = logging.Formatter("%(levelname)s:%(message)s")
         ch.setFormatter(formatter_console)
-    logger.addHandler(ch)
+        logger.addHandler(ch)
     if set_level_to == "DEBUG":
         logger.setLevel(logging.DEBUG)
     elif set_level_to == "INFO":
