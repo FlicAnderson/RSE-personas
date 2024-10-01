@@ -22,6 +22,7 @@ class CommitReformatter:
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/commits_reformatters_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger

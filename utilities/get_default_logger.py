@@ -1,11 +1,25 @@
 """Set up default logger details"""
 
 import logging
+from pathlib import Path
+
+
+def _notebookify(name: str):
+    path = Path(name)
+    path = "../.." / path
+    dir = path.parent
+    suffix = path.suffix
+    filename = f"{path.name.removesuffix(suffix)}_NOTEBOOK"
+
+    return str(dir / f"{filename}{suffix}")
 
 
 # set the default logging params
 def get_default_logger(
-    console: bool, set_level_to="INFO", log_name="logs/functionname_logs.txt"
+    console: bool,
+    set_level_to="INFO",
+    log_name="logs/functionname_logs.txt",
+    in_notebook=False,
 ):
     """
     This function sets up a default logger.
@@ -19,12 +33,13 @@ def get_default_logger(
     :returns: logger
     :type: ~logger
     """
-    try:
-        set_level_to in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    except ValueError:
+
+    if set_level_to not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
         raise ValueError(
             f"set_level_to value '{set_level_to}' not recognised; select one of 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'."
         )
+    if in_notebook:
+        log_name = _notebookify(log_name)
 
     logger = logging.getLogger(log_name)
     fh = logging.FileHandler(log_name)

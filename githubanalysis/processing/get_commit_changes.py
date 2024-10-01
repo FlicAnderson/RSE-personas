@@ -30,6 +30,7 @@ class CommitChanges:
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/get_commit_changes_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger

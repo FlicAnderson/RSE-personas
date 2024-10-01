@@ -15,12 +15,17 @@ class DevsAssigner:
     # if not given a better option, use my default settings for logging
     logger: logging.Logger
 
-    def __init__(self, logger: logging.Logger = None) -> None:
+    def __init__(
+        self,
+        logger: logging.Logger = None,
+        in_notebook=False,
+    ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/get_all_devs_assignment_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger

@@ -18,12 +18,14 @@ class Hattori_Lanza_Content_Classification:
     def __init__(
         self,
         logger: logging.Logger = None,
+        in_notebook=False,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/hattori_lanza_commit_content_classification_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger

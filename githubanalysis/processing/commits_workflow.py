@@ -39,6 +39,7 @@ class RunCommits:
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/commits_workflow_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger

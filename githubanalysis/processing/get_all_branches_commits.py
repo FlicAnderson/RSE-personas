@@ -43,6 +43,7 @@ class AllBranchesCommitsGetter:
                 console=False,
                 set_level_to="INFO",
                 log_name="logs/get_all_branches_commits_logs.txt",
+                in_notebook=in_notebook,
             )
         else:
             self.logger = logger
