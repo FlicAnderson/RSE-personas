@@ -224,12 +224,14 @@ class RunCommits:
         if filepath is None:
             filepath = f"{write_read_location}commits_cats_stats_{sanitised_repo_name}_{current_date_info}.csv"
 
-        commitscatsstats = pd.read_csv(filepath_or_buffer=filepath, header=0)
+        commits_cats_stats = pd.read_csv(filepath_or_buffer=filepath, header=0)
 
-        return commitscatsstats
+        return commits_cats_stats
 
     def run_commits_workflow_single(
         self,
+        repo_name,
+        config_path,
     ):
         commits = self.getallcommits()
 
