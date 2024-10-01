@@ -116,7 +116,9 @@ class RunCommits:
         )
 
     def classify_content(self, processed_commits: pd.DataFrame):
-        hattorilanzaclassifier = Hattori_Lanza_Content_Classification()
+        hattorilanzaclassifier = Hattori_Lanza_Content_Classification(
+            in_notebook=self.in_notebook
+        )
 
         results = []
 
