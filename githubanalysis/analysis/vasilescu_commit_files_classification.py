@@ -316,13 +316,13 @@ class Vasilescu_Commit_Classifier:
             unique_categories = set(files_results)
             if len(unique_categories) == 1:
                 v_cat = files_results[0]
-                return v_cat
+                return v_cat, commit_changes_df["commit_hash"][0]
             else:
                 # print("TIE-BREAKER REQUIRED")
                 v_cat = sorted(
                     unique_categories,
                     key=lambda x: list(self.cat_list_dict.keys()).index(x),
                 )[0]  # get lowest index'd category returned
-                return v_cat
+                return v_cat, commit_changes_df["commit_hash"][0]
 
-        return v_cat
+        return v_cat, commit_changes_df["commit_hash"][0]
