@@ -37,20 +37,20 @@ class Vasilescu_Commit_Classifier:
 
         # ALL CATEGORY TYPES:
         self.v_cats = [  # category acronyms, and their Activity Type (t):
-            "unknown",  # Unknown
-            "code",  # Coding
-            "devdoc",  # Development Documentation
             "doc",  # Documentation
             "img",  # Images
             "l10n",  # Localization
-            "media",  # Multimedia
             "ui",  # User Interface
+            "media",  # Multimedia
+            "code",  # Coding
             "meta",  # Meta
+            "config",  # Configuration
             "build",  # Building
+            "devdoc",  # Development Documentation
+            "db",  # Databases / Data
             "test",  # Testing
             "lib",  # Library
-            "db",  # Database
-            "config",  # Configuration
+            "unknown",  # Unknown
         ]
 
         # REGULAR EXPRESSIONS FOR CATEGORIES:
@@ -230,8 +230,8 @@ class Vasilescu_Commit_Classifier:
         This checks a given filename string `filestr` against a specified
         `category` or `any` to check against ALL categories.
 
-        The rules are assessed in this order: unknown, doc, img, l10n, ui,
-        media, code, meta, config, build, devdoc, db, test, lib
+        The rules are assessed in this order: doc, img, l10n, ui,
+        media, code, meta, config, build, devdoc, db, test, lib, unknown.
 
         """
 
@@ -242,12 +242,12 @@ class Vasilescu_Commit_Classifier:
             "ui",
             "media",
             "code",
-            "test",
             "meta",
             "config",
             "build",
             "devdoc",
             "db",
+            "test",
             "lib",
             "unknown",
         ]
@@ -314,15 +314,6 @@ class Vasilescu_Commit_Classifier:
                 else:
                     continue
 
-        if search_cat == "test":
-            for filetype in self.cat_test:
-                if re.search(filetype, filestr, flags=re.IGNORECASE):
-                    v_cat = search_cat
-                    return v_cat
-                    break
-                else:
-                    continue
-
         if search_cat == "meta":
             for filetype in self.cat_media:
                 if re.search(filetype, filestr, flags=re.IGNORECASE):
@@ -361,6 +352,15 @@ class Vasilescu_Commit_Classifier:
 
         if search_cat == "db":
             for filetype in self.cat_db:
+                if re.search(filetype, filestr, flags=re.IGNORECASE):
+                    v_cat = search_cat
+                    return v_cat
+                    break
+                else:
+                    continue
+
+        if search_cat == "test":
+            for filetype in self.cat_test:
                 if re.search(filetype, filestr, flags=re.IGNORECASE):
                     v_cat = search_cat
                     return v_cat
