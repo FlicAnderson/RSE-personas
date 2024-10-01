@@ -315,7 +315,8 @@ class Vasilescu_Commit_Classifier:
 
             unique_categories = set(files_results)
             if len(unique_categories) == 1:
-                return unique_categories
+                v_cat = files_results[0]
+                return v_cat
             else:
                 # print("TIE-BREAKER REQUIRED")
                 v_cat = sorted(
