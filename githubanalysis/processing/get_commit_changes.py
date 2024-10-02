@@ -137,9 +137,10 @@ class CommitChanges:
 
                 return n_commit_changes, commit_hash
         except:
-            raise RuntimeError(
-                f"Error: commit_changes_df is empty for commit {commit_hash} and contains NO changes."
+            self.logger.info(
+                f"Beware: commit_changes_df is empty for commit {commit_hash} and contains NO changes."
             )
+            return None, commit_hash
 
     def get_commit_files_changed(
         self, commit_changes_df: pd.DataFrame, commit_hash: str
@@ -150,7 +151,7 @@ class CommitChanges:
 
                 return n_commit_files, commit_hash
         except:
-            raise RuntimeError(
-                f"Error: commit_changes_df for commit_hash {commit_hash} is empty and contains NO files."
-                #                return None, commit_hash
+            self.logger.info(
+                f"Beware: commit_changes_df is empty for commit {commit_hash} and contains NO changes."
             )
+            return None, commit_hash
