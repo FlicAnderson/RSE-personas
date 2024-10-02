@@ -303,7 +303,10 @@ class Vasilescu_Commit_Classifier:
 
         v_cat = []
 
-        if len(commit_changes_df) == 1:  # only single file change to check
+        if commit_changes_df.empty:
+            v_cat = "no_categorisation [EMPTY]"
+
+        elif len(commit_changes_df) == 1:  # only single file change to check
             filestr = commit_changes_df["filename"][0]
             v_cat = self.vasilescu_check_category(category="any", filestr=filestr)
 
