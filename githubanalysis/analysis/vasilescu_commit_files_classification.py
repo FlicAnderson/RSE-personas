@@ -297,9 +297,9 @@ class Vasilescu_Commit_Classifier:
         get_commit_changes( ) when running: `commit_changes_df = commitchanges.get_commit_changes(commit_hash = commit)`
         """
         # if there are NO files, or filename is empty:
-        assert (
-            len(commit_changes_df) >= 1
-        ), "WARNING! Dataframe of files changed is empty. Check if this should be the case."
+        # assert (
+        #     len(commit_changes_df) >= 1
+        # ), "WARNING! Dataframe of files changed is empty. Check if this should be the case."
 
         v_cat = []
 
