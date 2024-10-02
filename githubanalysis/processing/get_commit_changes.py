@@ -87,31 +87,44 @@ class CommitChanges:
         self.logger.info(
             f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
         )
-
-        return commit_changes_df
+        if commit_changes_df.empty:
+            commit_changes_dict = [
+                {
+                    "commit_hash": commit_hash,
+                    "filename": "",
+                    "changes": 0,
+                    "additions": 0,
+                    "deletions": 0,
+                }
+            ]
+            commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+            return commit_changes_df
+        else:
+            return commit_changes_df
 
     def get_commit_total_changes(
-        self, commit_changes_df: pd.DataFrame
+        self, commit_changes_df: pd.DataFrame, commit_hash: str
     ) -> tuple[int, str]:
         try:
             if not commit_changes_df.empty:
                 n_commit_changes = sum(commit_changes_df.changes)
 
-                return n_commit_changes, commit_changes_df.commit_hash[0]
+                return n_commit_changes, commit_hash
         except:
             raise RuntimeError(
-                "Error: commit_changes_df is empty and contains NO changes."
+                f"Error: commit_changes_df is empty for commit {commit_hash} and contains NO changes."
             )
 
     def get_commit_files_changed(
-        self, commit_changes_df: pd.DataFrame
+        self, commit_changes_df: pd.DataFrame, commit_hash: str
     ) -> tuple[int, str]:
         try:
             if not commit_changes_df.empty:
                 n_commit_files = commit_changes_df.filename.nunique()
 
-                return n_commit_files, commit_changes_df.commit_hash[0]
+                return n_commit_files, commit_hash
         except:
             raise RuntimeError(
-                "Error: commit_changes_df is empty and contains NO files."
+                f"Error: commit_changes_df for commit_hash {commit_hash} is empty and contains NO files."
+                #                return None, commit_hash
             )
