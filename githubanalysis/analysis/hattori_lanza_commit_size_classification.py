@@ -24,24 +24,27 @@ def hattori_lanza_commit_size_classification(commit_size: int) -> str | None:
     :rtype: str
 
     """
-    assert isinstance(
-        commit_size, int
-    ), "Warning! This function requires an integer input for commit_size. Recheck input parameter."
-    assert commit_size >= 0, "Warning! Cannot process negative numbers."
+    if commit_size is None or commit_size == 0:
+        commit_cat = None
+        return commit_cat
 
-    commit_cat = None
-
-    if commit_size in range(1, 5):
-        commit_cat = "tiny"
-        return commit_cat
-    elif commit_size in range(6, 25):
-        commit_cat = "small"
-        return commit_cat
-    elif commit_size in range(26, 125):
-        commit_cat = "medium"
-        return commit_cat
-    elif commit_size > 125:
-        commit_cat = "large"
-        return commit_cat
     else:
-        return commit_cat
+        assert isinstance(
+            commit_size, int
+        ), "Warning! This function requires an integer input for commit_size. Recheck input parameter."
+        assert commit_size > 0, "Warning! Cannot process negative numbers."
+
+        if commit_size in range(1, 5):
+            commit_cat = "tiny"
+            return commit_cat
+        elif commit_size in range(6, 25):
+            commit_cat = "small"
+            return commit_cat
+        elif commit_size in range(26, 125):
+            commit_cat = "medium"
+            return commit_cat
+        elif commit_size > 125:
+            commit_cat = "large"
+            return commit_cat
+        else:
+            return None
