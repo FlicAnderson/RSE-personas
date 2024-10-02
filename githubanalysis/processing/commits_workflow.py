@@ -60,6 +60,7 @@ class RunCommits:
         processed_commits: pd.DataFrame,
         vasilescucommitclassifier: Vasilescu_Commit_Classifier,
     ):
+        self.logger.info("Beginning getcommitschangesvcats( ).")
         n_files: list[tuple[int, str]] = []
         n_changes = []
         v_category = []
@@ -68,15 +69,21 @@ class RunCommits:
         for commit in processed_commits["commit_sha"]:
             i += 1
             # TODO: LOG
-            print(f"{i} of {len(processed_commits)}")
+            self.logger.info(
+                f"Getting change numbers and v_cats for {i} of {len(processed_commits)} commits for repo {self.repo_name}."
+            )
 
             tmpdf = commitchanges.get_commit_changes(commit_hash=commit)
 
             n_files.append(
-                commitchanges.get_commit_files_changed(commit_changes_df=tmpdf)
+                commitchanges.get_commit_files_changed(
+                    commit_changes_df=tmpdf, commit_hash=commit
+                )
             )
             n_changes.append(
-                commitchanges.get_commit_total_changes(commit_changes_df=tmpdf)
+                commitchanges.get_commit_total_changes(
+                    commit_changes_df=tmpdf, commit_hash=commit
+                )
             )
 
             # apply Vasilescu et al commit classification (filetype) method:
@@ -160,6 +167,7 @@ class RunCommits:
         )
         self.logger.info("did reformat commits")
         reformat_commits.save_formatted_commits(self.write_read_location)
+        self.logger.info("saved out reformat commits")
         commitchanges = CommitChanges(
             repo_name=self.repo_name,
             in_notebook=self.in_notebook,
