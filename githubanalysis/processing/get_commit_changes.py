@@ -84,13 +84,25 @@ class CommitChanges:
     def get_commit_total_changes(
         self, commit_changes_df: pd.DataFrame
     ) -> tuple[int, str]:
-        n_commit_changes = sum(commit_changes_df.changes)
+        try:
+            if not commit_changes_df.empty:
+                n_commit_changes = sum(commit_changes_df.changes)
 
-        return n_commit_changes, commit_changes_df.commit_hash[0]
+                return n_commit_changes, commit_changes_df.commit_hash[0]
+        except:
+            raise RuntimeError(
+                "Error: commit_changes_df is empty and contains NO changes."
+            )
 
     def get_commit_files_changed(
         self, commit_changes_df: pd.DataFrame
     ) -> tuple[int, str]:
-        n_commit_files = commit_changes_df.filename.nunique()
+        try:
+            if not commit_changes_df.empty:
+                n_commit_files = commit_changes_df.filename.nunique()
 
-        return n_commit_files, commit_changes_df.commit_hash[0]
+                return n_commit_files, commit_changes_df.commit_hash[0]
+        except:
+            raise RuntimeError(
+                "Error: commit_changes_df is empty and contains NO files."
+            )
