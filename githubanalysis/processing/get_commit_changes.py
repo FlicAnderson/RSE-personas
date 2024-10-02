@@ -62,7 +62,13 @@ class CommitChanges:
         repos_api_url = "https://api.github.com/repos/"
         commit_url = make_commit_url(repos_api_url, self.repo_name, commit_hash)
 
+        self.logger.info(
+            f"Attempting to gather commit changes for repo {self.repo_name} with commit_url {commit_url}."
+        )
         api_response = self.s.get(url=commit_url, headers=self.headers)
+        self.logger.info(
+            f"API response is {api_response.status_code} for call to commit-hash {commit_hash} for repo {self.repo_name},"
+        )
 
         commit_json = api_response.json()
 
@@ -78,6 +84,9 @@ class CommitChanges:
         ]
 
         commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+        self.logger.info(
+            f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
+        )
 
         return commit_changes_df
 
