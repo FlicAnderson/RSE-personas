@@ -3,6 +3,7 @@
 import logging
 import pandas as pd
 import datetime
+from pathlib import Path
 
 import utilities.get_default_logger as loggit
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
@@ -53,6 +54,49 @@ class RunCommits:
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
         self.write_read_location = write_read_location
+
+    def check_existing_formatted_commits(self):
+        # generate filename and check if this file had been created already today:
+
+        formatted_commits_filename = f"{self.write_read_location}processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        formatted_commits_path = Path(formatted_commits_filename)
+        self.logger.info(
+            f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
+        )
+
+        if formatted_commits_path.is_file():  # read in existing dataset
+            processed_commits_df = pd.read_csv(
+                formatted_commits_filename, index_col=0, header=0
+            )
+
+            self.logger.info("loaded in previously-got commits data")
+            return processed_commits_df
+
+        else:  # run steps to get commits data and generate dataset
+            allbranchescommitsgetter = AllBranchesCommitsGetter(
+                repo_name=self.repo_name,
+                in_notebook=self.in_notebook,
+                config_path=self.config_path,
+            )
+            # TODO: this does not need to take repo name
+            all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
+                repo_name=self.repo_name
+            )
+            self.logger.info("did allbranchescommitsgetter()")
+
+            reformat_commits = CommitReformatter(
+                repo_name=self.repo_name,
+                in_notebook=self.in_notebook,
+            )
+            processed_commits_df = reformat_commits.reformat_commits_object(
+                unique_commits_all_branches=all_branches_commits
+            )
+
+            self.logger.info("did reformat commits")
+            reformat_commits.save_formatted_commits(self.write_read_location)
+            self.logger.info("saved out reformat commits")
+
+            return processed_commits_df
 
     def getcommitschangesvcats(
         self,
@@ -147,28 +191,11 @@ class RunCommits:
         return results
 
     def do_it_all(self):
-        allbranchescommitsgetter = AllBranchesCommitsGetter(
-            repo_name=self.repo_name,
-            in_notebook=self.in_notebook,
-            config_path=self.config_path,
-        )
+        self.logger.info("checking whether formatted commits dataset already exists")
+        # if all processed commits here from same day, don't re-run getter steps.
+        processed_commits = self.check_existing_formatted_commits()
+        self.logger.info("got formatted commits data")
 
-        # TODO: this does not need to take repo name
-        all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
-            repo_name=self.repo_name
-        )
-        self.logger.info("did allbranchescommitsgetter()")
-
-        reformat_commits = CommitReformatter(
-            repo_name=self.repo_name,
-            in_notebook=self.in_notebook,
-        )
-        processed_commits = reformat_commits.reformat_commits_object(
-            unique_commits_all_branches=all_branches_commits
-        )
-        self.logger.info("did reformat commits")
-        reformat_commits.save_formatted_commits(self.write_read_location)
-        self.logger.info("saved out reformat commits")
         commitchanges = CommitChanges(
             repo_name=self.repo_name,
             in_notebook=self.in_notebook,
