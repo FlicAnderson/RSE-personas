@@ -89,7 +89,8 @@ class RunCommits:
             # apply Vasilescu et al commit classification (filetype) method:
             v_category.append(
                 vasilescucommitclassifier.vasilescu_commit_files_classification(
-                    commit_changes_df=tmpdf
+                    commit_changes_df=tmpdf,
+                    commit_hash=commit,
                 )
             )
         return n_files, n_changes, v_category
