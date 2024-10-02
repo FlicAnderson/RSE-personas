@@ -67,7 +67,7 @@ class CommitChanges:
         )
         api_response = self.s.get(url=commit_url, headers=self.headers)
         self.logger.info(
-            f"API response is {api_response.status_code} for call to commit-hash {commit_hash} for repo {self.repo_name},"
+            f"API response is {api_response.status_code} for call to commit-hash {commit_hash} for repo {self.repo_name} and API response headers are {api_response.headers}"
         )
 
         if api_response.status_code == 403 or api_response.status_code == 429:
