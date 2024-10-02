@@ -70,37 +70,52 @@ class CommitChanges:
             f"API response is {api_response.status_code} for call to commit-hash {commit_hash} for repo {self.repo_name},"
         )
 
-        commit_json = api_response.json()
+        if api_response.status_code == 403 or api_response.status_code == 429:
+            self.logger.debug(
+                f"API response code is {api_response.status_code} and API response is: {api_response}; headers are {api_response.headers}. "
+            )
 
-        commit_changes_dict = [
-            {
-                "commit_hash": commit_hash,
-                "filename": commit["filename"],
-                "changes": commit["changes"],
-                "additions": commit["additions"],
-                "deletions": commit["deletions"],
-            }
-            for commit in commit_json["files"]
-        ]
+        if api_response.status_code == 200:
+            commit_json = api_response.json()
 
-        commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
-        self.logger.info(
-            f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
-        )
-        if commit_changes_df.empty:
             commit_changes_dict = [
                 {
                     "commit_hash": commit_hash,
-                    "filename": "",
-                    "changes": 0,
-                    "additions": 0,
-                    "deletions": 0,
+                    "filename": commit["filename"],
+                    "changes": commit["changes"],
+                    "additions": commit["additions"],
+                    "deletions": commit["deletions"],
                 }
+                for commit in commit_json["files"]
             ]
+
             commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
-            return commit_changes_df
+            self.logger.info(
+                f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
+            )
+
+            if commit_changes_df.empty:
+                commit_changes_dict = [
+                    {
+                        "commit_hash": commit_hash,
+                        "filename": "",
+                        "changes": 0,
+                        "additions": 0,
+                        "deletions": 0,
+                    }
+                ]
+                commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+                return commit_changes_df
+            else:
+                return commit_changes_df
+
         else:
-            return commit_changes_df
+            self.logger.debug(
+                f"API response code is {api_response.status_code} and API response is: {api_response}."
+            )
+            raise RuntimeError(
+                f"API response not OK, please investigate for commit {commit_hash} at repo {self.repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
+            )
 
     def get_commit_total_changes(
         self, commit_changes_df: pd.DataFrame, commit_hash: str
