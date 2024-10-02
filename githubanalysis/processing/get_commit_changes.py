@@ -78,23 +78,7 @@ class CommitChanges:
         if api_response.status_code == 200:
             commit_json = api_response.json()
 
-            commit_changes_dict = [
-                {
-                    "commit_hash": commit_hash,
-                    "filename": commit["filename"],
-                    "changes": commit["changes"],
-                    "additions": commit["additions"],
-                    "deletions": commit["deletions"],
-                }
-                for commit in commit_json["files"]
-            ]
-
-            commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
-            self.logger.info(
-                f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
-            )
-
-            if commit_changes_df.empty:
+            if commit_json["files"] == []:
                 commit_changes_dict = [
                     {
                         "commit_hash": commit_hash,
@@ -104,10 +88,37 @@ class CommitChanges:
                         "deletions": 0,
                     }
                 ]
-                commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
-                return commit_changes_df
             else:
-                return commit_changes_df
+                commit_changes_dict = [
+                    {
+                        "commit_hash": commit_hash,
+                        "filename": commit["filename"],
+                        "changes": commit["changes"],
+                        "additions": commit["additions"],
+                        "deletions": commit["deletions"],
+                    }
+                    for commit in commit_json["files"]
+                ]
+
+                commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+                self.logger.info(
+                    f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
+                )
+
+                if commit_changes_df.empty:
+                    commit_changes_dict = [
+                        {
+                            "commit_hash": commit_hash,
+                            "filename": "",
+                            "changes": 0,
+                            "additions": 0,
+                            "deletions": 0,
+                        }
+                    ]
+                    commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+                    return commit_changes_df
+                else:
+                    return commit_changes_df
 
         else:
             self.logger.debug(
