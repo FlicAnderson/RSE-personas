@@ -25,12 +25,13 @@ def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | N
 
     """
 
+    print(f"commit size is {commit_size}")
     if commit_size is None or commit_size == 0:
         commit_cat = None
         return commit_cat
 
     else:
-        assert commit_size > 0, "Warning! Cannot process negative numbers."
+        assert commit_size >= 0, "Warning! Cannot process negative numbers."
 
         if commit_size in range(1, 6):  # tiny:1-5
             commit_cat = "tiny"
