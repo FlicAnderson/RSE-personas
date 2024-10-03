@@ -128,11 +128,11 @@ class CommitChanges:
 
         else:
             self.logger.debug(
-                f"API response code is {api_response.status_code} and API response is: {api_response}."
+                f"API response code is {api_response.status_code} and API response is: {api_response}; headers are: {api_response.headers}.."
             )
-            raise RuntimeError(
-                f"API response not OK, please investigate for commit {commit_hash} at repo {self.repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
-            )
+            # raise RuntimeError(
+            #     f"API response not OK, please investigate for commit {commit_hash} at repo {self.repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
+            # )
 
     def get_commit_total_changes(
         self, commit_changes_df: pd.DataFrame, commit_hash: str
