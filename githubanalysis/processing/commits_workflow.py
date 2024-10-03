@@ -186,6 +186,7 @@ class RunCommits:
         results = []
 
         for msg in processed_commits["n_changes"]:
+            self.logger.debug(f"commit size n_changes value is: {msg}")
             rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
             results.append(rslt)
         return results
@@ -223,9 +224,10 @@ class RunCommits:
         )
         self.logger.info("did merge the lists with processed commits data")
 
-        # processed_commits.to_csv()
         write_out = f"{self.write_read_location}commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        self.logger.info(f"writing file out to this path / filename: {write_out}")
+        self.logger.info(
+            f"writing processed commits with changes and v_cats file out to this path / filename: {write_out}"
+        )
 
         processed_commits["hattori_lanza_content_cat"] = self.classify_content(
             processed_commits
@@ -236,9 +238,10 @@ class RunCommits:
         )
         self.logger.info("did hattori lanza size classification")
 
-        # processed_commits.to_csv()
         write_out = f"{self.write_read_location}commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        self.logger.info(f"writing file out to this path / filename: {write_out}")
+        self.logger.info(
+            f"writing post-workflow file out to this path / filename: {write_out}"
+        )
 
         processed_commits.to_csv(
             path_or_buf=write_out,
