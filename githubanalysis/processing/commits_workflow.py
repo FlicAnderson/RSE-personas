@@ -225,6 +225,13 @@ class RunCommits:
         self.logger.info("did merge the lists with processed commits data")
 
         write_out = f"{self.write_read_location}commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        processed_commits.to_csv(
+            path_or_buf=write_out,
+            header=True,
+            index=False,
+            na_rep="",
+            mode="w",
+        )
         self.logger.info(
             f"writing processed commits with changes and v_cats file out to this path / filename: {write_out}"
         )
