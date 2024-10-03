@@ -35,7 +35,6 @@ class CommitChanges:
         else:
             self.logger = logger
 
-        self.s = requests.Session()
         retries = Retry(
             total=10,
             connect=5,
@@ -43,7 +42,7 @@ class CommitChanges:
             backoff_factor=1.5,
             status_forcelist=[202, 502, 503, 504],
         )
-        self.s.mount("https://", HTTPAdapter(max_retries=retries))
+        self.s = requests.Session().mount("https://", HTTPAdapter(max_retries=retries))
         self.gh_token = ghauth.setup_github_auth(config_path=config_path)
         self.headers = {"Authorization": "token " + self.gh_token}
         self.config_path = config_path
@@ -65,6 +64,8 @@ class CommitChanges:
         self.logger.info(
             f"Attempting to gather commit changes for repo {self.repo_name} with commit_url {commit_url}."
         )
+        self.logger.info(f"Session info: {self.s}")
+
         api_response = self.s.get(url=commit_url, headers=self.headers)
         self.logger.info(
             f"API response is {api_response.status_code} for call to commit-hash {commit_hash} for repo {self.repo_name} and API response headers are {api_response.headers}."
