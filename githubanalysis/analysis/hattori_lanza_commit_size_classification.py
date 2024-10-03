@@ -6,7 +6,7 @@
 # doi: 10.1109/ASEW.2008.4686322.
 
 
-def hattori_lanza_commit_size_classification(commit_size: int) -> str | None:
+def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | None:
     """
     Implementing Hattori-Lanza commit size classification method by number of files changed per commit.
     Classification returns category based on bins: (tiny: 1-5 files changed; small=6-25; medium=26-125; large=126+ files changed).
@@ -24,23 +24,21 @@ def hattori_lanza_commit_size_classification(commit_size: int) -> str | None:
     :rtype: str
 
     """
+
     if commit_size is None or commit_size == 0:
         commit_cat = None
         return commit_cat
 
     else:
-        assert isinstance(
-            commit_size, int
-        ), "Warning! This function requires an integer input for commit_size. Recheck input parameter."
         assert commit_size > 0, "Warning! Cannot process negative numbers."
 
-        if commit_size in range(1, 5):
+        if commit_size in range(1, 6):  # tiny:1-5
             commit_cat = "tiny"
             return commit_cat
-        elif commit_size in range(6, 25):
+        elif commit_size in range(6, 26):
             commit_cat = "small"
             return commit_cat
-        elif commit_size in range(26, 125):
+        elif commit_size in range(26, 126):
             commit_cat = "medium"
             return commit_cat
         elif commit_size > 125:
