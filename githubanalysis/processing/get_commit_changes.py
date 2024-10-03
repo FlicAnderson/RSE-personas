@@ -35,14 +35,19 @@ class CommitChanges:
         else:
             self.logger = logger
 
-        retries = Retry(
-            total=10,
-            connect=5,
-            read=3,
-            backoff_factor=1.5,
-            status_forcelist=[202, 502, 503, 504],
+        self.s = requests.Session()
+        self.s.mount(
+            "https://",
+            HTTPAdapter(
+                max_retries=Retry(
+                    total=10,
+                    connect=5,
+                    read=3,
+                    backoff_factor=1.5,
+                    status_forcelist=[202, 502, 503, 504],
+                )
+            ),
         )
-        self.s = requests.Session().mount("https://", HTTPAdapter(max_retries=retries))
         self.gh_token = ghauth.setup_github_auth(config_path=config_path)
         self.headers = {"Authorization": "token " + self.gh_token}
         self.config_path = config_path
