@@ -5,6 +5,8 @@
 # in 2008 23rd IEEE/ACM International Conference on Automated Software Engineering - Workshops, Sep. 2008, pp. 63–71.
 # doi: 10.1109/ASEW.2008.4686322.
 
+import numpy
+
 
 def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | None:
     """
@@ -26,12 +28,15 @@ def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | N
     """
 
     print(f"commit size is {commit_size}")
-    if commit_size is None or commit_size == 0:
+
+    if commit_size is None or commit_size == 0 or numpy.isnan(commit_size):
         commit_cat = None
         return commit_cat
 
     else:
-        assert commit_size >= 0, "Warning! Cannot process negative numbers."
+        assert (
+            commit_size >= 0
+        ), "Warning! Cannot process negative numbers: {commit_size}"
 
         if commit_size in range(1, 6):  # tiny:1-5
             commit_cat = "tiny"
