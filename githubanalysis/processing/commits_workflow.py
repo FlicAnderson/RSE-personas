@@ -223,6 +223,10 @@ class RunCommits:
         )
         self.logger.info("did merge the lists with processed commits data")
 
+        # processed_commits.to_csv()
+        write_out = f"{self.write_read_location}commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        self.logger.info(f"writing file out to this path / filename: {write_out}")
+
         processed_commits["hattori_lanza_content_cat"] = self.classify_content(
             processed_commits
         )
@@ -234,7 +238,6 @@ class RunCommits:
 
         # processed_commits.to_csv()
         write_out = f"{self.write_read_location}commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        # TODO: log
         self.logger.info(f"writing file out to this path / filename: {write_out}")
 
         processed_commits.to_csv(
