@@ -141,9 +141,9 @@ class Hattori_Lanza_Content_Classification:
             for keyword in self.mgmt:
                 match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
-                    self.logger.info(
-                        f"match for {keyword} in management: {match_result}."
-                    )
+                    # self.logger.info(
+                    #     f"match for {keyword} in management: {match_result}."
+                    # )
                     return "management"
                     break
                 else:
@@ -152,9 +152,9 @@ class Hattori_Lanza_Content_Classification:
             for keyword in self.re_eng:
                 match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
-                    self.logger.info(
-                        f"match for {keyword} in reengineering: {match_result}."
-                    )
+                    # self.logger.info(
+                    #     f"match for {keyword} in reengineering: {match_result}."
+                    # )
                     return "reengineering"
                     break
                 else:
@@ -163,9 +163,9 @@ class Hattori_Lanza_Content_Classification:
             for keyword in self.cor_eng:
                 match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
-                    self.logger.info(
-                        f"match for {keyword} in corrective engineering: {match_result}."
-                    )
+                    # self.logger.info(
+                    #     f"match for {keyword} in corrective engineering: {match_result}."
+                    # )
                     return "corrective_engineering"
                     break
                 else:
@@ -174,13 +174,13 @@ class Hattori_Lanza_Content_Classification:
             for keyword in self.fwd_eng:
                 match_result = re.search(keyword, commit_message, flags=re.IGNORECASE)
                 if match_result is not None:
-                    self.logger.info(
-                        f"match for {keyword} in fwdforward engineering: {match_result}."
-                    )
+                    # self.logger.info(
+                    #     f"match for {keyword} in fwdforward engineering: {match_result}."
+                    # )
                     return "forward_engineering"
                     break
 
                 else:
                     continue
-            self.logger.info("No match, uncategorised commit")
+            # self.logger.info("No match, uncategorised commit")
             return "no_categorisation"
