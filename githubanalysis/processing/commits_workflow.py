@@ -157,7 +157,12 @@ class RunCommits:
         ]
         changes_df = pd.DataFrame(
             data=output,
-            columns=["commit_sha", "files_changed", "n_changes", "vasilescu_category"],
+            columns=[
+                "commit_sha",
+                "n_files_changed",
+                "n_changes",
+                "vasilescu_category",
+            ],
         )
 
         # merge changes_df to main commits df
@@ -185,8 +190,8 @@ class RunCommits:
     def classify_size(self, processed_commits: pd.DataFrame):
         results = []
 
-        for msg in processed_commits["n_changes"]:
-            self.logger.debug(f"commit size n_changes value is: {msg}")
+        for msg in processed_commits["n_files_changed"]:
+            self.logger.debug(f"commit size n_files_changed value is: {msg}")
             rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
             results.append(rslt)
         return results
