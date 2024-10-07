@@ -27,8 +27,6 @@ def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | N
 
     """
 
-    print(f"commit size is {commit_size}")
-
     if commit_size is None or commit_size == 0 or numpy.isnan(commit_size):
         commit_cat = None
         return commit_cat
