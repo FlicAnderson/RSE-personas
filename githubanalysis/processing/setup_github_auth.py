@@ -1,50 +1,27 @@
 """Set up authenticated access to GitHub."""
 
 import configparser
-from pathlib import Path
-from github import Github
+import os
 
 
-def setup_github_auth(config_path="githubanalysis/config.cfg", verbose=True):
+def setup_github_auth(config_path="githubanalysis/config.cfg") -> str:
     """
-    Authenticates with Github API using user-generated config.cfg file contents; sets per_page to 100 items.
+    Authenticates with Github API using user-generated config.cfg file contents
     :param config_path: file path of config.cfg file. Default='githubanalysis/config.cfg'.
     :type: str
-    :param per_pg: number of items per page in paginated API requests. Default=100, overwrites GitHub default 30.
-    :type: int
-    :param verbose: return status info. Default: True
-    :type: bool
-    :returns: `ghlink`
-    :type: github.MainClass.Github
-
-    # NB: GitHub API param uses 'per_page', Flic's code using 'per_pg' intentionally.
-
-    Examples:
-    ----------
-    TODO.
+    :returns: accesstoken
+    :rtype: str
     """
 
     # check config filepath input (using separate variable to avoid overwriting it as pathlib Path type)
-    pathchecker = Path(config_path)
-    if pathchecker.exists() is False:
-        raise OSError("Config file does not exist at path:", config_path)
-
-    # read config file and pull out access token details
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    config.sections()
+    if not os.path.exists(config_path):
+        raise RuntimeError("Config file does not exist at path:", config_path)
     try:
-        access_token = config["ACCESS"]["token"]
+        # read config file and pull out access token details
+        config = configparser.ConfigParser()
+        config.read(config_path)
+        return config["ACCESS"]["token"]
     except:
-        raise KeyError("Config file access token info not correct somehow.")
-
-    try:
-        Github(
-            access_token,
-        )  # type is github.MainClass.Github;
-        return access_token
-
-    except RuntimeError:
-        print(
+        raise RuntimeError(
             "Github authentication failed. Check config file format and permissions in your github account."
         )
