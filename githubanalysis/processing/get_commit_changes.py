@@ -9,6 +9,16 @@ from requests.adapters import HTTPAdapter, Retry
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
+from typing import TypedDict
+
+
+class CommitInfo(TypedDict):
+    commit_hash: str
+    changes: int
+    filename: str
+    additions: int
+    deletions: int
+
 
 def make_commit_url(repos_api_url: str, repo_name: str, commit_sha: str):
     """Combine elements of API string for github API request"""
@@ -23,7 +33,7 @@ class CommitChanges:
         repo_name,
         in_notebook: bool,
         config_path: str,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -43,7 +53,7 @@ class CommitChanges:
                     total=10,
                     connect=5,
                     read=3,
-                    backoff_factor=1.5,
+                    backoff_factor=1,
                     status_forcelist=[202, 502, 503, 504],
                 )
             ),
@@ -62,7 +72,7 @@ class CommitChanges:
     def __del__(self):
         self.s.close()
 
-    def get_commit_changes(self, commit_hash: str) -> pd.DataFrame:
+    def get_commit_changes(self, commit_hash: str) -> pd.DataFrame | None:
         repos_api_url = "https://api.github.com/repos/"
         commit_url = make_commit_url(repos_api_url, self.repo_name, commit_hash)
 
@@ -85,7 +95,7 @@ class CommitChanges:
             commit_json = api_response.json()
 
             if commit_json["files"] == []:
-                commit_changes_dict = [
+                commit_changes: list[CommitInfo] = [
                     {
                         "commit_hash": commit_hash,
                         "filename": "",
@@ -95,7 +105,7 @@ class CommitChanges:
                     }
                 ]
             else:
-                commit_changes_dict = [
+                commit_changes: list[CommitInfo] = [
                     {
                         "commit_hash": commit_hash,
                         "filename": commit["filename"],
@@ -106,13 +116,13 @@ class CommitChanges:
                     for commit in commit_json["files"]
                 ]
 
-                commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+                commit_changes_df = pd.DataFrame.from_dict(commit_changes)
                 self.logger.info(
                     f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
                 )
 
                 if commit_changes_df.empty:
-                    commit_changes_dict = [
+                    commit_changes = [
                         {
                             "commit_hash": commit_hash,
                             "filename": "",
@@ -121,7 +131,7 @@ class CommitChanges:
                             "deletions": 0,
                         }
                     ]
-                    commit_changes_df = pd.DataFrame.from_dict(commit_changes_dict)
+                    commit_changes_df = pd.DataFrame.from_dict(commit_changes)
                     return commit_changes_df
                 else:
                     return commit_changes_df
@@ -136,13 +146,12 @@ class CommitChanges:
 
     def get_commit_total_changes(
         self, commit_changes_df: pd.DataFrame, commit_hash: str
-    ) -> tuple[int, str]:
-        try:
-            if not commit_changes_df.empty:
-                n_commit_changes = sum(commit_changes_df.changes)
+    ) -> tuple[int | None, str]:
+        if not commit_changes_df.empty:
+            n_commit_changes = sum(commit_changes_df.changes)
 
-                return n_commit_changes, commit_hash
-        except:
+            return n_commit_changes, commit_hash
+        else:
             self.logger.info(
                 f"Beware: commit_changes_df is empty for commit {commit_hash} and contains NO changes."
             )
@@ -150,13 +159,12 @@ class CommitChanges:
 
     def get_commit_files_changed(
         self, commit_changes_df: pd.DataFrame, commit_hash: str
-    ) -> tuple[int, str]:
-        try:
-            if not commit_changes_df.empty:
-                n_commit_files = commit_changes_df.filename.nunique()
+    ) -> tuple[int | None, str]:
+        if not commit_changes_df.empty:
+            n_commit_files = commit_changes_df.filename.nunique()
 
-                return n_commit_files, commit_hash
-        except:
+            return n_commit_files, commit_hash
+        else:
             self.logger.info(
                 f"Beware: commit_changes_df is empty for commit {commit_hash} and contains NO changes."
             )
