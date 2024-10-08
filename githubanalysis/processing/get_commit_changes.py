@@ -116,7 +116,7 @@ class CommitChanges:
                     for commit in commit_json["files"]
                 ]
 
-                commit_changes_df = pd.DataFrame.from_dict(commit_changes)
+                commit_changes_df = pd.DataFrame(commit_changes)
                 self.logger.info(
                     f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
                 )
@@ -131,7 +131,7 @@ class CommitChanges:
                             "deletions": 0,
                         }
                     ]
-                    commit_changes_df = pd.DataFrame.from_dict(commit_changes)
+                    commit_changes_df = pd.DataFrame(commit_changes)
                     return commit_changes_df
                 else:
                     return commit_changes_df
