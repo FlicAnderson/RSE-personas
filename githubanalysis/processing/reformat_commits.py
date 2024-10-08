@@ -15,7 +15,7 @@ class CommitReformatter:
         self,
         repo_name,
         in_notebook: bool,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
