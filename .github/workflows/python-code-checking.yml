@@ -46,10 +46,10 @@ jobs:
     #  run: |
     #    python -m pip list -e
     # run tests
-    #- name: Test with pytest
-    #  run: |
-        #pytest -v tests/test*
-        #pytest --cov
+    - name: Test with pytest
+      run: |
+        pytest -v tests/test*
+        pytest --cov
     # run linter 
     - name: Lint with ruff
       run: |
