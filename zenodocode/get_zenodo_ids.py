@@ -13,13 +13,14 @@ RATE_LIMIT = 60
 @sleep_and_retry
 @limits(calls=CALLS, period=RATE_LIMIT)
 def get_zenodo_ids(
+    *,
     auth="access_token",
     per_pg=20,
     total_records=100,
     filename="zn_ids",
     write_out_location="data/",
     verbose=True,
-):
+) -> list[int]:
     """
     Get zenodo record ids for software, saving these out into a csv file.
 
@@ -131,3 +132,5 @@ def get_zenodo_ids(
         print(f"Zenodo IDs file saved out as: {write_out} at {write_out_location}")
 
     # return(write_out)  # write_out filename and path.
+
+    return identifiers
