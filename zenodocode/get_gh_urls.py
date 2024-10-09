@@ -34,9 +34,7 @@ class GhURLsGetter:
 
     def get_gh_urls(
         self,
-        config_path="zenodococode/zenodoconfig.cfg",
-        in_filename="zenodo_ids",
-        read_in_location="data/",
+        zenodo_ids: list[int],
         out_filename="gh_urls",
         write_out_location="data/",
         verbose=True,
@@ -88,22 +86,6 @@ class GhURLsGetter:
         GitHub URL grab complete.
         """
 
-        # read-in file setup (accept commandline input for zenodo_ids file if any)
-        if len(sys.argv) == 2:
-            zenodo_file = sys.argv[1]  # use second argv (user-provided by commandline)
-
-            if not isinstance(zenodo_file, str):
-                raise TypeError(
-                    "Ensure argument is a file location and name in string format (e.g. 'data/zenodo_id.csv')"
-                )
-
-            self.logger.info(
-                f"Using commandline argument {zenodo_file} as input file of Zenodo IDs to retrieve GH URLs for. Entered as: {sys.argv[1]}"
-            )
-        else:
-            # default location: data/zenodo_ids.csv
-            zenodo_file = f"{read_in_location}{in_filename}.csv"
-
         # write-out file setup
         # get date for generating extra filename info
         current_date_info = datetime.now().strftime(
@@ -112,17 +94,10 @@ class GhURLsGetter:
         write_out = f"{write_out_location}{out_filename}"
         write_out_extra_info = f"{write_out}_{current_date_info}.csv"
 
-        # read in CSV file of zenodo IDs
-        zenodo_ids = pd.read_csv(
-            zenodo_file, header=None, names=["index", "zenodo_id"], dtype="Int64"
-        )
-
         batch_size = 10
-        total_records = len(zenodo_ids.index)
+        total_records = len(zenodo_ids)
         num_batches = math.ceil(total_records / batch_size)  # 3
-        self.logger.debug(
-            f"\n ... STARTING RUN. Read in file {zenodo_file} of shape {zenodo_ids.shape}; Number of record IDs to process is {total_records}; Batch size is set to {batch_size}; This run requires {num_batches} batches ... \n"
-        )
+        self.logger.debug(f"Fetching urls for {total_records} records")
 
         # rate handling setup
         s = requests.Session()
@@ -130,7 +105,7 @@ class GhURLsGetter:
             total=10,
             connect=5,
             read=3,
-            backoff_factor=1.5,
+            backoff_factor=1,
             status_forcelist=[202, 502, 503, 504],
         )
         s.mount("https://", HTTPAdapter(max_retries=retries))
@@ -142,7 +117,7 @@ class GhURLsGetter:
         gh_urls_df = pd.DataFrame()  # create empty df to hold complete record set
 
         # this loop splits the zenodo IDs into 3x batches of size 10 and returns ephemeral
-        for i in chunker.chunker(zenodo_ids["zenodo_id"], batch_size):
+        for i in chunker.chunker(zenodo_ids, batch_size):
             loop_num += 1
             self.logger.info(
                 f"\n >> Running loop/chunk number {loop_num} of {num_batches} ... "
@@ -223,6 +198,7 @@ class GhURLsGetter:
                         )
                     print(type(e))
                     print(e)
+                # TODO: what do we do woith teh ereror??????????
 
             # convert to pandas dataframe format
             writeable_chunk_df = pd.DataFrame.from_dict(writeable_chunk)
