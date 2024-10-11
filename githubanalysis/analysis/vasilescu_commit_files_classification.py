@@ -472,7 +472,7 @@ class Vasilescu_Commit_Classifier:
         return v_cat
 
     def vasilescu_commit_files_classification(
-        self, commit_changes_df: pd.DataFrame, commit_hash: str
+        self, commit_changes_df: pd.DataFrame | None, commit_hash: str
     ) -> list[str]:
         """
         Function to classify commit based on filetypes according to method in Vasilescu et al. 2014,
