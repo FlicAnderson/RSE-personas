@@ -15,7 +15,7 @@ class Vasilescu_Commit_Classifier:
         repo_name,
         in_notebook: bool,
         config_path: str,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
