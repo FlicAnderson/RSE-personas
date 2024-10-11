@@ -20,7 +20,9 @@ def _normalise_default_branch_name(branch):
     return branch
 
 
-def make_url(repos_api_url: str, repo_name: str, branch: str, per_pg: str, page: str):
+def make_url(
+    repos_api_url: str, repo_name: str, branch: str, per_pg: int | str, page: int | str
+):
     if branch == "main":
         return f"{repos_api_url}{repo_name}/commits?per_page={per_pg}&page={page}"  # don't use branch in query, obtains GH default branch.
     else:
@@ -71,7 +73,7 @@ class AllBranchesCommitsGetter:
         self.s.close()
 
     def _singlepage_commit_grabber(
-        self, repos_api_url: str, repo_name: str, branch: str, per_pg: str
+        self, repos_api_url: str, repo_name: str, branch: str, per_pg: str | int
     ) -> list[dict]:
         commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page=1)
 
@@ -92,7 +94,7 @@ class AllBranchesCommitsGetter:
         repos_api_url: str,
         repo_name: str,
         branch: str,
-        per_pg: str,
+        per_pg: str | int,
     ) -> list[dict]:
         commit_links_last = commit_links["last"]["url"].split("&page=")[1]
         pages_commits = int(commit_links_last)
