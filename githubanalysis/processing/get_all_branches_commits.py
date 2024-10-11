@@ -36,7 +36,7 @@ class AllBranchesCommitsGetter:
         repo_name,
         in_notebook: bool,
         config_path: str,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -53,7 +53,7 @@ class AllBranchesCommitsGetter:
             total=10,
             connect=5,
             read=3,
-            backoff_factor=1.5,
+            backoff_factor=1,
             status_forcelist=[202, 502, 503, 504],
         )
         self.s.mount("https://", HTTPAdapter(max_retries=retries))
