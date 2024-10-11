@@ -33,7 +33,7 @@ class RunCommits:
         in_notebook: bool,
         config_path: str,
         write_read_location: str,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -105,7 +105,7 @@ class RunCommits:
         vasilescucommitclassifier: Vasilescu_Commit_Classifier,
     ):
         self.logger.info("Beginning getcommitschangesvcats( ).")
-        n_files: list[tuple[int, str]] = []
+        n_files: list[tuple[int | None, str]] = []
         n_changes = []
         v_category = []
 
@@ -141,8 +141,8 @@ class RunCommits:
 
     def merge_stats(
         self,
-        n_files: list[tuple[int, str]],
-        n_changes: list[tuple[int, str]],
+        n_files: list[tuple[int | None, str]],
+        n_changes: list[tuple[int | None, str]],
         v_category: list[tuple[str, str]],
         processed_commits: pd.DataFrame,
     ):
