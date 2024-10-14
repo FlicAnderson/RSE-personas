@@ -132,7 +132,7 @@ class AllBranchesCommitsGetter:
 
     def get_all_branches_commits(
         self,
-        repo_name,
+        repo_name: str,
         per_pg=100,
         out_filename="all-branches-commits",
         write_out_location="data/",
