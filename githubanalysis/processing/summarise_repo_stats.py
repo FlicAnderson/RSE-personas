@@ -2,7 +2,7 @@
 
 import sys
 import pandas as pd
-import datetime
+from datetime import datetime
 from datetime import timezone
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -22,7 +22,7 @@ class RepoStatsSummariser:
 
     def __init__(
         self,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
         in_notebook=False,
     ) -> None:
         if logger is None:
@@ -51,12 +51,11 @@ class RepoStatsSummariser:
         :type: str
         :returns: repo_stats: dictionary w/ keys: "repo_name", "devs", "total_commits", "tickets", "last_commit", "repo_age_days",
         ... "repo_license", "repo_visibility", "repo_language".
-        :type: dict
+        :rtype: dict
 
         Examples:
         ----------
         >>> summarise_repo_stats(repo_name='riboviz/riboviz', per_pg=100)
-        TODO
         """
 
         # get auth string
@@ -68,7 +67,7 @@ class RepoStatsSummariser:
             total=10,
             connect=5,
             read=3,
-            backoff_factor=1.5,
+            backoff_factor=1,
             status_forcelist=[202, 502, 503, 504],
         )
         s.mount("https://", HTTPAdapter(max_retries=retries))
@@ -183,32 +182,6 @@ class RepoStatsSummariser:
                     f"Error in checking number of contributors with repo name {repo_name} and config path {config_path}: {e_countdevs}. API response: {api_response}"
                 )
 
-            # try:
-            #     # count total number of commits
-            #     total_commits = None
-
-            #     base_commits_url = f"https://api.github.com/repos/{repo_name}/commits?per_page=1"
-
-            #     s = requests.Session()
-            #     retries = Retry(total=10, connect=5, read=3, backoff_factor=1.5, status_forcelist=[202, 502, 503, 504])
-            #     s.mount('https://', HTTPAdapter(max_retries=retries))
-            #     try:
-            #         api_response = s.get(url=base_commits_url, timeout=10)
-            #         commit_links = api_response.links
-            #         commit_links_last = commit_links['last']['url'].split("&page=")[1]
-            #         total_commits = int(commit_links_last)
-
-            #         self.logger.debug(f"API response for getting total commits: {api_response}")
-
-            #     except Exception as e:
-            #         self.logger.error(f"API response total_commits_last_year fail exception: {e}; error type {type(e)}.")
-
-            #     repo_stats.update({"total_commits": total_commits})
-            #     self.logger.debug(f"Repo total commits is {repo_stats.get('total_commits')}.")
-
-            # except Exception as e_commitstotal:
-            #     self.logger.error(f"Error in checking total number of commits at repo name {repo_name} and config path {config_path}: {e_commitstotal}. API response: {api_response}")
-
             # count total commits in last year
             # Do something sensible re: no commits in last year returned TODO
             try:
@@ -221,7 +194,7 @@ class RepoStatsSummariser:
                     total=10,
                     connect=5,
                     read=3,
-                    backoff_factor=1.5,
+                    backoff_factor=1,
                     status_forcelist=[202, 502, 503, 504],
                 )
                 s.mount("https://", HTTPAdapter(max_retries=retries))
