@@ -396,14 +396,14 @@ class RepoStatsSummariser:
 
             # count closed issue tickets
             try:
-                if repo_stats.get("has_issues"):
+                if repo_stats.get("issues_enabled"):
                     state = "closed"
                     issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
 
-                    issues_api_response = s.get(url=issues_url, headers=headers)
+                    clsd_issues_api_response = s.get(url=issues_url, headers=headers)
 
-                    if issues_api_response.ok:
-                        issue_links = issues_api_response.links
+                    if clsd_issues_api_response.ok:
+                        issue_links = clsd_issues_api_response.links
                         if "last" in issue_links:
                             issue_links_last = issue_links["last"]["url"].split(
                                 "&page="
