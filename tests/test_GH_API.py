@@ -10,6 +10,7 @@ def make_request(api_key: str, repo_name: str):
     return response
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_GH_commits_success(
     repo_name: str = "JeschkeLab/DeerLab",
     config_path: str = "githubanalysis/config.cfg",
@@ -27,6 +28,7 @@ def test_GH_commits_success(
     assert len(data) <= 30
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_GH_commits_fail_bad_repo_name(
     repo_name: str = "FlicAnderson/NonexistentRepo",  # EXPECT FAIL
     config_path: str = "githubanalysis/config.cfg",
@@ -44,6 +46,7 @@ def test_GH_commits_fail_bad_repo_name(
     assert "Not Found" in data.get("message")
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_GH_commits_fail_emptybranch(
     repo_name: str = "FlicAnderson/coding-smart",
     config_path: str = "githubanalysis/config.cfg",
@@ -66,6 +69,7 @@ def test_GH_commits_fail_emptybranch(
     assert "Not Found" in data.get("message")
 
 
+# NOT expected to fail, since doesn't rely on local or missing config.cfg
 def test_GH_commits_bad_api_key(
     repo_name: str = "FlicAnderson/test-repo-no-issues",
 ):
