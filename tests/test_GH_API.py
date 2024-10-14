@@ -1,3 +1,4 @@
+import pytest
 import requests
 
 import githubanalysis.processing.setup_github_auth as ghauth
