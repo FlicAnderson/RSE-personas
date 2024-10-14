@@ -156,7 +156,13 @@ class RunCommits:
         v_category: list[tuple[str, str]],
         processed_commits: pd.DataFrame,
     ):
-        # generate changes_df of files changed from zipped lists of results
+        """
+        Merge (equivalent to SQL-style join on 'commit_sha') main
+        commits df and changes_df (numbers of files changed, filenames
+        of changed files, and vasilescu categories from zipped lists of
+        results via getcommitschangesvcats() run.
+        """
+
         output = [
             [commit_hash, files_changed, number_changes, vasilescu_category]
             for (
@@ -174,7 +180,6 @@ class RunCommits:
                 "vasilescu_category",
             ],
         )
-
         # merge changes_df to main commits df
         return processed_commits.merge(
             changes_df,
@@ -186,6 +191,10 @@ class RunCommits:
         hattorilanzaclassifier = Hattori_Lanza_Content_Classification(
             in_notebook=self.in_notebook
         )
+        """
+        Run Hattori & Lanza commit message content classification method
+        on processed commit data.
+        """
 
         results = []
 
@@ -207,6 +216,11 @@ class RunCommits:
         return results
 
     def do_it_all(self):
+        """
+        Runs main commits workflow; picks up using formatted commit .csv
+        file if this exists; returns df of processed, categorised commit
+        data.
+        """
         self.logger.info("checking whether formatted commits dataset already exists")
         # if all processed commits here from same day, don't re-run getter steps.
         processed_commits = self.check_existing_formatted_commits()
