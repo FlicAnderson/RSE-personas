@@ -13,7 +13,8 @@ def make_request(api_key: str, repo_name: str):
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_GH_commits_success(
-    repo_name: str = "JeschkeLab/DeerLab",
+    # test against one of Flic's non-updated repos; ~20 commits, 2 branches.
+    repo_name: str = "FlicAnderson/peramagroon",
     config_path: str = "githubanalysis/config.cfg",
 ):
     # Arrange:
@@ -49,7 +50,7 @@ def test_GH_commits_fail_bad_repo_name(
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_GH_commits_fail_emptybranch(
-    repo_name: str = "FlicAnderson/coding-smart",
+    repo_name: str = "FlicAnderson/peramagroon",
     config_path: str = "githubanalysis/config.cfg",
 ):
     # Arrange:
