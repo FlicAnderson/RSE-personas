@@ -29,6 +29,19 @@ def make_url(
         return f"{repos_api_url}{repo_name}/commits?sha={branch}&per_page={per_pg}&page={page}"
 
 
+def deduplicate_commits(all_branches_commits: dict[str, list]):
+    shas = set()
+    modified: dict[str, list] = {}
+    for branch_name, commits in all_branches_commits.items():
+        modified[branch_name] = []
+        for commit in commits:
+            sha = commit["sha"]
+            if sha not in shas:
+                shas.add(sha)
+                modified[branch_name].append(commit)
+    return modified
+
+
 class AllBranchesCommitsGetter:
     # if not given a better option, use my default settings for logging
     logger: logging.Logger
@@ -117,18 +130,6 @@ class AllBranchesCommitsGetter:
             all_commits.extend(json_pg)
 
         return all_commits
-
-    def _deduplicate_commits(self, all_branches_commits: dict[str, list]):
-        shas = set()
-        modified: dict[str, list] = {}
-        for branch_name, commits in all_branches_commits.items():
-            modified[branch_name] = []
-            for commit in commits:
-                sha = commit["sha"]
-                if sha not in shas:
-                    shas.add(sha)
-                    modified[branch_name].append(commit)
-        return modified
 
     def get_all_branches_commits(
         self,
@@ -219,7 +220,7 @@ class AllBranchesCommitsGetter:
                 self.logger.error(f"Error: {e}")
                 raise
 
-        unique_commits_all_branches = self._deduplicate_commits(all_branches_commits)
+        unique_commits_all_branches = deduplicate_commits(all_branches_commits)
 
         write_out_extra_info_dedup = (
             f"{write_out}_{self.current_date_info}_deduplicated.json"
