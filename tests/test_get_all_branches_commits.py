@@ -12,8 +12,8 @@ import json
 
 #     # Assert:
 
-rawjson = "/tests/testdata/raw-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-15.json"
-deduplicatedjson = "/tests/testdata/deduplicated-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-15_deduplicated.json"
+rawjson = "tests/testdata/raw-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-15.json"
+deduplicatedjson = "tests/testdata/deduplicated-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-15_deduplicated.json"
 
 with open(rawjson) as f1:
     rawjsondata = json.load(f1)
