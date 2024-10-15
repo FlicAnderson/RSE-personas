@@ -55,6 +55,19 @@ class RunCommits:
         self.repo_name = repo_name
         self.write_read_location = write_read_location
 
+    def generate_all_branches_commits(self):
+        allbranchescommitsgetter = AllBranchesCommitsGetter(
+            repo_name=self.repo_name,
+            in_notebook=self.in_notebook,
+            config_path=self.config_path,
+        )
+        # TODO: this does not need to take repo name
+        all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
+            repo_name=self.repo_name
+        )
+        self.logger.info("did allbranchescommitsgetter()")
+        return all_branches_commits
+
     def check_existing_formatted_commits(self):
         """Generate expected filename of formatted commits data from repo name and date,
         and check if this file had been created already today. If not, run `get_all_branches_commits( repo_name )`
@@ -76,30 +89,31 @@ class RunCommits:
             return processed_commits_df
 
         else:  # run steps to get commits data and generate dataset
-            allbranchescommitsgetter = AllBranchesCommitsGetter(
-                repo_name=self.repo_name,
-                in_notebook=self.in_notebook,
-                config_path=self.config_path,
-            )
-            # TODO: this does not need to take repo name
-            all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
-                repo_name=self.repo_name
-            )
-            self.logger.info("did allbranchescommitsgetter()")
+            # run generate_all_branches_commits()
+            # run process_format_commits()
+            # run writeout_formatted_commits()
+            pass
 
-            reformat_commits = CommitReformatter(
-                repo_name=self.repo_name,
-                in_notebook=self.in_notebook,
-            )
-            processed_commits_df = reformat_commits.reformat_commits_object(
-                unique_commits_all_branches=all_branches_commits
-            )
+    def process_format_commits(self, all_branches_commits):
+        """
+        Process and format commits from all branches (ie output of
+        generate_all_branches_commits() for a repo) into a dataframe.
+        """
+        reformat_commits = CommitReformatter(
+            repo_name=self.repo_name,
+            in_notebook=self.in_notebook,
+        )
+        reformat_commits.reformat_commits_object(
+            unique_commits_all_branches=all_branches_commits
+        )
+        self.logger.info("did reformat commits")
+        return reformat_commits
 
-            self.logger.info("did reformat commits")
-            reformat_commits.save_formatted_commits(self.write_read_location)
-            self.logger.info("saved out reformat commits")
-
-            return processed_commits_df
+    def writeout_formatted_commits(self, reformat_commits: CommitReformatter):
+        reformat_commits.save_formatted_commits(
+            write_out_location=self.write_read_location
+        )
+        self.logger.info("saved out reformat commits")
 
     def getcommitschangesvcats(
         self,
