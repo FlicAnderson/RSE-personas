@@ -68,6 +68,28 @@ class RunCommits:
         self.logger.info("did allbranchescommitsgetter()")
         return all_branches_commits
 
+    def process_format_commits(self, all_branches_commits, writeout: bool = True):
+        """
+        Process and format commits from all branches (ie output of
+        generate_all_branches_commits() for a repo) into a dataframe.
+        """
+        reformat_commits = CommitReformatter(
+            repo_name=self.repo_name,
+            in_notebook=self.in_notebook,
+        )
+        reformat_commits.reformat_commits_object(
+            unique_commits_all_branches=all_branches_commits
+        )
+        self.logger.info("did reformat commits")
+
+        if writeout:
+            reformat_commits.save_formatted_commits(
+                write_out_location=self.write_read_location
+            )
+            self.logger.info("saved out reformat commits")
+
+        return reformat_commits.reformatted_commits
+
     def check_existing_formatted_commits(self):
         """Generate expected filename of formatted commits data from repo name and date,
         and check if this file had been created already today. If not, run `get_all_branches_commits( repo_name )`
@@ -89,31 +111,9 @@ class RunCommits:
             return processed_commits_df
 
         else:  # run steps to get commits data and generate dataset
-            # run generate_all_branches_commits()
-            # run process_format_commits()
-            # run writeout_formatted_commits()
-            pass
-
-    def process_format_commits(self, all_branches_commits):
-        """
-        Process and format commits from all branches (ie output of
-        generate_all_branches_commits() for a repo) into a dataframe.
-        """
-        reformat_commits = CommitReformatter(
-            repo_name=self.repo_name,
-            in_notebook=self.in_notebook,
-        )
-        reformat_commits.reformat_commits_object(
-            unique_commits_all_branches=all_branches_commits
-        )
-        self.logger.info("did reformat commits")
-        return reformat_commits
-
-    def writeout_formatted_commits(self, reformat_commits: CommitReformatter):
-        reformat_commits.save_formatted_commits(
-            write_out_location=self.write_read_location
-        )
-        self.logger.info("saved out reformat commits")
+            return self.process_format_commits(
+                self.generate_all_branches_commits(), writeout=True
+            )
 
     def getcommitschangesvcats(
         self,
@@ -240,6 +240,11 @@ class RunCommits:
         # if all processed commits here from same day, don't re-run getter steps.
         processed_commits = self.check_existing_formatted_commits()
         self.logger.info("got formatted commits data")
+
+        if processed_commits is None or processed_commits.empty:
+            raise pd.errors.EmptyDataError(
+                "Frame is None or pd.DataFrame is empty; perhaps no commits?"
+            )
 
         commitchanges = CommitChanges(
             repo_name=self.repo_name,
