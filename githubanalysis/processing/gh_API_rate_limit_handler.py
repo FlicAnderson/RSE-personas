@@ -1,7 +1,6 @@
 """Code to handle API rate limiting"""
 
 from time import time
-import datetime
 import requests
 
 import githubanalysis.processing.setup_github_auth as ghauth
