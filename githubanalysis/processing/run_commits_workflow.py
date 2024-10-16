@@ -25,7 +25,7 @@ def single_repo_method(repo_name: str):
     runcommits = RunCommits(
         repo_name=repo_name,
         in_notebook=True,
-        config_path="../../githubanalysis/config.cfg",
+        config_path="../../githubanalysis/config.cfg",  # TODO make this editable and useful
         write_read_location="../../data/",
     )
     repodf = runcommits.do_it_all()
