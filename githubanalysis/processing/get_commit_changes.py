@@ -3,11 +3,13 @@
 import pandas as pd
 import logging
 import datetime
+from time import sleep
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
+import githubanalysis.processing.gh_API_rate_limit_handler as ratehandle
 
 from typing import TypedDict
 
@@ -86,10 +88,25 @@ class CommitChanges:
             f"API response is {api_response.status_code} for call to commit-hash {commit_hash} for repo {self.repo_name} and API response headers are {api_response.headers}."
         )
 
+        headers_out = api_response.headers
+        self.logger.debug(
+            f"record ID request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
+        )
+        waittime = 1
         if api_response.status_code == 403 or api_response.status_code == 429:
             self.logger.debug(
                 f"API response code is {api_response.status_code} and API response is: {api_response}; headers are {api_response.headers}. "
             )
+            if api_response.headers.get("X-RateLimit-Remaining") == "0":
+                resettime = api_response.headers.get("X-RateLimit-Reset")
+                if resettime is not None:
+                    resettime = int(resettime)
+                else:
+                    raise
+                waittime = ratehandle.wait_until_calc(reset_time=resettime)
+            else:
+                waittime = 1
+            sleep(waittime)  # in seconds
 
         if api_response.status_code == 200:
             commit_json = api_response.json()
