@@ -8,6 +8,7 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 import utilities.get_default_logger as loggit
+from utilities.check_gh_reponse import RateLimitError, raise_if_response_needs_retry
 import githubanalysis.processing.setup_github_auth as ghauth
 import githubanalysis.processing.gh_API_rate_limit_handler as ratehandle
 
@@ -25,14 +26,6 @@ class CommitInfo(TypedDict):
 def make_commit_url(repos_api_url: str, repo_name: str, commit_sha: str):
     """Combine elements of API string for github API request"""
     return f"{repos_api_url}{repo_name}/commits/{commit_sha}"
-
-
-class RateLimitError(RuntimeError):
-    waittime: int
-
-    def __init__(self, waittime: int):
-        self.waittime = waittime
-        super().__init__()
 
 
 class UnexpectedAPIError(RuntimeError):
@@ -116,25 +109,8 @@ class CommitChanges:
         self.logger.debug(
             f"record ID request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
         )
-        if api_response.status_code == 403 or api_response.status_code == 429:
-            self.logger.debug(
-                f"API response code is {api_response.status_code} and API response is: {api_response}; headers are {api_response.headers}. "
-            )
-            if api_response.headers.get("X-RateLimit-Remaining") == "0":
-                resettime = api_response.headers.get("X-RateLimit-Reset")
-                if resettime is not None:
-                    resettime = int(resettime)
-                else:
-                    raise RuntimeError(
-                        "Reset time value 'X-RateLimit-Reset' resettime is None"
-                    )
-                waittime = ratehandle.wait_until_calc(reset_time=resettime)
-            else:
-                waittime = 1
-            self.logger.error(
-                f"Waiting {waittime} seconds as API rate limit remaining is {api_response.headers.get('X-RateLimit-Remaining')} and reset time is {api_response.headers.get('X-RateLimit-Reset')} in epoch seconds."
-            )
-            raise RateLimitError(waittime=waittime)
+
+        raise_if_response_needs_retry(api_response=api_response, logger=self.logger)
 
         if api_response.status_code == 200:
             commit_json = api_response.json()
