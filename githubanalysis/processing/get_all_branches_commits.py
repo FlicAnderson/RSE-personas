@@ -82,8 +82,8 @@ class AllBranchesCommitsGetter:
         )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
 
-    def __del__(self):
-        self.s.close()
+    # def __del__(self):
+    #     self.s.close()
 
     def _singlepage_commit_grabber(
         self, repos_api_url: str, repo_name: str, branch: str, per_pg: str | int
