@@ -32,3 +32,17 @@ def raise_if_response_needs_retry(api_response: Response, logger: Logger):
         f"Waiting {waittime} seconds as API rate limit remaining is {api_response.headers.get('X-RateLimit-Remaining')} and reset time is {api_response.headers.get('X-RateLimit-Reset')} in epoch seconds."
     )
     raise RateLimitError(waittime=waittime)
+
+
+def raise_if_resoponse_error():
+    """
+    if status is 200: return
+    else:
+        call raise_if_response_needs_retry()
+        if it doesn't raise:
+            if status is 404:
+                raise RepoNotFoundError() <- need to make this c.f. RateLimitError or UnexpectedAPIError
+            else:
+                raise UnexpectedAPIError()
+    done!
+    """
