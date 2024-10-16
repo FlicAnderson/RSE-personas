@@ -91,7 +91,7 @@ class RepoStatsSummariser:
 
         # get repo_name gh connection:
         repo_stats.update({"repo_name": repo_name})
-        self.logger.debug(f"Repo name is {repo_name}")
+        # self.logger.debug(f"Repo name is {repo_name}")
 
         base_repo_url = "https://api.github.com/repos"
         connect_to = f"{base_repo_url}/{repo_name}"
