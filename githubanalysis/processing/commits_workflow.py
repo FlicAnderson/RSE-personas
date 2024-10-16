@@ -7,7 +7,10 @@ from pathlib import Path
 
 import utilities.get_default_logger as loggit
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
-from githubanalysis.processing.get_commit_changes import CommitChanges
+from githubanalysis.processing.get_commit_changes import (
+    CommitChanges,
+    UnexpectedAPIError,
+)
 from githubanalysis.processing.reformat_commits import CommitReformatter
 import githubanalysis.analysis.hattori_lanza_commit_size_classification as sizecat
 from githubanalysis.analysis.hattori_lanza_commit_content_classification import (
@@ -141,9 +144,15 @@ class RunCommits:
             self.logger.info(
                 f"Getting change numbers and v_cats for {i} of {len(processed_commits)} commits for repo {self.repo_name}."
             )
-
-            tmpdf = commitchanges.get_commit_changes(commit_hash=commit)
-
+            try:
+                tmpdf = commitchanges.get_commit_changes_with_retries(
+                    commit_hash=commit
+                )
+            except UnexpectedAPIError as e:
+                self.logger.error(
+                    f"Unexpected API error: {e}; skipping to next commit."
+                )
+                continue
             n_files.append(
                 commitchanges.get_commit_files_changed(
                     commit_changes_df=tmpdf, commit_hash=commit

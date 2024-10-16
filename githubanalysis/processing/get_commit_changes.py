@@ -27,6 +27,18 @@ def make_commit_url(repos_api_url: str, repo_name: str, commit_sha: str):
     return f"{repos_api_url}{repo_name}/commits/{commit_sha}"
 
 
+class RateLimitError(RuntimeError):
+    waittime: int
+
+    def __init__(self, waittime: int):
+        self.waittime = waittime
+        super().__init__()
+
+
+class UnexpectedAPIError(RuntimeError):
+    pass
+
+
 class CommitChanges:
     logger: logging.Logger
 
@@ -74,6 +86,18 @@ class CommitChanges:
     def __del__(self):
         self.s.close()
 
+    def get_commit_changes_with_retries(self, commit_hash: str, max_retries=25):
+        assert max_retries > 0
+        retries = 0
+        while retries > max_retries:
+            try:
+                return self.get_commit_changes(commit_hash=commit_hash)
+            except RateLimitError as e:
+                retries += 1
+                sleep(e.waittime)  # in seconds
+                self.logger.debug(f"Sleep of {e.waittime} seconds complete.")
+        raise RuntimeError("Hit maximum number of retries")
+
     def get_commit_changes(self, commit_hash: str) -> pd.DataFrame | None:
         repos_api_url = "https://api.github.com/repos/"
         commit_url = make_commit_url(repos_api_url, self.repo_name, commit_hash)
@@ -92,7 +116,6 @@ class CommitChanges:
         self.logger.debug(
             f"record ID request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
         )
-        waittime = 1
         if api_response.status_code == 403 or api_response.status_code == 429:
             self.logger.debug(
                 f"API response code is {api_response.status_code} and API response is: {api_response}; headers are {api_response.headers}. "
@@ -108,11 +131,10 @@ class CommitChanges:
                 waittime = ratehandle.wait_until_calc(reset_time=resettime)
             else:
                 waittime = 1
-            self.logger.debug(
+            self.logger.error(
                 f"Waiting {waittime} seconds as API rate limit remaining is {api_response.headers.get('X-RateLimit-Remaining')} and reset time is {api_response.headers.get('X-RateLimit-Reset')} in epoch seconds."
             )
-            sleep(waittime)  # in seconds
-            self.logger.debug(f"Sleep of {waittime} seconds complete.")
+            raise RateLimitError(waittime=waittime)
 
         if api_response.status_code == 200:
             commit_json = api_response.json()
@@ -160,12 +182,9 @@ class CommitChanges:
                     return commit_changes_df
 
         else:
-            self.logger.debug(
-                f"API response code is {api_response.status_code} and API response is: {api_response}; headers are: {api_response.headers}.."
+            raise UnexpectedAPIError(
+                f"API response not OK, please investigate for commit {commit_hash} at repo {self.repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
             )
-            # raise RuntimeError(
-            #     f"API response not OK, please investigate for commit {commit_hash} at repo {self.repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
-            # )
 
     def get_commit_total_changes(
         self, commit_changes_df: pd.DataFrame | None, commit_hash: str
