@@ -89,7 +89,7 @@ class CommitChanges:
     def get_commit_changes_with_retries(self, commit_hash: str, max_retries=25):
         assert max_retries > 0
         retries = 0
-        while retries > max_retries:
+        while retries < max_retries:
             try:
                 return self.get_commit_changes(commit_hash=commit_hash)
             except RateLimitError as e:
