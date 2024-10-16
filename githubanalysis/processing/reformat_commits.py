@@ -35,7 +35,9 @@ class CommitReformatter:
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.reformatted_commits = None
 
-    def reformat_commits_object(self, unique_commits_all_branches: dict[str, list]):
+    def reformat_commits_object(
+        self, unique_commits_all_branches: dict[str, list]
+    ) -> pd.DataFrame:
         """
         Reformat previously-made commit data (from get_all_branches_commits() ) into pd.DataFrame.
         """

@@ -20,11 +20,26 @@ def _normalise_default_branch_name(branch):
     return branch
 
 
-def make_url(repos_api_url: str, repo_name: str, branch: str, per_pg: str, page: str):
+def make_url(
+    repos_api_url: str, repo_name: str, branch: str, per_pg: int | str, page: int | str
+):
     if branch == "main":
         return f"{repos_api_url}{repo_name}/commits?per_page={per_pg}&page={page}"  # don't use branch in query, obtains GH default branch.
     else:
         return f"{repos_api_url}{repo_name}/commits?sha={branch}&per_page={per_pg}&page={page}"
+
+
+def deduplicate_commits(all_branches_commits: dict[str, list]):
+    shas = set()
+    modified: dict[str, list] = {}
+    for branch_name, commits in all_branches_commits.items():
+        modified[branch_name] = []
+        for commit in commits:
+            sha = commit["sha"]
+            if sha not in shas:
+                shas.add(sha)
+                modified[branch_name].append(commit)
+    return modified
 
 
 class AllBranchesCommitsGetter:
@@ -36,7 +51,7 @@ class AllBranchesCommitsGetter:
         repo_name,
         in_notebook: bool,
         config_path: str,
-        logger: logging.Logger = None,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -53,7 +68,7 @@ class AllBranchesCommitsGetter:
             total=10,
             connect=5,
             read=3,
-            backoff_factor=1.5,
+            backoff_factor=1,
             status_forcelist=[202, 502, 503, 504],
         )
         self.s.mount("https://", HTTPAdapter(max_retries=retries))
@@ -67,11 +82,11 @@ class AllBranchesCommitsGetter:
         )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
 
-    def __del__(self):
-        self.s.close()
+    # def __del__(self):
+    #     self.s.close()
 
     def _singlepage_commit_grabber(
-        self, repos_api_url: str, repo_name: str, branch: str, per_pg: str
+        self, repos_api_url: str, repo_name: str, branch: str, per_pg: str | int
     ) -> list[dict]:
         commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page=1)
 
@@ -92,7 +107,7 @@ class AllBranchesCommitsGetter:
         repos_api_url: str,
         repo_name: str,
         branch: str,
-        per_pg: str,
+        per_pg: str | int,
     ) -> list[dict]:
         commit_links_last = commit_links["last"]["url"].split("&page=")[1]
         pages_commits = int(commit_links_last)
@@ -116,21 +131,9 @@ class AllBranchesCommitsGetter:
 
         return all_commits
 
-    def _deduplicate_commits(self, all_branches_commits: dict[str, list]):
-        shas = set()
-        modified: dict[str, list] = {}
-        for branch_name, commits in all_branches_commits.items():
-            modified[branch_name] = []
-            for commit in commits:
-                sha = commit["sha"]
-                if sha not in shas:
-                    shas.add(sha)
-                    modified[branch_name].append(commit)
-        return modified
-
     def get_all_branches_commits(
         self,
-        repo_name,
+        repo_name: str,
         per_pg=100,
         out_filename="all-branches-commits",
         write_out_location="data/",
@@ -217,7 +220,7 @@ class AllBranchesCommitsGetter:
                 self.logger.error(f"Error: {e}")
                 raise
 
-        unique_commits_all_branches = self._deduplicate_commits(all_branches_commits)
+        unique_commits_all_branches = deduplicate_commits(all_branches_commits)
 
         write_out_extra_info_dedup = (
             f"{write_out}_{self.current_date_info}_deduplicated.json"
