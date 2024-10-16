@@ -106,7 +106,11 @@ class CommitChanges:
                 waittime = ratehandle.wait_until_calc(reset_time=resettime)
             else:
                 waittime = 1
+            self.logger.debug(
+                f"Waiting {waittime} seconds as API rate limit remaining is {api_response.headers.get('X-RateLimit-Remaining')} and reset time is {api_response.headers.get('X-RateLimit-Reset')} in epoch seconds."
+            )
             sleep(waittime)  # in seconds
+            self.logger.debug(f"Sleep of {waittime} seconds complete.")
 
         if api_response.status_code == 200:
             commit_json = api_response.json()
