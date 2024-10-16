@@ -102,7 +102,9 @@ class CommitChanges:
                 if resettime is not None:
                     resettime = int(resettime)
                 else:
-                    raise
+                    raise RuntimeError(
+                        "Reset time value 'X-RateLimit-Reset' resettime is None"
+                    )
                 waittime = ratehandle.wait_until_calc(reset_time=resettime)
             else:
                 waittime = 1
