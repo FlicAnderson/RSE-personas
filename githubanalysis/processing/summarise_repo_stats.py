@@ -93,34 +93,32 @@ class RepoStatsSummariser:
         repo_stats.update({"repo_name": repo_name})
         self.logger.debug(f"Repo name is {repo_name}")
 
-        try:
-            base_repo_url = "https://api.github.com/repos"
-            connect_to = f"{base_repo_url}/{repo_name}"
+        base_repo_url = "https://api.github.com/repos"
+        connect_to = f"{base_repo_url}/{repo_name}"
 
-            repos_api_response = s.get(url=connect_to, headers=headers)
-            print(
-                f"API response at initial connection to {repo_name} is {repos_api_response}"
-            )
-            self.logger.info(
-                f"API response at initial connection to {repo_name} for request {repos_api_response.url} is {repos_api_response}."
-            )
-            repo_con = repos_api_response.json()
-            api_status = repos_api_response.status_code
+        repos_api_response = s.get(url=connect_to, headers=headers)
+        print(
+            f"API response at initial connection to {repo_name} is {repos_api_response}"
+        )
+        self.logger.info(
+            f"API response at initial connection to {repo_name} for request {repos_api_response.url} is {repos_api_response}."
+        )
 
-            repo_stats.update({"initial_HTTP_code": api_status})
+        api_status = repos_api_response.status_code
 
-        except Exception as e_connect:
-            if repos_api_response.status_code == 404:
-                self.logger.error(
-                    f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?"
-                )
-            if repos_api_response.status_code == 401:
-                self.logger.error(
-                    f"401 (unauthorized) error in connecting to {repo_name}. Is your GitHub Personal Authentication Token valid and config.cfg file correctly formatted?"
-                )
+        repo_stats.update({"initial_HTTP_code": api_status})
+
+        if repos_api_response.status_code == 404:
             self.logger.error(
-                f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}."
+                f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?"
             )
+        if repos_api_response.status_code == 401:
+            self.logger.error(
+                f"401 (unauthorized) error in connecting to {repo_name}. Is your GitHub Personal Authentication Token valid and config.cfg file correctly formatted?"
+            )
+        self.logger.error(
+            f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}."
+        )
 
         if repos_api_response.status_code != 404:
             try:
@@ -148,251 +146,221 @@ class RepoStatsSummariser:
             # get stats:
 
             # get license type
-            try:
-                license_type = repos_api_response.json().get("license")
 
-                if license_type is not None:
-                    license_type = license_type["spdx_id"]
+            license_type = repos_api_response.json().get("license")
 
-                repo_stats.update({"repo_license": license_type})
-                self.logger.debug(
-                    f"Repo license type is {repo_stats.get('repo_license')}."
-                )
+            if license_type is not None:
+                license_type = license_type["spdx_id"]
 
-            except Exception as e_license:
-                self.logger.error(
-                    f"Error in checking license of repo at {repo_name} with config path {config_path}: {e_license}."
-                )
+            repo_stats.update({"repo_license": license_type})
+            self.logger.debug(f"Repo license type is {repo_stats.get('repo_license')}.")
+
+            self.logger.error(
+                f"Error in checking license of repo at {repo_name} with config path {config_path}."
+            )
 
             # is repo accessible?
-            try:
-                repo_vis = repos_api_response.json().get("visibility")
-                if repo_vis == "public":
-                    repo_visibility = True
-                else:
-                    repo_visibility = False
-                repo_stats.update({"repo_visibility": repo_visibility})
-                self.logger.debug(
-                    f"Repo visibility (~publicness) is {repo_stats.get('repo_visibility')}."
-                )
+            repo_vis = repos_api_response.json().get("visibility")
+            if repo_vis == "public":
+                repo_visibility = True
+            else:
+                repo_visibility = False
+            repo_stats.update({"repo_visibility": repo_visibility})
+            self.logger.debug(
+                f"Repo visibility (~publicness) is {repo_stats.get('repo_visibility')}."
+            )
 
-            except Exception as e_visibility:
-                self.logger.error(
-                    f"Error in checking visibility of repo at {repo_name} with config path {config_path} - repos_api_response.json().get('visibility') returns {repos_api_response.json().get('visibility')} :{e_visibility}."
-                )
+            self.logger.error(
+                f"Error in checking visibility of repo at {repo_name} with config path {config_path} - repos_api_response.json().get('visibility') returns {repos_api_response.json().get('visibility')}."
+            )
 
             # is the repo a fork of something else?
-            try:
-                repos_api_response.json().get("fork")
-                if repos_api_response.json().get("fork"):
-                    repo_stats.update(
-                        {"repo_is_fork": repos_api_response.json().get("fork")}
-                    )
-                else:
-                    repo_stats.update(
-                        {"repo_is_fork": repos_api_response.json().get("fork")}
-                    )
-                self.logger.debug(f"Repo is a fork: {repo_stats.get('repo_is_fork')}")
-            except Exception as e_fork:
-                self.logger.debug(
-                    f"Error in checking whether repo is a fork at repo name {repo_name} and config path {config_path}: {e_fork}."
+            repos_api_response.json().get("fork")
+            if repos_api_response.json().get("fork"):
+                repo_stats.update(
+                    {"repo_is_fork": repos_api_response.json().get("fork")}
                 )
+            else:
+                repo_stats.update(
+                    {"repo_is_fork": repos_api_response.json().get("fork")}
+                )
+            self.logger.debug(f"Repo is a fork: {repo_stats.get('repo_is_fork')}")
+
+            self.logger.debug(
+                f"Error in checking whether repo is a fork at repo name {repo_name} and config path {config_path}."
+            )
 
             # count number of devs (contributors; including anonymous contribs* )
-            try:
-                contribs_url = f"https://api.github.com/repos/{repo_name}/contributors?per_page=1&anon=1"
+            contribs_url = f"https://api.github.com/repos/{repo_name}/contributors?per_page=1&anon=1"
 
-                contributors_api_response = s.get(contribs_url, headers=headers)
+            contributors_api_response = s.get(contribs_url, headers=headers)
 
-                total_contributors = 1  # repo created by 1 person minimum; don't need to update unless there's more than one page (@ 1x person per page)
+            total_contributors = 1  # repo created by 1 person minimum; don't need to update unless there's more than one page (@ 1x person per page)
 
-                if contributors_api_response.ok:
-                    contrib_links = contributors_api_response.links
-                    if "last" in contrib_links:
-                        contrib_links_last = contrib_links["last"]["url"].split(
-                            "&page="
-                        )[1]
-                        total_contributors = int(contrib_links_last)
+            if contributors_api_response.ok:
+                contrib_links = contributors_api_response.links
+                if "last" in contrib_links:
+                    contrib_links_last = contrib_links["last"]["url"].split("&page=")[1]
+                    total_contributors = int(contrib_links_last)
 
-                    if total_contributors >= 500:
-                        self.logger.debug(
-                            f"Repo {repo_name} has over 500 contributors, so API may not return contributors numbers accurately."
-                        )
+                if total_contributors >= 500:
+                    self.logger.debug(
+                        f"Repo {repo_name} has over 500 contributors, so API may not return contributors numbers accurately."
+                    )
 
-                    # * NOTE: gh API does NOT return username info where number of contributors is > 500;
-                    #  ... after this they're listed as anonymous contributors.
-                    #  ... It's NOT possible to get the number of contributors GH web page returns using API info.
-                    # source: https://docs.github.com/en/free-pro-team@latest/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors
-                    # > "GitHub identifies contributors by author email address.
-                    # > This endpoint groups contribution counts by GitHub user, which includes all associated email addresses.
-                    # > To improve performance, only the first 500 author email addresses in the repository link to GitHub users.
-                    # > The rest will appear as anonymous contributors without associated GitHub user information."
+                # * NOTE: gh API does NOT return username info where number of contributors is > 500;
+                #  ... after this they're listed as anonymous contributors.
+                #  ... It's NOT possible to get the number of contributors GH web page returns using API info.
+                # source: https://docs.github.com/en/free-pro-team@latest/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors
+                # > "GitHub identifies contributors by author email address.
+                # > This endpoint groups contribution counts by GitHub user, which includes all associated email addresses.
+                # > To improve performance, only the first 500 author email addresses in the repository link to GitHub users.
+                # > The rest will appear as anonymous contributors without associated GitHub user information."
 
                 repo_stats.update({"devs": total_contributors})
                 self.logger.debug(
                     f"Repo number of contributors is {repo_stats.get('devs')}"
                 )
 
-            except Exception as e_countdevs:
                 self.logger.error(
-                    f"Error in checking number of contributors with repo name {repo_name} and config path {config_path}: {e_countdevs}. API response: {contributors_api_response}"
+                    f"Error in checking number of contributors with repo name {repo_name} and config path {config_path}: API response: {contributors_api_response}"
                 )
 
             # does repo contain code
-            try:
-                # repo languages include: python, (C, C++), (shell?, R?, FORTRAN?)
-                languages_url = f"https://api.github.com/repos/{repo_name}/languages"
-                languages_api_response = s.get(languages_url, headers=headers)
+            # repo languages include: python, (C, C++), (shell?, R?, FORTRAN?)
+            languages_url = f"https://api.github.com/repos/{repo_name}/languages"
+            languages_api_response = s.get(languages_url, headers=headers)
 
-                languages = (
-                    languages_api_response.json().keys()
-                )  # returns a dict_keys rather than anything cleverer
+            languages = (
+                languages_api_response.json().keys()
+            )  # returns a dict_keys rather than anything cleverer
 
-                if len(languages) == 0:
-                    repo_stats.update({"repo_language": "None"})
-                elif "Python" or "C" or "C++" or "Shell" in languages:
-                    repo_stats.update({"repo_language": languages})
-                else:
-                    repo_stats.update({"repo_language": "other"})
-                self.logger.debug(
-                    f"Repo language is {repo_stats.get('repo_language')}."
-                )
+            if len(languages) == 0:
+                repo_stats.update({"repo_language": "None"})
+            elif "Python" or "C" or "C++" or "Shell" in languages:
+                repo_stats.update({"repo_language": languages})
+            else:
+                repo_stats.update({"repo_language": "other"})
+            self.logger.debug(f"Repo language is {repo_stats.get('repo_language')}.")
 
-            except Exception as e_lingo:
-                self.logger.error(
-                    f"Error in checking language of repo at {repo_name} with config path {config_path}: {e_lingo}."
-                )
+            self.logger.error(
+                f"Error in checking language of repo at {repo_name} with config path {config_path}."
+            )
 
             # count total commits in last year
             # Do something sensible re: no commits in last year returned TODO
-            try:
-                base_commit_stats_url = (
-                    f"https://api.github.com/repos/{repo_name}/stats/commit_activity"
-                )
+            base_commit_stats_url = (
+                f"https://api.github.com/repos/{repo_name}/stats/commit_activity"
+            )
 
-                s = requests.Session()
-                retries = Retry(
-                    total=10,
-                    connect=5,
-                    read=3,
-                    backoff_factor=1,
-                    status_forcelist=[202, 502, 503, 504],
-                )
-                s.mount("https://", HTTPAdapter(max_retries=retries))
-                try:
-                    stats_api_response = s.get(
-                        url=base_commit_stats_url, timeout=10, headers=headers
-                    )
-                    self.logger.debug(
-                        f"API response for getting total commits in year: {stats_api_response}"
-                    )
-                except Exception as e:
-                    self.logger.error(
-                        f"API response total_commits_last_year fail exception: {e}; error type {type(e)}."
-                    )
+            s = requests.Session()
+            retries = Retry(
+                total=10,
+                connect=5,
+                read=3,
+                backoff_factor=1,
+                status_forcelist=[202, 502, 503, 504],
+            )
+            s.mount("https://", HTTPAdapter(max_retries=retries))
 
-                try:
-                    total_commits_df = pd.DataFrame(stats_api_response.json())
-                    total_commits_1_year = total_commits_df["total"].sum()
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed trying to calculate the sum of commits in 1 year for repo {repo_name}: {e}."
-                    )
-                repo_stats.update({"total_commits_last_year": total_commits_1_year})
+            stats_api_response = s.get(
+                url=base_commit_stats_url, timeout=10, headers=headers
+            )
+            self.logger.debug(
+                f"API response for getting total commits in year: {stats_api_response}"
+            )
+            self.logger.error("API response total_commits_last_year fail exception")
+
+            total_commits_df = pd.DataFrame(stats_api_response.json())
+            total_commits_1_year = total_commits_df["total"].sum()
+
+            self.logger.error(
+                f"Failed trying to calculate the sum of commits in 1 year for repo {repo_name}."
+            )
+            repo_stats.update({"total_commits_last_year": total_commits_1_year})
+            self.logger.debug(
+                f"Repo total commits last year is {repo_stats.get('total_commits_last_year')}."
+            )
+            self.logger.error(
+                f"Error in checking commits in last year at {repo_name} and config path {config_path}. API response: {stats_api_response}"
+            )
+
+            # date of most recently updated PR:
+            per_pg = 1
+            state = "all"
+            sort = "updated"
+            direction = "desc"
+            params_string = (
+                f"?per_pg={per_pg}&state={state}&sort={sort}&direction={direction}"
+            )
+
+            PRs_url = f"https://api.github.com/repos/{repo_name}/pulls{params_string}"
+
+            PRs_api_response = s.get(PRs_url, headers=headers)
+
+            PRs_bool = None
+            last_PR_updated = None
+
+            if PRs_api_response.ok:
                 self.logger.debug(
-                    f"Repo total commits last year is {repo_stats.get('total_commits_last_year')}."
-                )
-            except Exception as e_commitsyear:
-                self.logger.error(
-                    f"Error in checking commits in last year at {repo_name} and config path {config_path}: {e_commitsyear}. API response: {stats_api_response}"
+                    f"API response for getting PRs info: {PRs_api_response}"
                 )
 
-            try:
-                # date of most recently updated PR:
-                per_pg = 1
-                state = "all"
-                sort = "updated"
-                direction = "desc"
-                params_string = (
-                    f"?per_pg={per_pg}&state={state}&sort={sort}&direction={direction}"
-                )
-
-                PRs_url = (
-                    f"https://api.github.com/repos/{repo_name}/pulls{params_string}"
-                )
-
-                PRs_api_response = s.get(PRs_url, headers=headers)
-
-                PRs_bool = None
-                last_PR_updated = None
-
-                if PRs_api_response.ok:
+                try:
+                    assert len(PRs_api_response.json()) != 0, "No json therefore no PRs"
+                    last_PR_update = PRs_api_response.json()[0][
+                        "updated_at"
+                    ]  # 0th(1st) for latest update as sorted desc.
+                    date_format = "%Y-%m-%dT%H:%M:%S%z"
+                    last_PR_updated = datetime.strptime(last_PR_update, date_format)
+                    # as datetime w/ UTC timezone awareness(last_PR_update)
+                    PRs_bool = True
+                except:
                     self.logger.debug(
-                        f"API response for getting PRs info: {PRs_api_response}"
+                        f"No PRs found for repo {repo_name}; setting PRs_bool to False and last_PR_updated to None."
                     )
+                    PRs_bool = False
+                    last_PR_updated = None
+            else:
+                PRs_api_response.raise_for_status()
 
-                    try:
-                        assert (
-                            len(PRs_api_response.json()) != 0
-                        ), "No json therefore no PRs"
-                        last_PR_update = PRs_api_response.json()[0][
-                            "updated_at"
-                        ]  # 0th(1st) for latest update as sorted desc.
-                        date_format = "%Y-%m-%dT%H:%M:%S%z"
-                        last_PR_updated = datetime.strptime(last_PR_update, date_format)
-                        # as datetime w/ UTC timezone awareness(last_PR_update)
-                        PRs_bool = True
-                    except:
-                        self.logger.debug(
-                            f"No PRs found for repo {repo_name}; setting PRs_bool to False and last_PR_updated to None."
-                        )
-                        PRs_bool = False
-                        last_PR_updated = None
-                else:
-                    PRs_api_response.raise_for_status()
-
-                repo_stats.update({"has_PRs": PRs_bool})
-                self.logger.debug(f"Repo PRs is {repo_stats.get('has_PRs')}.")
-                repo_stats.update({"last_PR_update": last_PR_updated})
-                self.logger.debug(
-                    f"Repo last PR update is {repo_stats.get('last_PR_update')}."
-                )
-            except Exception as e_PRs:
-                self.logger.error(
-                    f"Error in checking commits in last year at {repo_name} and config path {config_path}: {e_PRs}. API response: {PRs_api_response}"
-                )
+            repo_stats.update({"has_PRs": PRs_bool})
+            self.logger.debug(f"Repo PRs is {repo_stats.get('has_PRs')}.")
+            repo_stats.update({"last_PR_update": last_PR_updated})
+            self.logger.debug(
+                f"Repo last PR update is {repo_stats.get('last_PR_update')}."
+            )
+            self.logger.error(
+                f"Error in checking commits in last year at {repo_name} and config path {config_path}"
+            )
 
             # count open issue tickets
-            try:
-                if repo_stats.get("issues_enabled"):
-                    state = "open"
-                    issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
+            if repo_stats.get("issues_enabled"):
+                state = "open"
+                issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
 
-                    issues_api_response = s.get(url=issues_url, headers=headers)
+                issues_api_response = s.get(url=issues_url, headers=headers)
 
-                    if issues_api_response.ok:
-                        issue_links = issues_api_response.links
-                        if "last" in issue_links:
-                            issue_links_last = issue_links["last"]["url"].split(
-                                "&page="
-                            )[1]
-                            open_issues = int(issue_links_last)
-                            repo_stats.update({"open_tickets": open_issues})
-                        else:
-                            open_issues = 0
-                            repo_stats.update({"open_tickets": open_issues})
-                else:
-                    open_issues = 0
-                    repo_stats.update({"open_tickets": open_issues})
-
+                if issues_api_response.ok:
+                    issue_links = issues_api_response.links
+                    if "last" in issue_links:
+                        issue_links_last = issue_links["last"]["url"].split("&page=")[1]
+                        open_issues = int(issue_links_last)
+                        repo_stats.update({"open_tickets": open_issues})
+                    else:
+                        open_issues = 0
+                        repo_stats.update({"open_tickets": open_issues})
+            else:
+                open_issues = 0
                 repo_stats.update({"open_tickets": open_issues})
-                self.logger.debug(
-                    f"Repo number of open issue tickets is {repo_stats.get('open_tickets')}."
-                )
-            except Exception as e_opentix:
-                self.logger.error(
-                    f"Error in checking open issue numbers at {repo_name} and config path {config_path}: {e_opentix}."
-                )
+
+            self.logger.debug(
+                f"Repo number of open issue tickets is {repo_stats.get('open_tickets')}."
+            )
+
+            logger.error(
+                f"Error in checking open issue numbers at {repo_name} and config path {config_path}."
+            )
 
             # count closed issue tickets
             try:
@@ -417,7 +385,6 @@ class RepoStatsSummariser:
                     closed_issues = 0
                     repo_stats.update({"closed_tickets": closed_issues})
 
-                repo_stats.update({"closed_tickets": closed_issues})
                 self.logger.debug(
                     f"Repo number of closed issue tickets is {repo_stats.get('closed_tickets')}."
                 )
@@ -425,8 +392,6 @@ class RepoStatsSummariser:
                 self.logger.error(
                     f"Error in checking closed issue numbers at {repo_name} and config path {config_path}: {e_closedtix}."
                 )
-
-            try:
                 # get age of repo
                 repo_age_days = dayssince.calc_days_since_repo_creation(
                     datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
@@ -439,9 +404,9 @@ class RepoStatsSummariser:
                 self.logger.debug(
                     f"Repo age in days is {repo_stats.get('repo_age_days')}."
                 )
-            except Exception as e_age:
+
                 self.logger.error(
-                    f"Error in checking age of repo at {repo_name} with config path {config_path}: {e_age}."
+                    f"Error in checking age of repo at {repo_name} with config path {config_path}."
                 )
 
         else:
