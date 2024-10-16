@@ -153,11 +153,13 @@ class RunCommits:
                     f"Unexpected API error: {e}; skipping to next commit."
                 )
                 continue
+
             n_files.append(
                 commitchanges.get_commit_files_changed(
                     commit_changes_df=tmpdf, commit_hash=commit
                 )
             )
+
             n_changes.append(
                 commitchanges.get_commit_total_changes(
                     commit_changes_df=tmpdf, commit_hash=commit
