@@ -10,7 +10,6 @@ from requests.adapters import HTTPAdapter, Retry
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import RateLimitError, raise_if_response_needs_retry
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.gh_API_rate_limit_handler as ratehandle
 
 from typing import TypedDict
 

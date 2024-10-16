@@ -1,12 +1,7 @@
-import logging
-import pandas as pd
-import datetime
 
-import utilities.get_default_logger as loggit
 
 
 from githubanalysis.processing.commits_workflow import RunCommits
-import githubanalysis.processing.gh_API_rate_limit_handler as ratehandler
 
 
 import argparse
