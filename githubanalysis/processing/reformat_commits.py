@@ -89,7 +89,7 @@ class CommitReformatter:
 
                 record_list.append(author.get("login") if author is not None else None)
                 record_list.append(
-                    committer["login"] if committer is not None else None
+                    committer.get("login") if committer is not None else None
                 )
 
                 frame.append(record_list)
