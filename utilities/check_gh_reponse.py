@@ -1,7 +1,17 @@
 from requests import Response
-
+from time import sleep
+from typing import Callable, TypeVar
 from logging import Logger
+
 import githubanalysis.processing.gh_API_rate_limit_handler as ratehandle
+
+
+class UnexpectedAPIError(RuntimeError):
+    pass
+
+
+class RepoNotFoundError(RuntimeError):
+    pass
 
 
 class RateLimitError(RuntimeError):
@@ -34,15 +44,50 @@ def raise_if_response_needs_retry(api_response: Response, logger: Logger):
     raise RateLimitError(waittime=waittime)
 
 
-def raise_if_resoponse_error():
+def raise_if_response_error(
+    api_response: Response, commit_hash: str, repo_name: str, logger: Logger
+):
     """
-    if status is 200: return
+    This will handle 404s, 429s and 403s. And returns if all is ok.
+    """
+
+    if api_response.status_code == 200:
+        return
+
+    raise_if_response_needs_retry(api_response=api_response, logger=logger)
+
+    if api_response.status_code == 404:
+        raise RepoNotFoundError(
+            f"API response not OK for repo {repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
+        )
     else:
-        call raise_if_response_needs_retry()
-        if it doesn't raise:
-            if status is 404:
-                raise RepoNotFoundError() <- need to make this c.f. RateLimitError or UnexpectedAPIError
-            else:
-                raise UnexpectedAPIError()
-    done!
+        raise UnexpectedAPIError(
+            f"API response not OK, please investigate for commit {commit_hash} at repo {repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
+        )
+
+
+# https://docs.python.org/3/library/typing.html#generics
+T = TypeVar("T")  # this naming follows convention for this type of thing
+
+
+def run_with_retries(
+    fn: Callable[[], T],
+    logger: Logger,
+    max_retries=25,
+):
     """
+    run `fn` until either:
+        a) it returns without error or
+        b) `fn` exits with `rateLimitError` and number of retries reaches `max_retries` or
+        c) some other error occurs
+    """
+    assert max_retries > 0
+    retries = 0
+    while retries < max_retries:
+        try:
+            return fn()
+        except RateLimitError as e:
+            retries += 1
+            sleep(e.waittime)  # in seconds
+            logger.debug(f"Sleep of {e.waittime} seconds complete.")
+    raise RuntimeError("Hit maximum number of retries")
