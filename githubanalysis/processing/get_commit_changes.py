@@ -3,13 +3,11 @@
 import pandas as pd
 import logging
 import datetime
-from time import sleep
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import (
-    RateLimitError,
     raise_if_response_error,
     run_with_retries,
 )
