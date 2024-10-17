@@ -233,18 +233,25 @@ class RunCommits:
 
         return results
 
-    def classify_size(self, processed_commits: pd.DataFrame):
-        results = []
+    def classify_size(self, processed_commits: pd.DataFrame) -> list[str | None]:
+        results: list[str | None] = []
 
-        for msg in processed_commits["n_files_changed"]:
-            self.logger.debug(f"Type of commit size df n_files_changed is {type(msg)}.")
-            self.logger.debug(f"commit size n_files_changed value is: {msg}")
-            if isinstance(msg, float) and not np.isnan(msg):  # avoid float-type NaNs!
-                msg = int(msg)
-                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
-                results.append(rslt)
+        for num_files in processed_commits["n_files_changed"]:
+            self.logger.debug(
+                f"Commit size df n_files_changed is {num_files} of type {type(num_files)}."
+            )
+            if isinstance(num_files, float) and not np.isnan(num_files):
+                num = int(num_files)
+            elif isinstance(num_files, int):
+                num = num_files
             else:
-                results.append(None)
+                self.logger.warning(
+                    f"Number of files: expeced int or float got {num_files} of type {type(num_files)}"
+                )
+                num = None
+            results.append(
+                sizecat.hattori_lanza_commit_size_classification(commit_size=num)
+            )
 
         return results
 
