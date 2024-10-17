@@ -3,29 +3,26 @@ from githubanalysis.processing.commits_workflow import RunCommits
 
 import argparse
 import pandas as pd
-from logging import Logger
-
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--repo-names",
-    metavar="PATH",
-    help="Name of the repo to workflow",
-    type=str,
-)
+from logging import Logger, getLogger
 
 
-def single_repo_method(repo_name: str) -> pd.DataFrame:
+def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
     """
     This is used by multi_repo_method()
     """
     runcommits = RunCommits(
         repo_name=repo_name,
-        in_notebook=True,
-        config_path="../../githubanalysis/config.cfg",  # TODO make this editable and useful
-        write_read_location="../../data/",
+        in_notebook=False,  # TODO
+        config_path="githubanalysis/config.cfg",  # TODO make this editable and useful
+        write_read_location="data/",  # TODO
     )
-    repodf = runcommits.do_it_all()
-    return repodf
+    try:
+        return runcommits.do_it_all()
+    except Exception as e:
+        logger.error(
+            f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}"
+        )
+        return None
 
 
 def read_repos_from_file(filename, logger: Logger) -> dict[str, pd.DataFrame | None]:
@@ -42,22 +39,61 @@ def multi_repo_method(
     single_repo_method() on each.
     Return dictionary of repodfs with repo_name as key.
     """
+    repo_names = list(set(repo_names))
     collation_dict = {}
     for repo in repo_names:
-        try:
-            repodf = single_repo_method(repo_name=repo)
-        except Exception as e:
-            logger.error(
-                f"Encountered repo-getting-workflow-borking error in repo {repo}; error {e}"
-            )
-            collation_dict[repo] = None
-            continue  # skip to next loop iteration
-
-        collation_dict[repo] = repodf
-
+        collation_dict[repo] = single_repo_method(repo_name=repo, logger=logger)
     return collation_dict
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-f",
+    "--filepath-for-repos-list",
+    metavar="PATH",
+    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
+    type=str,
+)
+parser.add_argument(
+    "-r",
+    "--repo-name",
+    metavar="REPO_NAME",
+    help="Name of the single repo to workflow",
+    type=str,
+)
+parser.add_argument(
+    "-s",
+    "--several-repo-names",
+    metavar="REPO_NAME",  # this is OK to be repeated from above because of nargs
+    nargs="+",  # this is convention indicating that there's many
+    help="NameS of the multiple repos to workflow",
+)
+
 if __name__ == "__main__":
     args = parser.parse_args()
-    names = args.repo_names
+    filepath: str | None = args.filepath_for_repos_list
+    repo_name: str | None = args.repo_name
+    several_repo_names: list[str] = args.several_repo_names
+    logger = getLogger()
+
+    if (
+        (filepath is not None)
+        + (repo_name is not None)
+        + (several_repo_names is not None)
+    ) != 1:
+        logger.error(
+            "Exactly one argument allowed; please avoid your current whole deal."
+        )
+        exit(1)
+
+    if repo_name is not None:
+        logger.info(f"Running single repo method on {repo_name}")
+        single_repo_method(repo_name=repo_name, logger=logger)
+
+    elif several_repo_names is not None:
+        logger.info(f"Running multi repo method on list: {several_repo_names}")
+        multi_repo_method(repo_names=several_repo_names, logger=logger)
+
+    elif filepath is not None:
+        logger.info(f"Running multi repo method on repos in file: {filepath}")
+        read_repos_from_file(filename=filepath, logger=logger)
