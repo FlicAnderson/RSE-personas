@@ -243,9 +243,6 @@ class RunCommits:
                 msg = int(msg)
                 rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
                 results.append(rslt)
-            if isinstance(msg, int):
-                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
-                results.append(rslt)
             else:
                 results.append(None)
 
