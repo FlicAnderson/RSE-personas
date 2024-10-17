@@ -239,16 +239,23 @@ class RunCommits:
         for msg in processed_commits["n_files_changed"]:
             self.logger.debug(f"Type of commit size df n_files_changed is {type(msg)}.")
             self.logger.debug(f"commit size n_files_changed value is: {msg}")
-            if isinstance(msg, float):
-                msg = int(msg)
-                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
             if np.isnan(msg):
                 rslt = None
-            if isinstance(msg, int):
-                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
+                results.append(rslt)
+                break  # don't proceed in case it's a float type nan :S
             else:
-                rslt = None
-            results.append(rslt)
+                if isinstance(msg, float):
+                    msg = int(msg)
+                    rslt = sizecat.hattori_lanza_commit_size_classification(
+                        commit_size=msg
+                    )
+                    results.append(rslt)
+                if isinstance(msg, int):
+                    rslt = sizecat.hattori_lanza_commit_size_classification(
+                        commit_size=msg
+                    )
+                    results.append(rslt)
+
         return results
 
     def do_it_all(self):
