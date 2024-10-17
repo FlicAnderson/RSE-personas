@@ -22,7 +22,15 @@ class RateLimitError(RuntimeError):
         super().__init__()
 
 
-def raise_if_response_needs_retry(api_response: Response, logger: Logger):
+def _raise_if_response_needs_retry(api_response: Response, logger: Logger):
+    """
+    This function checks if api_response.status_code indicates that rate
+    limit has probably been reached.
+    If so, it gets the value of `X-RateLimit-Reset` which is the epoch
+    time in seconds when the ratelimit resets.
+    From this, wait_until_calc() figures out the wait time until then
+    and this value is raised with the RateLimitError exception.
+    """
     if not (api_response.status_code == 403 or api_response.status_code == 429):
         return
 
@@ -45,16 +53,21 @@ def raise_if_response_needs_retry(api_response: Response, logger: Logger):
 
 
 def raise_if_response_error(
-    api_response: Response, commit_hash: str, repo_name: str, logger: Logger
+    api_response: Response,
+    repo_name: str,
+    logger: Logger,
+    commit_hash: str | None = None,
 ):
     """
-    This will handle 404s, 429s and 403s. And returns if all is ok.
+    This will report 404s, 429s and 403s. And returns if all is ok.
+    Use this instead of _raise_if_response_needs_retry() by itself
+    (which is now private).
     """
 
     if api_response.status_code == 200:
-        return
+        return api_response
 
-    raise_if_response_needs_retry(api_response=api_response, logger=logger)
+    _raise_if_response_needs_retry(api_response=api_response, logger=logger)
 
     if api_response.status_code == 404:
         raise RepoNotFoundError(
@@ -85,7 +98,7 @@ def run_with_retries(
     retries = 0
     while retries < max_retries:
         try:
-            return fn()
+            return fn()  # this calls the function and returns its result
         except RateLimitError as e:
             retries += 1
             sleep(e.waittime)  # in seconds
