@@ -2,7 +2,8 @@ from githubanalysis.processing.commits_workflow import RunCommits
 
 
 import argparse
-
+import pandas as pd
+from logging import Logger
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -13,7 +14,10 @@ parser.add_argument(
 )
 
 
-def single_repo_method(repo_name: str):
+def single_repo_method(repo_name: str) -> pd.DataFrame:
+    """
+    This is used by multi_repo_method()
+    """
     runcommits = RunCommits(
         repo_name=repo_name,
         in_notebook=True,
@@ -24,22 +28,33 @@ def single_repo_method(repo_name: str):
     return repodf
 
 
-def read_repos_from_file(filename):
+def read_repos_from_file(filename, logger: Logger) -> dict[str, pd.DataFrame | None]:
     with open(filename, "r") as f:
         repos = [txtline.strip() for txtline in f.readlines()]
-        return multi_repo_method(repo_names=repos)
+        return multi_repo_method(repo_names=repos, logger=logger)
 
 
-def multi_repo_method(repo_names: list[str]):
+def multi_repo_method(
+    repo_names: list[str], logger: Logger
+) -> dict[str, pd.DataFrame | None]:
     """
     Loop through several repos from a file input, running
     single_repo_method() on each.
     Return dictionary of repodfs with repo_name as key.
     """
     collation_dict = {}
-    for item in repo_names:
-        repodf = single_repo_method(repo_name=item)
-        collation_dict[item] = repodf
+    for repo in repo_names:
+        try:
+            repodf = single_repo_method(repo_name=repo)
+        except Exception as e:
+            logger.error(
+                f"Encountered repo-getting-workflow-borking error in repo {repo}; error {e}"
+            )
+            collation_dict[repo] = None
+            continue  # skip to next loop iteration
+
+        collation_dict[repo] = repodf
+
     return collation_dict
 
 
