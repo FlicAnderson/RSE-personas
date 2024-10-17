@@ -27,16 +27,8 @@ def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | N
 
     """
 
-    if (
-        commit_size is None
-        or commit_size == 0
-        or commit_size == 0.0
-        or np.isnan(commit_size)
-    ):
+    if commit_size is None or commit_size == 0:
         return None
-
-    if isinstance(commit_size, float):
-        commit_size = int(commit_size)
 
     if not isinstance(commit_size, int):
         raise RuntimeError("Must be integer type or None")
