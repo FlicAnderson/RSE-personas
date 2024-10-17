@@ -8,7 +8,11 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 import utilities.get_default_logger as loggit
-from utilities.check_gh_reponse import RateLimitError, raise_if_response_needs_retry
+from utilities.check_gh_reponse import (
+    RateLimitError,
+    raise_if_response_error,
+    run_with_retries,
+)
 import githubanalysis.processing.setup_github_auth as ghauth
 
 from typing import TypedDict
@@ -25,10 +29,6 @@ class CommitInfo(TypedDict):
 def make_commit_url(repos_api_url: str, repo_name: str, commit_sha: str):
     """Combine elements of API string for github API request"""
     return f"{repos_api_url}{repo_name}/commits/{commit_sha}"
-
-
-class UnexpectedAPIError(RuntimeError):
-    pass
 
 
 class CommitChanges:
@@ -79,16 +79,11 @@ class CommitChanges:
         self.s.close()
 
     def get_commit_changes_with_retries(self, commit_hash: str, max_retries=25):
-        assert max_retries > 0
-        retries = 0
-        while retries < max_retries:
-            try:
-                return self.get_commit_changes(commit_hash=commit_hash)
-            except RateLimitError as e:
-                retries += 1
-                sleep(e.waittime)  # in seconds
-                self.logger.debug(f"Sleep of {e.waittime} seconds complete.")
-        raise RuntimeError("Hit maximum number of retries")
+        return run_with_retries(
+            lambda: self.get_commit_changes(commit_hash=commit_hash),
+            self.logger,
+            max_retries,
+        )
 
     def get_commit_changes(self, commit_hash: str) -> pd.DataFrame | None:
         repos_api_url = "https://api.github.com/repos/"
@@ -109,13 +104,44 @@ class CommitChanges:
             f"record ID request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
         )
 
-        raise_if_response_needs_retry(api_response=api_response, logger=self.logger)
+        raise_if_response_error(
+            api_response=api_response,
+            commit_hash=commit_hash,
+            repo_name=self.repo_name,
+            logger=self.logger,
+        )
 
-        if api_response.status_code == 200:
-            commit_json = api_response.json()
+        commit_json = api_response.json()
 
-            if commit_json["files"] == []:
-                commit_changes: list[CommitInfo] = [
+        if commit_json["files"] == []:
+            commit_changes: list[CommitInfo] = [
+                {
+                    "commit_hash": commit_hash,
+                    "filename": "",
+                    "changes": 0,
+                    "additions": 0,
+                    "deletions": 0,
+                }
+            ]
+        else:
+            commit_changes: list[CommitInfo] = [
+                {
+                    "commit_hash": commit_hash,
+                    "filename": commit["filename"],
+                    "changes": commit["changes"],
+                    "additions": commit["additions"],
+                    "deletions": commit["deletions"],
+                }
+                for commit in commit_json["files"]
+            ]
+
+            commit_changes_df = pd.DataFrame(commit_changes)
+            self.logger.info(
+                f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
+            )
+
+            if commit_changes_df.empty:
+                commit_changes = [
                     {
                         "commit_hash": commit_hash,
                         "filename": "",
@@ -124,42 +150,10 @@ class CommitChanges:
                         "deletions": 0,
                     }
                 ]
-            else:
-                commit_changes: list[CommitInfo] = [
-                    {
-                        "commit_hash": commit_hash,
-                        "filename": commit["filename"],
-                        "changes": commit["changes"],
-                        "additions": commit["additions"],
-                        "deletions": commit["deletions"],
-                    }
-                    for commit in commit_json["files"]
-                ]
-
                 commit_changes_df = pd.DataFrame(commit_changes)
-                self.logger.info(
-                    f"Dataframe of length {len(commit_changes_df)} obtained for commit-hash {commit_hash} for repo {self.repo_name}."
-                )
-
-                if commit_changes_df.empty:
-                    commit_changes = [
-                        {
-                            "commit_hash": commit_hash,
-                            "filename": "",
-                            "changes": 0,
-                            "additions": 0,
-                            "deletions": 0,
-                        }
-                    ]
-                    commit_changes_df = pd.DataFrame(commit_changes)
-                    return commit_changes_df
-                else:
-                    return commit_changes_df
-
-        else:
-            raise UnexpectedAPIError(
-                f"API response not OK, please investigate for commit {commit_hash} at repo {self.repo_name}; API response is: {api_response}; headers are: {api_response.headers}."
-            )
+                return commit_changes_df
+            else:
+                return commit_changes_df
 
     def get_commit_total_changes(
         self, commit_changes_df: pd.DataFrame | None, commit_hash: str
