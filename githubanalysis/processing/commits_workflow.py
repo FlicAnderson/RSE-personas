@@ -242,19 +242,13 @@ class RunCommits:
             if np.isnan(msg):
                 rslt = None
                 results.append(rslt)
-                break  # don't proceed in case it's a float type nan :S
-            else:
-                if isinstance(msg, float):
-                    msg = int(msg)
-                    rslt = sizecat.hattori_lanza_commit_size_classification(
-                        commit_size=msg
-                    )
-                    results.append(rslt)
-                if isinstance(msg, int):
-                    rslt = sizecat.hattori_lanza_commit_size_classification(
-                        commit_size=msg
-                    )
-                    results.append(rslt)
+            if isinstance(msg, float) and not np.isnan(msg):  # avoid float-type NaNs!
+                msg = int(msg)
+                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
+                results.append(rslt)
+            if isinstance(msg, int):
+                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
+                results.append(rslt)
 
         return results
 
