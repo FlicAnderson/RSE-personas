@@ -5,6 +5,8 @@
 # in 2008 23rd IEEE/ACM International Conference on Automated Software Engineering - Workshops, Sep. 2008, pp. 63–71.
 # doi: 10.1109/ASEW.2008.4686322.
 
+import numpy as np
+
 
 def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | None:
     """
@@ -25,7 +27,12 @@ def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | N
 
     """
 
-    if commit_size is None or commit_size == 0 or commit_size == 0.0:
+    if (
+        commit_size is None
+        or commit_size == 0
+        or commit_size == 0.0
+        or np.isnan(commit_size)
+    ):
         return None
 
     if isinstance(commit_size, float):
