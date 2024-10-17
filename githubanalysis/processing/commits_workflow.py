@@ -4,6 +4,7 @@ import logging
 import pandas as pd
 import datetime
 from pathlib import Path
+import numpy as np
 
 import utilities.get_default_logger as loggit
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
@@ -236,8 +237,17 @@ class RunCommits:
         results = []
 
         for msg in processed_commits["n_files_changed"]:
+            self.logger.debug(f"Type of commit size df n_files_changed is {type(msg)}.")
             self.logger.debug(f"commit size n_files_changed value is: {msg}")
-            rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
+            if isinstance(msg, float):
+                msg = int(msg)
+                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
+            if np.isnan(msg):
+                rslt = None
+            if isinstance(msg, int):
+                rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
+            else:
+                rslt = None
             results.append(rslt)
         return results
 
@@ -283,6 +293,9 @@ class RunCommits:
             processed_commits,
         )
         self.logger.info("did merge the lists with processed commits data")
+        self.logger.debug(
+            f"Info details of `processed_commits` object is {processed_commits.info()}"
+        )
 
         write_out = f"{self.write_read_location}commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         processed_commits.to_csv(
@@ -300,10 +313,17 @@ class RunCommits:
             processed_commits
         )
         self.logger.info("did hattori lanza commits content classification")
+        self.logger.debug(
+            f"Info details of `processed_commits` object is {processed_commits.info()}"
+        )
+
         processed_commits["hattori_lanza_size_cat"] = self.classify_size(
             processed_commits
         )
         self.logger.info("did hattori lanza size classification")
+        self.logger.debug(
+            f"Info details of `processed_commits` object is {processed_commits.info()}"
+        )
 
         write_out = f"{self.write_read_location}commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         self.logger.info(
@@ -318,5 +338,8 @@ class RunCommits:
             mode="w",
         )
         self.logger.info("did writeout")
+        self.logger.debug(
+            f"Info details of FINAL `processed_commits` object is {processed_commits.info()}"
+        )
 
         return processed_commits
