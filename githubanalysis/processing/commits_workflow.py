@@ -239,9 +239,6 @@ class RunCommits:
         for msg in processed_commits["n_files_changed"]:
             self.logger.debug(f"Type of commit size df n_files_changed is {type(msg)}.")
             self.logger.debug(f"commit size n_files_changed value is: {msg}")
-            if np.isnan(msg):
-                rslt = None
-                results.append(rslt)
             if isinstance(msg, float) and not np.isnan(msg):  # avoid float-type NaNs!
                 msg = int(msg)
                 rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
@@ -249,6 +246,8 @@ class RunCommits:
             if isinstance(msg, int):
                 rslt = sizecat.hattori_lanza_commit_size_classification(commit_size=msg)
                 results.append(rslt)
+            else:
+                results.append(None)
 
         return results
 
@@ -295,7 +294,7 @@ class RunCommits:
         )
         self.logger.info("did merge the lists with processed commits data")
         self.logger.debug(
-            f"Info details of `processed_commits` object is {processed_commits.info()}"
+            f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
         )
 
         write_out = f"{self.write_read_location}commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
@@ -308,6 +307,13 @@ class RunCommits:
         )
         self.logger.info(
             f"writing processed commits with changes and v_cats file out to this path / filename: {write_out}"
+        )
+
+        processed_commits = processed_commits.dropna(
+            subset=["n_files_changed", "n_changes"]
+        )  # drop rows with NaN values / missing data from commit changes
+        self.logger.debug(
+            f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
         )
 
         processed_commits["hattori_lanza_content_cat"] = self.classify_content(
