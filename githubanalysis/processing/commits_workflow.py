@@ -6,12 +6,11 @@ import datetime
 from pathlib import Path
 import numpy as np
 
+
 import utilities.get_default_logger as loggit
+from utilities.check_gh_reponse import UnexpectedAPIError
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
-from githubanalysis.processing.get_commit_changes import (
-    CommitChanges,
-    UnexpectedAPIError,
-)
+from githubanalysis.processing.get_commit_changes import CommitChanges
 from githubanalysis.processing.reformat_commits import CommitReformatter
 import githubanalysis.analysis.hattori_lanza_commit_size_classification as sizecat
 from githubanalysis.analysis.hattori_lanza_commit_content_classification import (
