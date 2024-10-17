@@ -5,13 +5,12 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 import pandas as pd
-from time import sleep
 import datetime
 import json
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
+from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
 
-import githubanalysis.processing.gh_API_rate_limit_handler as ratehandle
 import githubanalysis.processing.get_branches as branchgetter
 # import githubanalysis.processing.deduplicate_commits as dedupcommits
 
@@ -84,9 +83,6 @@ class AllBranchesCommitsGetter:
         )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
 
-    # def __del__(self):
-    #     self.s.close()
-
     def _singlepage_commit_grabber(
         self, repos_api_url: str, repo_name: str, branch: str, per_pg: str | int
     ) -> list[dict]:
@@ -96,8 +92,16 @@ class AllBranchesCommitsGetter:
             f">> Running commit grab for repo {repo_name}, on branch {branch}, in page 1 of 1."
         )
 
-        # logger.debug(f"getting json via request url {commits_url}.")
-        api_response = self.s.get(url=commits_url, headers=self.headers)
+        self.logger.info(f"getting json via request url {commits_url}.")
+        api_response = run_with_retries(
+            fn=lambda: raise_if_response_error(
+                api_response=self.s.get(url=commits_url, headers=self.headers),
+                repo_name=repo_name,
+                logger=self.logger,
+            ),
+            logger=self.logger,
+        )
+        assert api_response.ok, f"API response is: {api_response}"
 
         all_commits = api_response.json()
 
@@ -123,34 +127,25 @@ class AllBranchesCommitsGetter:
             )
             page = i
             commits_url = make_url(repos_api_url, repo_name, branch, per_pg, page)
-            api_response = self.s.get(url=commits_url, headers=self.headers)
-
-            self.logger.info(f"API response is: {api_response}")
             self.logger.info(f"API is checking url: {commits_url}")
+
+            # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
+            api_response = run_with_retries(
+                lambda: raise_if_response_error(
+                    api_response=self.s.get(url=commits_url, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
+                self.logger,
+            )
+
+            assert api_response.ok, f"API response is: {api_response}"
+            self.logger.info(f"API response is: {api_response}")
 
             headers_out = api_response.headers
             self.logger.debug(
                 f"record ID request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
             )
-            waittime = 1
-            if api_response.status_code == 403 or api_response.status_code == 429:
-                self.logger.debug(
-                    f"API response code is {api_response.status_code} and API response is: {api_response}; headers are {api_response.headers}. "
-                )
-                if api_response.headers.get("X-RateLimit-Remaining") == "0":
-                    resettime = api_response.headers.get("X-RateLimit-Reset")
-                    if resettime is not None:
-                        resettime = int(resettime)
-                    else:
-                        raise
-                    waittime = ratehandle.wait_until_calc(reset_time=resettime)
-                else:
-                    waittime = 1
-                self.logger.debug(
-                    f"Waiting {waittime} seconds as API rate limit remaining is {api_response.headers.get('X-RateLimit-Remaining')} and reset time is {api_response.headers.get('X-RateLimit-Reset')} in epoch seconds."
-                )
-                sleep(waittime)  # in seconds
-                self.logger.debug(f"Sleep of {waittime} seconds complete.")
 
             json_pg = api_response.json()
             all_commits.extend(json_pg)
