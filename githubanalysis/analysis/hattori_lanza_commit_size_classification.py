@@ -6,7 +6,6 @@
 # doi: 10.1109/ASEW.2008.4686322.
 
 
-
 def hattori_lanza_commit_size_classification(commit_size: int | None) -> str | None:
     """
     Implementing Hattori-Lanza commit size classification method by number of files changed per commit.
