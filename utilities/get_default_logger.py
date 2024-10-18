@@ -4,6 +4,13 @@ import logging
 from pathlib import Path
 
 
+# https://stackoverflow.com/a/22424821
+def _is_interactive():
+    import __main__ as main
+
+    return not hasattr(main, "__file__")
+
+
 def _notebookify(name: str):
     path = Path(name)
     path = "../.." / path
@@ -19,7 +26,7 @@ def get_default_logger(
     console: bool,
     set_level_to="INFO",
     log_name="logs/functionname_logs.txt",
-    in_notebook=False,
+    in_notebook=not _is_interactive(),
 ):
     """
     This function sets up a default logger.
