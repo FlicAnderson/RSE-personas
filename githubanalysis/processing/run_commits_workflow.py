@@ -4,6 +4,7 @@ from githubanalysis.processing.commits_workflow import RunCommits
 import argparse
 import pandas as pd
 from logging import Logger, getLogger
+import utilities.get_default_logger as loggit
 
 
 def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
@@ -42,7 +43,10 @@ def multi_repo_method(
     repo_names = list(set(repo_names))
     collation_dict = {}
     for repo in repo_names:
+        logger.info(f"Trying to reading repo {repo} data from GH API.")
+        print(f"Getting repo data for {repo}.")
         collation_dict[repo] = single_repo_method(repo_name=repo, logger=logger)
+        logger.info(f"Completed repo data get for {repo}.")
     return collation_dict
 
 
@@ -74,7 +78,13 @@ if __name__ == "__main__":
     filepath: str | None = args.filepath_for_repos_list
     repo_name: str | None = args.repo_name
     several_repo_names: list[str] = args.several_repo_names
-    logger = getLogger()
+
+    logger = loggit.get_default_logger(
+        console=True,
+        set_level_to="INFO",
+        log_name="logs/run_commits_workflow_logs.txt",
+        in_notebook=False,
+    )
 
     if (
         (filepath is not None)
