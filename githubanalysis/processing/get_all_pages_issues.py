@@ -1,16 +1,27 @@
 """Get all data from all pages of issues for a GitHub repo."""
 
-import sys
 import os
 import pandas as pd
-from datetime import datetime
+import json
+import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.repo_name_clean as name_clean
+from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
+
+
+def make_url(
+    repos_api_url: str,
+    repo_name: str,
+    state: str,
+    pulls: bool,
+    per_pg: int | str,
+    page: int | str,
+):
+    return f"{repos_api_url}{repo_name}/issues?state={state}&pulls={pulls}&per_page={per_pg}&page={page}"
 
 
 class IssueGetter:
@@ -19,8 +30,10 @@ class IssueGetter:
 
     def __init__(
         self,
-        logger: logging.Logger = None,
-        in_notebook=False,
+        repo_name: str,
+        in_notebook: bool,
+        config_path: str,
+        logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -32,341 +45,203 @@ class IssueGetter:
         else:
             self.logger = logger
 
+        self.s = requests.Session()
+        retries = Retry(
+            total=10,
+            connect=5,
+            read=3,
+            backoff_factor=1,
+            status_forcelist=[202, 502, 503, 504],
+        )
+        self.s.mount("https://", HTTPAdapter(max_retries=retries))
+        self.gh_token = ghauth.setup_github_auth(config_path=config_path)
+        self.headers = {"Authorization": "token " + self.gh_token}
+        self.config_path = config_path
+        self.in_notebook = in_notebook
+        # write-out file setup
+        self.current_date_info = datetime.datetime.now().strftime(
+            "%Y-%m-%d"
+        )  # run this at start of script not in loop to avoid midnight/long-run commits
+        self.sanitised_repo_name = repo_name.replace("/", "-")
+
+    def _singlepage_issues_grabber(
+        self,
+        repos_api_url: str,
+        repo_name: str,
+        state: str,
+        pulls: bool,
+        per_pg: str | int,
+    ) -> list[dict]:
+        issues_url = make_url(
+            repos_api_url=repos_api_url,
+            repo_name=repo_name,
+            state=state,
+            pulls=pulls,
+            per_pg=per_pg,
+            page=1,
+        )
+        self.logger.debug(
+            f"Trying to pull issue information from repo {repo_name} with query {issues_url}."
+        )
+        api_reponse = run_with_retries(
+            fn=lambda: raise_if_response_error(
+                api_response=self.s.get(url=issues_url, headers=self.headers),
+                repo_name=repo_name,
+                logger=self.logger,
+            ),
+            logger=self.logger,
+        )
+        assert api_reponse.ok, f"API response is {api_reponse}."
+
+        all_issues = api_reponse.json()
+        return all_issues  # THIS IS JSON OUTPUT CURRENTLY
+
+    def _multipage_issues_grabber(
+        self,
+        issue_links: dict,
+        repos_api_url: str,
+        repo_name: str,
+        state: str,
+        pulls: bool,
+        per_pg: str | int,
+    ) -> list[dict]:
+        issue_links_last = issue_links["last"]["url"].split("&page=")[1]
+        pages_issues = int(issue_links_last)
+
+        all_issues = []
+        pg_range = range(1, (pages_issues + 1))
+
+        for i in pg_range:
+            self.logger.info(
+                f">> Running issues grab for repo {repo_name}, on page {i} of {pages_issues}."
+            )
+            page = i
+            issues_url = make_url(
+                repos_api_url=repos_api_url,
+                repo_name=repo_name,
+                state=state,
+                pulls=pulls,
+                per_pg=per_pg,
+                page=page,
+            )
+            self.logger.info(f"API is checking url: {issues_url}")
+
+            # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
+            api_response = run_with_retries(
+                lambda: raise_if_response_error(
+                    api_response=self.s.get(url=issues_url, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
+                self.logger,
+            )
+
+            assert api_response.ok, f"API response is: {api_response}"
+            self.logger.info(f"API response is: {api_response}")
+
+            headers_out = api_response.headers
+            self.logger.debug(
+                f"API request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
+            )
+
+            json_pg = api_response.json()
+            all_issues.extend(json_pg)
+
+            self.logger.debug(
+                f"Total number of issues grabbed is {len(all_issues)} in {pages_issues} page(s)."
+            )
+
+        return all_issues
+
     def get_all_pages_issues(
         self,
-        repo_name,
-        config_path="githubanalysis/config.cfg",
+        repo_name: str,
         out_filename="all-issues",
         write_out_location="data/",
-        issue_state="all",
     ):
         """
         Obtains all fields of data from all pages for a given github repo `repo_name`.
         :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
         :type: str
-        :param config_path: file path of config.cfg file. Default=githubanalysis/config.cfg'.
-        :type: str
         :param out_filename: filename suffix indicating issues content (Default: 'issues')
         :type: str
         :param: write_out_location: path of location to write file out to (Default: 'data/')
         :type: str
-        :param issue_state: one of 'open', 'closed' or 'all'. GitHub issue API status options. Default: 'all'
-        :type: str
         :returns: `all_issues` pd.DataFrame containing 30 fields per issue for given repo `repo_name`.
-        :type: DataFrame
-
-        Examples:
-        ----------
-        $ python githubanalysis/processing/get_all_pages_issues.py 'Dallinger/Dallinger'
-
-        INFO:Using commandline argument Dallinger/Dallinger as repo name to retrieve GH issues for. Entered as: Dallinger/Dallinger
-        INFO:Number of issues returned for repo Dallinger/Dallinger is 6207.
-        INFO:There are 344 open issues (~6%) and 5863 closed issues (~94%).
-
-        $ python githubanalysis/processing/get_all_pages_issues.py 'sizespectrum/mizer'
-        INFO:Using commandline argument sizespectrum/mizer as repo name to retrieve GH issues for. Entered as: sizespectrum/mizer
-        INFO:>> Running issue grab for repo sizespectrum/mizer, in page 1 of 3.
-        INFO:>> Running issue grab for repo sizespectrum/mizer, in page 2 of 3.
-        INFO:>> Running issue grab for repo sizespectrum/mizer, in page 3 of 3.
-        INFO:Number of issues returned for repo sizespectrum/mizer is 281.
-        INFO:There are 47 open issues (~17%) and 234 closed issues (~83%).
+        :rtype: Dict
         """
 
-        # get repo_name from commandline if given (accept commandline input)
-        if len(sys.argv) == 2:
-            repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
+        # assert isinstance(repo_name, str), "Ensure repository name in string format (e.g. 'repo-owner/repo-name')"  # move this to outer function to ensure inputs to here are correct
 
-            if not isinstance(repo_name, str):
-                raise TypeError(
-                    "Ensure argument is repository name in string format (e.g. 'repo-owner/repo-name')"
-                )
+        self.logger.info(f"Repo name is {repo_name}. Getting issues.")
 
-            self.logger.info(
-                f"Using commandline argument {repo_name} as repo name to retrieve GH issues for. Entered as: {sys.argv[1]}"
-            )
+        if self.in_notebook:
+            write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}"  # look further up for correct path
         else:
-            self.logger.debug(f"Repo name is {repo_name}. Getting issues.")
+            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
 
-        # write-out file setup
-        # get date for generating extra filename info
-        current_date_info = datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run issues
-        sanitised_repo_name = repo_name.replace("/", "-")
-        write_out = f"{write_out_location}{out_filename}_{sanitised_repo_name}"
-        write_out_extra_info = f"{write_out}_{current_date_info}.csv"
-
-        # get auth string
-        gh_token = ghauth.setup_github_auth(config_path=config_path)
-        headers = {"Authorization": "token " + gh_token}
-
-        s = requests.Session()
-        retries = Retry(
-            total=10,
-            connect=5,
-            read=3,
-            backoff_factor=1.5,
-            status_forcelist=[202, 502, 503, 504],
-        )
-        s.mount("https://", HTTPAdapter(max_retries=retries))
+        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
         # create empty df to store issues data
-        all_issues = pd.DataFrame()
+        all_issues = {}
 
         # count open issue tickets
         try:
             page = 1  # try first page only
-            state = issue_state
-            pulls = True  # DO NOT include PRs here
-            issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=100&pulls={pulls}&page={page}"
-            # per_page=30 by default on GH, set to max
-            # default of 'state' is 'open' issues only
+            repos_api_url = "https://api.github.com/repos/"
 
-            api_response = s.get(url=issues_url, headers=headers)
-
-        except Exception as e_connect:
-            if api_response.status_code == 404:
-                self.logger.error(
-                    f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?"
-                )
-            self.logger.error(
-                f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect}."
+            issues_url = make_url(
+                repos_api_url=repos_api_url,
+                repo_name=repo_name,
+                state="all",  # alternatives: "open" (default) | "closed"
+                pulls=True,
+                per_pg=100,  # default is 30 on GH API
+                page=page,
             )
+            self.logger.debug(f"Issues URL being queried is: {issues_url}.")
 
-        if api_response.status_code != 404:
-            self.logger.debug(f"Getting issues for repo {repo_name}.")
+            api_response = self.s.get(url=issues_url, headers=self.headers)
+
+            assert (
+                api_response.status_code != 401
+            ), f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {issues_url} is {api_response}"
+            # assertion check on 401 only as unauthorise is more likely to stop whole run than 404 which may apply to given repo only
 
             issue_links = api_response.links
-            store_pg = pd.DataFrame()
-            pg_count = 0
 
-            try:
-                if "last" in issue_links:
-                    issue_links_last = issue_links["last"]["url"].split("&page=")[1]
-                    pages_issues = int(issue_links_last)
-
-                    pg_range = range(1, (pages_issues + 1))
-
-                    for i in pg_range:
-                        pg_count += 1
-                        self.logger.info(
-                            f">> Running issue grab for repo {repo_name}, in page {pg_count} of {pages_issues}."
-                        )
-                        issues_query = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=100&pulls={pulls}&page={i}"
-                        api_response = s.get(url=issues_query, headers=headers)
-                        json_pg = api_response.json()
-                        store_pg = pd.DataFrame.from_dict(
-                            json_pg
-                        )  # convert json to pd.df
-                        # using pd.DataFrame.from_dict(json) instead of pd.read_json(url) because otherwise I lose rate handling
-
-                        if len(store_pg.index) > 0:
-                            store_pg["assigned_devs"] = store_pg[
-                                ["assignees"]
-                            ].applymap(
-                                lambda x: [x.get("login") for x in x]
-                            )  # use detail from get_issue_assignees() to create new column
-                            try:
-                                if "pull_request" in store_pg.columns:
-                                    store_pg["is_PR"] = store_pg[
-                                        "pull_request"
-                                    ].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.
-                                else:
-                                    store_pg["is_PR"] = False
-                            except Exception as e_noPRs:
-                                self.logger.error(
-                                    f"Error trying to generate additional boolean is_PR column from data: {e_noPRs}."
-                                )
-
-                            # write out 'completed' page of issues as df to csv via APPEND (use added date filename with reponame inc)
-                            store_pg.to_csv(
-                                write_out_extra_info,
-                                mode="a",
-                                index=True,
-                                header=not os.path.exists(write_out_extra_info),
-                            )
-                            all_issues = pd.concat(
-                                [all_issues, store_pg],
-                            )  # append this page (df) to main issues df
-                        store_pg = pd.DataFrame()  # empty the df of last page
-
-                else:  # there's no next page, grab all on this page and proceed.
-                    pg_count += 1
-                    self.logger.debug(f"getting json via request url {issues_url}.")
-                    json_pg = api_response.json()
-                    if not json_pg:  # check emptiness of result.
-                        self.logger.debug(
-                            "Result of api_response.json() is empty list."
-                        )
-                        self.logger.error(
-                            "Result of API request is an empty json. Error - cannot currently handle this result nicely."
-                        )
-                    store_pg = pd.DataFrame.from_dict(json_pg)
-
-                    if len(store_pg.index) > 0:
-                        store_pg["assigned_devs"] = store_pg[["assignees"]].applymap(
-                            lambda x: [x.get("login") for x in x]
-                        )  # use detail from get_issue_assignees() to create new column
-                        try:
-                            if "pull_request" in store_pg.columns:
-                                store_pg["is_PR"] = store_pg[
-                                    "pull_request"
-                                ].notna()  # pull out PR info into boolean column; blank cells = NaN. This checks for NOT NA so True if PR.
-                            else:
-                                store_pg["is_PR"] = False
-                        except Exception as e_noPRs:
-                            self.logger.error(
-                                f"Error trying to generate additional boolean is_PR column from data: {e_noPRs}."
-                            )
-
-                    all_issues = store_pg
-                    # write out the page content to csv via APPEND (use added date filename)
-                    all_issues.to_csv(
-                        write_out_extra_info,
-                        mode="a",
-                        index=True,
-                        header=not os.path.exists(write_out_extra_info),
-                    )
-
-                self.logger.debug(
-                    f"Total number of issues grabbed is {len(all_issues.index)} in {pg_count} page(s)."
+            if "last" in issue_links:
+                all_issues = self._multipage_issues_grabber(
+                    issue_links,
+                    repos_api_url,
+                    repo_name,
+                    state="all",
+                    pulls=True,
+                    per_pg=100,
                 )
-                self.logger.debug(
-                    f"Issues data written out to file for repo {repo_name} at {write_out_extra_info}."
+            else:
+                all_issues = self._singlepage_issues_grabber(
+                    repos_api_url,
+                    repo_name,
+                    state="all",
+                    pulls=True,
+                    per_pg=100,
                 )
+        except Exception as e:
+            self.logger.error(
+                f"Error in getting issues for repo name {repo_name}: {e}."
+            )
+            raise
 
-                if all_issues["state"].nunique() > 1:
-                    self.logger.debug(
-                        f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%)."
-                    )
-                else:
-                    if (
-                        all_issues["state"][0] == "closed"
-                    ):  # if we have only closed, set open to 0
-                        self.logger.debug(
-                            f"There are 0 open issues (0%) and {all_issues.state.value_counts().closed} closed issues (~{round(all_issues.state.value_counts(normalize=True).closed*100)}%)."
-                        )
-                    elif all_issues["state"][0] == "open":  # do vice versa!
-                        self.logger.debug(
-                            f"There are {all_issues.state.value_counts().open} open issues (~{round(all_issues.state.value_counts(normalize=True).open*100)}%) and 0 closed issues (0)."
-                        )
-                    else:
-                        self.logger.error("Error in the 'state' column of issues df.")
+        self.logger.info(
+            f"{len(all_issues)} issues returned from repo {repo_name} at {write_out_extra_info_json}."
+        )
 
-                if all_issues["is_PR"].nunique() > 1:
-                    self.logger.debug(
-                        f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%)."
-                    )
-                else:
-                    if not all_issues["is_PR"][0]:
-                        self.logger.debug(
-                            f"There are {all_issues['is_PR'].value_counts()[False]} issue tickets and (~{round(all_issues['is_PR'].value_counts(normalize=True)[False]*100)}%) and 0 (0%) issues that are PRs."
-                        )
-                    elif all_issues["is_PR"][0] is True:
-                        self.logger.debug(
-                            f"There are 0 issue tickets (0%) and {all_issues['is_PR'].value_counts()[True]} pull requests (~{round(all_issues['is_PR'].value_counts(normalize=True)[True]*100)}%)."
-                        )
-                    else:
-                        self.logger.error("Error in 'is_PR' field of issues df.")
+        with open(write_out_extra_info_json, "w") as json_file:
+            json.dump(all_issues, json_file)
 
-            except Exception as e_issues:
-                self.logger.error(
-                    f"Something failed in getting issues for repo {repo_name}: {e_issues}"
-                )
-
-        #     # check all important columns are present in the df.
-        #     wanted_cols = ['url', 'repository_url', 'labels', 'number', 'title', 'state',
-        #                 'assignee', 'assignees', 'created_at', 'closed_at', 'pull_request']
-        #     try:
-        #         assert all(item in all_issues.columns for item in wanted_cols)
-        #     except AssertionError as err:
-        #         print(f"column {[x for x in all_issues.columns if x not in wanted_cols]} not present in all_issues df; {err}")
-
-        #     all_issues['created_at'] = pd.to_datetime(all_issues['created_at'], yearfirst=True, utc=True,
-        #                                             format='%Y-%m-%dT%H:%M:%S%Z')
-        #     all_issues['closed_at'] = pd.to_datetime(all_issues['closed_at'], yearfirst=True, utc=True,
-        #                                             format='%Y-%m-%dT%H:%M:%S%Z')
-
-        #     all_issues['repo_name'] = repo_name
+        if not os.path.exists(write_out_extra_info_json):
+            self.logger.error(
+                f"JSON file was not written out correctly and does NOT exist at path: {os.path.exists(write_out_extra_info_json)}"
+            )
 
         return all_issues
-
-        # relevant fields: 'url', 'number', 'assignee'/'assignees', 'created_at', 'closed_at',
-        # ... 'pull_request' (contains url of PR if so), 'title', 'repository_url',
-        # ... 'labels' (bug, good first issue etc), 'state' (open/closed), 'user' (created issue)
-
-
-# this bit
-if __name__ == "__main__":
-    """
-    get issues for specific GH repo. 
-    gather into df 
-    (TODO: writeout to csv)
-    """
-    logger = loggit.get_default_logger(
-        console=True,
-        set_level_to="DEBUG",
-        log_name="logs/get_all_pages_issues_logs.txt",
-    )
-
-    issues_getter = IssueGetter(logger)
-
-    if len(sys.argv) == 2:
-        repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
-    else:
-        raise IndexError("Please enter a repo_name.")
-
-    if "github" in repo_name:
-        repo_name = name_clean.repo_name_clean(repo_name)
-
-    issues_df = pd.DataFrame()
-
-    # run the main function to get the issues!
-    try:
-        issues_df = issues_getter.get_all_pages_issues(
-            repo_name=repo_name, config_path="githubanalysis/config.cfg"
-        )
-        if len(issues_df) != 0:
-            logger.info(
-                f"Number of issues returned for repo {repo_name} is {len(issues_df.index)}."
-            )
-            logger.info(
-                f"There are {issues_df.state.value_counts().open} open issues (~{round(issues_df.state.value_counts(normalize=True).open*100)}%) and {issues_df.state.value_counts().closed} closed issues (~{round(issues_df.state.value_counts(normalize=True).closed*100)}%)."
-            )
-            logger.info(
-                f"There are {issues_df['is_PR'].value_counts()[False]} issue tickets (~{round(issues_df['is_PR'].value_counts(normalize=True)[False]*100)}%) and {issues_df['is_PR'].value_counts()[True]} pull requests (~{round(issues_df['is_PR'].value_counts(normalize=True)[True]*100)}%)."
-            )
-        else:
-            logger.warning(
-                "Getting issues did not work, length of returned records is zero."
-            )
-    except Exception as e:
-        logger.error(
-            f"Exception while running get_all_pages_issues() on repo {repo_name}: {e}"
-        )
-
-    # generate filename and try to read file in for comparison.
-    total_issues = pd.DataFrame()
-    try:
-        current_date_info = datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run issues
-        sanitised_repo_name = repo_name.replace("/", "-")
-        issues_file = "data/all-issues"
-        issues_file_extra_info = (
-            f"{issues_file}_{sanitised_repo_name}_{current_date_info}.csv"
-        )
-        total_issues = pd.read_csv(issues_file_extra_info, header=0)
-    except Exception as e:
-        logger.error(
-            f"There's been an exception while trying to read back in data generated by get_all_pages_issues() from {issues_file_extra_info}: {e}"
-        )
-
-    try:
-        assert (
-            len(issues_df.index) == len(total_issues.index)
-        ), f"WARNING! Lengths of returned df ({len(issues_df)}) vs df read in from file ({len(total_issues)}) DO NOT MATCH. Did you append too many records to the gh_urls file??"
-    except AssertionError as e:
-        logger.error(
-            f"The outputs of running the function and reading back in data DO NOT MATCH; {e}"
-        )
