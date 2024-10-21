@@ -13,6 +13,10 @@ import githubanalysis.processing.setup_github_auth as ghauth
 from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
 
 
+class NoIssuesError(RuntimeError):
+    pass
+
+
 def make_url(
     repos_api_url: str,
     repo_name: str,
@@ -63,6 +67,30 @@ class IssueGetter:
             "%Y-%m-%d"
         )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
+
+    def check_repo_has_issues(self, repo_name: str) -> bool:
+        repos_api_url = "https://api.github.com/repos/"
+        check_issue_url = f"{repos_api_url}{repo_name}/issues"
+        api_response = run_with_retries(
+            fn=lambda: raise_if_response_error(
+                api_response=self.s.get(url=check_issue_url, headers=self.headers),
+                repo_name=repo_name,
+                logger=self.logger,
+            ),
+            logger=self.logger,
+        )
+        assert api_response.ok, f"API response is: {api_response}"
+
+        self.logger.info(
+            f"API shows repo {repo_name} has issues_enabled is: {api_response.json().get('has_issues')}."
+        )
+        if api_response.json().get("has_issues"):
+            return api_response.json().get("has_issues")
+        else:
+            self.logger.error(
+                f"Repository {repo_name} does NOT have issues enabled at the repo level. Raising NoIssuesError."
+            )
+        raise NoIssuesError
 
     def _singlepage_issues_grabber(
         self,
