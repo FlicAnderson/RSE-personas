@@ -2,12 +2,9 @@
 
 import logging
 import datetime
-import pandas as pd
 
 import utilities.get_default_logger as loggit
-from utilities.check_gh_reponse import UnexpectedAPIError
 from githubanalysis.processing.get_all_pages_issues import IssueGetter, NoIssuesError
-from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
 
 
 class RunIssues:

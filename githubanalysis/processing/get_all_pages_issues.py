@@ -1,7 +1,6 @@
 """Get all data from all pages of issues for a GitHub repo."""
 
 import os
-import pandas as pd
 import json
 import datetime
 import requests
