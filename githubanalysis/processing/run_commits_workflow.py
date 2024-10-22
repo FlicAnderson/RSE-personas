@@ -3,7 +3,7 @@ from githubanalysis.processing.commits_workflow import RunCommits
 
 import argparse
 import pandas as pd
-from logging import Logger, getLogger
+from logging import Logger
 import utilities.get_default_logger as loggit
 
 
