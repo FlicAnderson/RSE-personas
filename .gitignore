@@ -80,6 +80,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+githubanalysis/notebooks/
 
 # IPython
 profile_default/
@@ -185,4 +186,4 @@ zenodocode/zenodoconfig.cfg
 
 # log files 
 *_logs.txt
-
+logs/
