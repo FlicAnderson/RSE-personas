@@ -12,8 +12,8 @@ from githubanalysis.processing.get_all_branches_commits import AllBranchesCommit
 
 #     # Assert:
 
-rawjson = "tests/testdata/raw-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-15.json"
-deduplicatedjson = "tests/testdata/deduplicated-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-15_deduplicated.json"
+rawjson = "tests/testdata/raw-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-17.json"
+deduplicatedjson = "tests/testdata/deduplicated-commits__all-branches-commits_FlicAnderson-peramagroon_2024-10-17_deduplicated.json"
 
 
 def setup_raw_data(rawjson: str) -> dict:
