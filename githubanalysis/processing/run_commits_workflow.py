@@ -5,6 +5,7 @@ import argparse
 import pandas as pd
 from logging import Logger
 import utilities.get_default_logger as loggit
+from utilities.check_gh_reponse import RepoNotFoundError
 
 
 def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
@@ -19,6 +20,11 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
     )
     try:
         return runcommits.do_it_all()
+    except RepoNotFoundError as e:
+        logger.error(
+            f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
+        )
+        return None
     except Exception as e:
         logger.error(
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}"
