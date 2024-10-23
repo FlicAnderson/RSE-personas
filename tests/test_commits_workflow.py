@@ -1,15 +1,12 @@
 """Test the whole commits workflow script."""
 
 import pytest
-import json
 import pandas as pd
 
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
 import githubanalysis.processing.run_commits_workflow as runner
 from utilities.check_gh_reponse import (
-    RateLimitError,
     RepoNotFoundError,
-    UnexpectedAPIError,
 )
 import utilities.get_default_logger as loggit
 
