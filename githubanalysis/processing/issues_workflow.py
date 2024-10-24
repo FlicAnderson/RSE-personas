@@ -114,8 +114,8 @@ class RunIssues:
             "closed_at",
             "author_association",
             "comments",
-            "issue_author",
-            "issue_assignees",
+            # "issue_author",
+            # "issue_assignees",
             "issue_author_username",
             "assignees_list_usernames",
         ]  # list of column names of data to keep from json
@@ -136,8 +136,8 @@ class RunIssues:
                 issue["closed_at"],
                 issue["author_association"],
                 issue["comments"],
-                issue["user"],
-                issue["assignees"],
+                # issue["user"],
+                # issue["assignees"],
             ]
 
             issue_list.append(user.get("login") if user is not None else None)
