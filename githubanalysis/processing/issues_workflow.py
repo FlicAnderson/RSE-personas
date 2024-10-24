@@ -80,7 +80,7 @@ class RunIssues:
         raw_issues_filename = f"{self.write_read_location}all-issues_{self.sanitised_repo_name}_{self.current_date_info}.json"
         raw_issues_path = Path(raw_issues_filename)
         self.logger.info(
-            f"Checking whether formatted commits dataset already exists at path {raw_issues_path}."
+            f"Checking whether issue tickets data for repo {self.repo_name} for today's date already exists at path {raw_issues_path}."
         )
 
         if raw_issues_path.is_file():
@@ -91,10 +91,13 @@ class RunIssues:
                 raw_issues_json,
                 list,  # json wrapped in list
             ), f"Error reading in raw .json file: {raw_issues_filename}."
-
+            self.logger.info("Reading in existing issues raw .json file.")
             return raw_issues_json
         else:
             # run main issue getting function:
+            self.logger.info(
+                "No existing issues file found; getting issues via GH API."
+            )
             all_issues = issuesgetter.get_all_pages_issues(repo_name=self.repo_name)
             return all_issues
 
