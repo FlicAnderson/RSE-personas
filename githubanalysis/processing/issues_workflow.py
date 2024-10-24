@@ -58,7 +58,9 @@ class RunIssues:
             assert repo_has_issues, f"There are NO issues enabled for repo {self.repo_name}. Cannot obtain issues data for this repo."
             return repo_has_issues
         except NoIssuesError as e:
-            self.logger.error(f"Error: Issues are not enabled for this repo: {e}")
+            self.logger.error(
+                f"Error: Issues are not enabled for repo {self.repo_name}: {e}"
+            )
             return False
 
     def check_existing_formatted_issues(self):
