@@ -142,9 +142,7 @@ class RunIssues:
 
             issue_list.append(user.get("login") if user is not None else None)
             issue_list.append(
-                lambda x: [x.get("login") for x in assignees]
-                if assignees is not None
-                else None
+                [x.get("login") for x in assignees] if assignees is not None else None
             )
 
             frame.append(issue_list)
