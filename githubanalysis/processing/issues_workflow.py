@@ -87,8 +87,9 @@ class RunIssues:
                 raw_issues_json = json.load(f1)
                 f1.close
             assert isinstance(
-                raw_issues_json, dict
-            ), f"Error reading in testdata for raw .json file: {raw_issues_filename}."
+                raw_issues_json,
+                list,  # json wrapped in list
+            ), f"Error reading in raw .json file: {raw_issues_filename}."
 
             return raw_issues_json
         else:
