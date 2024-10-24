@@ -2,6 +2,8 @@
 
 import logging
 import datetime
+import json
+from pathlib import Path
 
 import utilities.get_default_logger as loggit
 from githubanalysis.processing.get_all_pages_issues import IssueGetter, NoIssuesError
@@ -74,9 +76,25 @@ class RunIssues:
             logger=self.logger,
         )
 
-        # main issue getting function:
-        all_issues = issuesgetter.get_all_pages_issues(repo_name=self.repo_name)
-        return all_issues
+        raw_issues_filename = f"{self.write_read_location}all-issues_{self.sanitised_repo_name}_{self.current_date_info}.json"
+        raw_issues_path = Path(raw_issues_filename)
+        self.logger.info(
+            f"Checking whether formatted commits dataset already exists at path {raw_issues_path}."
+        )
+
+        if raw_issues_path.is_file():
+            with open(raw_issues_filename) as f1:
+                raw_issues_json = json.load(f1)
+                f1.close
+            assert isinstance(
+                raw_issues_json, dict
+            ), f"Error reading in testdata for raw .json file: {raw_issues_filename}."
+
+            return raw_issues_json
+        else:
+            # run main issue getting function:
+            all_issues = issuesgetter.get_all_pages_issues(repo_name=self.repo_name)
+            return all_issues
 
     def run_all_issues(self):  # -> pd.DataFrame:
         self.logger.info(f"Checking whether repo {self.repo_name} has issues enabled.")
