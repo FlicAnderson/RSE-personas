@@ -117,12 +117,13 @@ class RunIssues:
             "issue_author",
             "issue_assignees",
             "issue_author_username",
+            "assignees_list_usernames",
         ]  # list of column names of data to keep from json
         frame = []  # for df construction later
 
         for issue in issues_object:
             user = issue["user"]
-            # assignees = issue["assignees"]
+            assignees = issue["assignees"]
 
             issue_list = [
                 repo_name,
@@ -140,6 +141,11 @@ class RunIssues:
             ]
 
             issue_list.append(user.get("login") if user is not None else None)
+            issue_list.append(
+                lambda assignees: [assignees.get("login") for assignees in assignees]
+                if assignees is not None
+                else None
+            )
 
             frame.append(issue_list)
 
