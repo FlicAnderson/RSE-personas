@@ -242,7 +242,14 @@ class IssueGetter:
             )
             self.logger.debug(f"Issues URL being queried is: {issues_url}.")
 
-            api_response = self.s.get(url=issues_url, headers=self.headers)
+            api_response = run_with_retries(
+                fn=lambda: raise_if_response_error(
+                    api_response=self.s.get(url=issues_url, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
+                logger=self.logger,
+            )
 
             assert (
                 api_response.status_code != 401
