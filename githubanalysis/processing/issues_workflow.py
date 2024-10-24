@@ -3,6 +3,7 @@
 import logging
 import datetime
 import json
+import pandas as pd
 from pathlib import Path
 
 import utilities.get_default_logger as loggit
@@ -97,6 +98,70 @@ class RunIssues:
             all_issues = issuesgetter.get_all_pages_issues(repo_name=self.repo_name)
             return all_issues
 
+    def format_issues_object(self, issues_object: list[dict]) -> pd.DataFrame:
+        repo_name = self.repo_name
+        columns = [
+            "repo_name",
+            "issue_id",
+            "issue_number",
+            "issue_state" "issue_title",
+            "created_at",
+            "updated_at",
+            "closed_at",
+            "author_association",
+            "comments",
+            "issue_author",
+            "issue_assignees",
+        ]  # list of column names of data to keep from json
+        frame = []  # for df construction later
+
+        for issue in issues_object:
+            # creator = issue["user"]
+            # assignees = issue["assignees"]
+
+            issue_list = [
+                repo_name,
+                issue["id"],
+                issue["number"],
+                issue["state"],
+                issue["title"],
+                issue["created_at"],
+                issue["updated_at"],
+                issue["closed_at"],
+                issue["author_association"],
+                issue["comments"],
+                issue["user"],
+                issue["assignees"],
+            ]
+
+        frame.append(issue_list)
+        issues_df = pd.DataFrame(frame, columns=columns)
+        return issues_df
+
+        # dict_keys(
+        # issues_required_fields = ['assignee',
+        #     'closed_at',
+        #     'comments',
+        #     'comments_url',
+        #     'events_url',
+        #     'html_url',
+        #     'id',
+        #     'node_id',
+        #     'labels',
+        #     'labels_url',
+        #     'milestone',
+        #     'number',
+        #     'repository_url',
+        #     'state',
+        #     'locked',
+        #     'title',
+        #     'url',
+        #     'user',
+        #     'author_association',
+        #     'created_at',
+        #     'updated_at']
+        # )
+
     def run_all_issues(self):  # -> pd.DataFrame:
         self.logger.info(f"Checking whether repo {self.repo_name} has issues enabled.")
         worth_running = self.check_repo_valid()
@@ -110,14 +175,15 @@ class RunIssues:
 
             all_issues = self.get_issues()
 
-            return all_issues
-
             # TODO:
             # process issues data
 
             # ?? column handling
 
             # all_issues  # JSON TO DATAFRAME
+
+            processed_issues = self.format_issues_object(all_issues)
+            return processed_issues
 
             # if processed_issues is None or processed_issues.empty:
             #     raise pd.errors.EmptyDataError(
