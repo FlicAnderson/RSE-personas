@@ -135,7 +135,8 @@ class RunIssues:
                 issue["assignees"],
             ]
 
-        frame.append(issue_list)
+            frame.append(issue_list)
+
         issues_df = pd.DataFrame(frame, columns=columns)
         return issues_df
 
