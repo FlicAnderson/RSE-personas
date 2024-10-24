@@ -104,7 +104,9 @@ class IssueGetter:
             self.logger.error(
                 f"Repository {repo_name} does NOT have issues enabled OR there are NO issues created despite being enabled. Raising NoIssuesError."
             )
-        raise NoIssuesError
+        raise NoIssuesError(
+            f"Repository {repo_name} does NOT have issues enabled OR there are NO issues created despite being enabled."
+        )
 
     def _singlepage_issues_grabber(
         self,
@@ -200,7 +202,7 @@ class IssueGetter:
         repo_name: str,
         out_filename="all-issues",
         write_out_location="data/",
-    ):
+    ) -> dict:
         """
         Obtains all fields of data from all pages for a given github repo `repo_name`.
         :param repo_name: cleaned `repo_name` string without github url root or trailing slashes.
