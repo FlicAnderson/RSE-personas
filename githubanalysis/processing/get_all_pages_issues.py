@@ -80,14 +80,18 @@ class IssueGetter:
         )
         assert api_response.ok, f"API response is: {api_response}"
 
-        self.logger.info(
-            f"API shows repo {repo_name} has issues_enabled is: {api_response.json().get('has_issues')}."
-        )
-        if api_response.json().get("has_issues"):
+        self.logger.info(f"API shows repo {repo_name} has issues_enabled.")
+
+        json_response = api_response.json()
+        assert isinstance(
+            json_response, list
+        ), f"WARNING: result of api_response.json() in check_repo_has_issues() is NOT a list as expected: type is {api_response.json()}."
+
+        if len(json_response) > 0:
             return api_response.json().get("has_issues")
         else:
             self.logger.error(
-                f"Repository {repo_name} does NOT have issues enabled at the repo level. Raising NoIssuesError."
+                f"Repository {repo_name} does NOT have issues enabled OR there are NO issues created despite being enabled. Raising NoIssuesError."
             )
         raise NoIssuesError
 
