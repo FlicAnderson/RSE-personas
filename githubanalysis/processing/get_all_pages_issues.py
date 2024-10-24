@@ -69,7 +69,7 @@ class IssueGetter:
 
     def check_repo_has_issues(self, repo_name: str) -> bool:
         repos_api_url = "https://api.github.com/repos/"
-        check_issue_url = f"{repos_api_url}{repo_name}/issues"
+        check_issue_url = f"{repos_api_url}{repo_name}"
         api_response = run_with_retries(
             fn=lambda: raise_if_response_error(
                 api_response=self.s.get(url=check_issue_url, headers=self.headers),
@@ -84,11 +84,22 @@ class IssueGetter:
 
         json_response = api_response.json()
         assert isinstance(
-            json_response, list
-        ), f"WARNING: result of api_response.json() in check_repo_has_issues() is NOT a list as expected: type is {api_response.json()}."
+            json_response, dict
+        ), f"WARNING: result of api_response.json() in check_repo_has_issues() is NOT a dict as expected: type is {api_response.json()}."
 
         if len(json_response) > 0:
-            return api_response.json().get("has_issues")
+            assert isinstance(json_response.get("has_issues"), bool)
+
+            n_open_isses = json_response.get("open_issues_count")
+            assert (
+                n_open_isses is not None
+            ), f"The value for repo {repo_name} 'open_issues_count' is None; this is not ideal."
+            assert isinstance(
+                n_open_isses, int
+            ), f"The value for repo {repo_name} 'open_issues_count' is not an integer, instead it is {type(n_open_isses)}."
+
+            if json_response.get("has_issues") and n_open_isses > 0:
+                return True  # this is what we're hoping for: has issues, and more than zero of them.
         else:
             self.logger.error(
                 f"Repository {repo_name} does NOT have issues enabled OR there are NO issues created despite being enabled. Raising NoIssuesError."
