@@ -131,8 +131,6 @@ class RunIssues:
             user = issue["user"]
             assignees = issue["assignees"]
             state_reason = issue["state_reason"]
-            pull_request = issue["pull_request"]
-            closed_by = issue["closed_by"]
 
             issue_list = [
                 repo_name,
@@ -157,8 +155,12 @@ class RunIssues:
                 [x.get("login") for x in assignees] if assignees is not None else None
             )
             issue_list.append(state_reason if state_reason is not None else None)
-            issue_list.append(pull_request if pull_request is not None else None)
-            issue_list.append(closed_by if closed_by is not None else None)
+            issue_list.append(
+                issue["pull_request"] if issue["pull_request"] is not None else None
+            )
+            issue_list.append(
+                issue["closed_by"] if issue["closed_by"] is not None else None
+            )
 
             frame.append(issue_list)
 
