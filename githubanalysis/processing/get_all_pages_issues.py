@@ -269,6 +269,7 @@ class IssueGetter:
                     pulls=True,
                     per_pg=100,
                 )
+                self.logger.info(f"Type of all_issues is: {type(all_issues)}")
             else:
                 all_issues = self._singlepage_issues_grabber(
                     repos_api_url,
@@ -277,6 +278,7 @@ class IssueGetter:
                     pulls=True,
                     per_pg=100,
                 )
+                self.logger.info(f"Type of all_issues is: {type(all_issues)}")
         except Exception as e:
             self.logger.error(
                 f"Error in getting issues for repo name {repo_name}: {e}."
@@ -294,5 +296,7 @@ class IssueGetter:
             self.logger.error(
                 f"JSON file was not written out correctly and does NOT exist at path: {os.path.exists(write_out_extra_info_json)}"
             )
+
+        self.logger.info(f"Type of all_issues is: {type(all_issues)}")
 
         return all_issues
