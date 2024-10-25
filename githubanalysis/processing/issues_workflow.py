@@ -214,6 +214,12 @@ class RunIssues:
             # all_issues  # JSON TO DATAFRAME
 
             processed_issues = self.format_issues_object(all_issues)
+            self.logger.info(
+                f"There are {len(processed_issues)} issues for repo {self.repo_name}."
+            )
+            self.logger.debug(
+                f"Object processed_issues is type {type(processed_issues)} issues for repo {self.repo_name}."
+            )
             return processed_issues
 
             # if processed_issues is None or processed_issues.empty:
