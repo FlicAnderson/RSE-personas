@@ -169,29 +169,24 @@ class RunIssues:
         issues_df = pd.DataFrame(frame, columns=columns)
         return issues_df
 
-        # dict_keys(
-        # issues_required_fields = ['assignee',
-        #     'closed_at',
-        #     'comments',
-        #     'comments_url',
-        #     'events_url',
-        #     'html_url',
-        #     'id',
-        #     'node_id',
-        #     'labels',
-        #     'labels_url',
-        #     'milestone',
-        #     'number',
-        #     'repository_url',
-        #     'state',
-        #     'locked',
-        #     'title',
-        #     'url',
-        #     'user',
-        #     'author_association',
-        #     'created_at',
-        #     'updated_at']
-        # )
+    def save_formatted_issues(
+        self,
+        issues_df: pd.DataFrame,
+        write_out_location: str,
+        out_filename: str = "processed-issues",
+    ):
+        """
+        Save the reformatted commits data out to csv file.
+        """
+        write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+
+        if issues_df is not None:
+            issues_df.to_csv(path_or_buf=write_out, mode="w", index=True, header=True)
+            self.logger.info(f"Saved out issues data to {write_out}.")
+        else:
+            raise RuntimeError(
+                f"Error in save_formatted_issues(): Failed saving formatted issues data out to {write_out}."
+            )
 
     def run_all_issues(self):  # -> pd.DataFrame:
         self.logger.info(f"Checking whether repo {self.repo_name} has issues enabled.")
@@ -204,15 +199,10 @@ class RunIssues:
                 f"Running run_all_issues() to get all issues data for repo {self.repo_name}."
             )
 
+            # get json issues data from GH API
             all_issues = self.get_issues()
 
-            # TODO:
-            # process issues data
-
-            # ?? column handling
-
-            # all_issues  # JSON TO DATAFRAME
-
+            # process json data to pd.DataFrame
             processed_issues = self.format_issues_object(all_issues)
             self.logger.info(
                 f"There are {len(processed_issues)} issues for repo {self.repo_name}."
@@ -220,22 +210,27 @@ class RunIssues:
             self.logger.debug(
                 f"Object processed_issues is type {type(processed_issues)} issues for repo {self.repo_name}."
             )
+
+            if processed_issues is None or processed_issues.empty:
+                raise pd.errors.EmptyDataError(
+                    "Frame is None or pd.DataFrame is empty; perhaps no issues?"
+                )
+
+            assert isinstance(
+                processed_issues, pd.DataFrame
+            ), "WARNING: processed_issues is NOT in dataframe format after running format_issues_object(); check types for errors"
+
+            # Write out to CSV
+            self.save_formatted_issues(
+                issues_df=processed_issues, write_out_location=self.write_read_location
+            )
+            self.logger.info("Wrote out processed issues data to csv.")
+
+            # final happy case return:
+            self.logger.debug(
+                f"Info details of FINAL `processed_issues` object is {processed_issues.info()}"
+            )
             return processed_issues
-
-            # if processed_issues is None or processed_issues.empty:
-            #     raise pd.errors.EmptyDataError(
-            #         "Frame is None or pd.DataFrame is empty; perhaps no issues?"
-            #     )
-
-            # log retyping of json to df
-
-            #
-
-            # Write out to CSVs
-            # log writeout
-
-            # return processed issues data (pd.df format)
-            # return processed_issues
 
         else:
             # EXIT TO NEXT OR SOMETHING? NoIssuesError has been invoked...
