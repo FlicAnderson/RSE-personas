@@ -6,8 +6,14 @@ from logging import Logger
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import RepoNotFoundError
 
+from githubanalysis.processing.get_all_pages_issues import NoIssuesError
 from githubanalysis.processing.issues_workflow import RunIssues
-from githubanalysis.processing.run_commits_workflow import read_repos_from_file
+
+
+def read_repos_from_file(filename, logger: Logger) -> dict[str, pd.DataFrame | None]:
+    with open(filename, "r") as f:
+        repos = [txtline.strip() for txtline in f.readlines()]
+        return multi_repo_method(repo_names=repos, logger=logger)
 
 
 def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
@@ -29,6 +35,11 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
         )
         return None
+    except NoIssuesError as e:
+        logger.error(
+            f"Encountered issue-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT have issues enabled, or has NO ISSUES: {e}"
+        )
+        return None
     except Exception as e:
         logger.error(
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}"
@@ -47,10 +58,10 @@ def multi_repo_method(
     repo_names = list(set(repo_names))
     collation_dict = {}
     for repo in repo_names:
-        logger.info(f"Trying to reading repo {repo} data from GH API.")
+        logger.info(f"Trying to reading repo {repo} issue data from GH API.")
         print(f"Getting repo data for {repo}.")
         collation_dict[repo] = single_repo_method(repo_name=repo, logger=logger)
-        logger.info(f"Completed repo data get for {repo}.")
+        logger.info(f"Completed repo issue data get for {repo}.")
     return collation_dict
 
 
