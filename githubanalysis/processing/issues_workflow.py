@@ -101,7 +101,7 @@ class RunIssues:
             all_issues = issuesgetter.get_all_pages_issues(repo_name=self.repo_name)
             return all_issues
 
-    def format_issues_object(self, issues_object: list[dict]) -> pd.DataFrame:
+    def format_issues_object(self, issues_object: list) -> pd.DataFrame:
         repo_name = self.repo_name
         columns = [
             "repo_name",
