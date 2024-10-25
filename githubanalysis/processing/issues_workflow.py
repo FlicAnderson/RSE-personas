@@ -161,7 +161,7 @@ class RunIssues:
                 else None
             )
             issue_list.append(
-                issue["closed_by"] if issue["closed_by"] is not None else None
+                issue.get("closed_by") if issue.get("closed_by") is not None else None
             )
 
             frame.append(issue_list)
