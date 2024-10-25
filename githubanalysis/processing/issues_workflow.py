@@ -156,7 +156,9 @@ class RunIssues:
             )
             issue_list.append(state_reason if state_reason is not None else None)
             issue_list.append(
-                issue["pull_request"] if issue["pull_request"] is not None else None
+                issue.get("pull_request")
+                if issue.get("pull_request") is not None
+                else None
             )
             issue_list.append(
                 issue["closed_by"] if issue["closed_by"] is not None else None
