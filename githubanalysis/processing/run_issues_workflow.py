@@ -6,7 +6,7 @@ from logging import Logger
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import RepoNotFoundError
 
-from githubanalysis.processing.run_issues_workflow import RunIssues
+from githubanalysis.processing.issues_workflow import RunIssues
 from githubanalysis.processing.run_commits_workflow import read_repos_from_file
 
 
