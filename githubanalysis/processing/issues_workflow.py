@@ -114,16 +114,25 @@ class RunIssues:
             "closed_at",
             "author_association",
             "comments",
-            # "issue_author",
-            # "issue_assignees",
+            "issue_labels",
+            "issue_milestone",
+            "issue_body",
+            "issue_locked",
+            "issue_perf_by_gh_app",
             "issue_author_username",
             "assignees_list_usernames",
+            "issues_state_reason",
+            "pull_request",
+            "closed_by",
         ]  # list of column names of data to keep from json
         frame = []  # for df construction later
 
         for issue in issues_object:
             user = issue["user"]
             assignees = issue["assignees"]
+            state_reason = issue["state_reason"]
+            pull_request = issue["pull_request"]
+            closed_by = issue["closed_by"]
 
             issue_list = [
                 repo_name,
@@ -136,14 +145,20 @@ class RunIssues:
                 issue["closed_at"],
                 issue["author_association"],
                 issue["comments"],
-                # issue["user"],
-                # issue["assignees"],
+                issue["labels"],
+                issue["milestone"],
+                issue["body"],
+                issue["locked"],
+                issue["performed_via_github_app"],
             ]
 
             issue_list.append(user.get("login") if user is not None else None)
             issue_list.append(
                 [x.get("login") for x in assignees] if assignees is not None else None
             )
+            issue_list.append(state_reason if state_reason is not None else None)
+            issue_list.append(pull_request if pull_request is not None else None)
+            issue_list.append(closed_by if closed_by is not None else None)
 
             frame.append(issue_list)
 
