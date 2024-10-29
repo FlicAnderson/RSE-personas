@@ -445,7 +445,7 @@ class RepoStatsSummariser:
             self.logger.debug(f"Repo age in days is {repo_stats.get('repo_age_days')}.")
 
             ###
-            commits_url = f"{base_repo_url}{repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits.
+            commits_url = f"{base_repo_url}/{repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits.
             self.logger.info(f"getting json via request url {commits_url}.")
             commits_api_response = run_with_retries(
                 fn=lambda: raise_if_response_error(
