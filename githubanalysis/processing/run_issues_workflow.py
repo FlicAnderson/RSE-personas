@@ -1,5 +1,4 @@
-from githubanalysis.processing.commits_workflow import RunCommits
-
+"""Run issues workflow to obtain issue ticket and pull request data from GH API."""
 
 import argparse
 import pandas as pd
@@ -7,22 +6,38 @@ from logging import Logger
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import RepoNotFoundError
 
+from githubanalysis.processing.get_all_pages_issues import NoIssuesError
+from githubanalysis.processing.issues_workflow import RunIssues
+
+
+def read_repos_from_file(filename, logger: Logger) -> dict[str, pd.DataFrame | None]:
+    with open(filename, "r") as f:
+        repos = [txtline.strip() for txtline in f.readlines()]
+        return multi_repo_method(repo_names=repos, logger=logger)
+
 
 def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
     """
     This is used by multi_repo_method()
     """
-    runcommits = RunCommits(
+
+    runissues = RunIssues(
         repo_name=repo_name,
-        in_notebook=False,  # TODO
-        config_path="githubanalysis/config.cfg",  # TODO make this editable and useful
-        write_read_location="data/",  # TODO
+        in_notebook=False,
+        config_path="githubanalysis/config.cfg",
+        write_read_location="data/",
     )
+
     try:
-        return runcommits.do_it_all()
+        return runissues.run_all_issues()
     except RepoNotFoundError as e:
         logger.error(
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
+        )
+        return None
+    except NoIssuesError as e:
+        logger.error(
+            f"Encountered issue-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT have issues enabled, or has NO ISSUES: {e}"
         )
         return None
     except Exception as e:
@@ -30,12 +45,6 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}"
         )
         return None
-
-
-def read_repos_from_file(filename, logger: Logger) -> dict[str, pd.DataFrame | None]:
-    with open(filename, "r") as f:
-        repos = [txtline.strip() for txtline in f.readlines()]
-        return multi_repo_method(repo_names=repos, logger=logger)
 
 
 def multi_repo_method(
@@ -49,10 +58,10 @@ def multi_repo_method(
     repo_names = list(set(repo_names))
     collation_dict = {}
     for repo in repo_names:
-        logger.info(f"Trying to reading repo {repo} data from GH API.")
+        logger.info(f"Trying to reading repo {repo} issue data from GH API.")
         print(f"Getting repo data for {repo}.")
         collation_dict[repo] = single_repo_method(repo_name=repo, logger=logger)
-        logger.info(f"Completed repo data get for {repo}.")
+        logger.info(f"Completed repo issue data get for {repo}.")
     return collation_dict
 
 
@@ -79,6 +88,7 @@ parser.add_argument(
     help="NameS of the multiple repos to workflow",
 )
 
+
 if __name__ == "__main__":
     args = parser.parse_args()
     filepath: str | None = args.filepath_for_repos_list
@@ -87,8 +97,8 @@ if __name__ == "__main__":
 
     logger = loggit.get_default_logger(
         console=True,
-        set_level_to="INFO",
-        log_name="logs/run_commits_workflow_logs.txt",
+        set_level_to="DEBUG",
+        log_name="logs/run_issues_workflow_logs.txt",
         in_notebook=False,
     )
 
@@ -103,13 +113,13 @@ if __name__ == "__main__":
         exit(1)
 
     if repo_name is not None:
-        logger.info(f"Running single repo method on {repo_name}")
+        logger.info(f"Running single repo issues method on {repo_name}")
         single_repo_method(repo_name=repo_name, logger=logger)
 
     elif several_repo_names is not None:
-        logger.info(f"Running multi repo method on list: {several_repo_names}")
+        logger.info(f"Running multi repo issues method on list: {several_repo_names}")
         multi_repo_method(repo_names=several_repo_names, logger=logger)
 
     elif filepath is not None:
-        logger.info(f"Running multi repo method on repos in file: {filepath}")
+        logger.info(f"Running multi repo issues method on repos in file: {filepath}")
         read_repos_from_file(filename=filepath, logger=logger)

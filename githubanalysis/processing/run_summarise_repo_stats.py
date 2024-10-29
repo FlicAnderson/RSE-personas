@@ -1,4 +1,6 @@
-from githubanalysis.processing.commits_workflow import RunCommits
+"""Run summarise_repo_stats() to generate rough info on given repo to allow targeting of further datagrabs."""
+
+from githubanalysis.processing.summarise_repo_stats import RepoStatsSummariser
 
 
 import argparse
@@ -8,18 +10,18 @@ import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import RepoNotFoundError
 
 
-def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
+def single_repo_method(repo_name: str, logger: Logger) -> dict | None:
     """
     This is used by multi_repo_method()
     """
-    runcommits = RunCommits(
+    summarise_stats = RepoStatsSummariser(
         repo_name=repo_name,
         in_notebook=False,  # TODO
         config_path="githubanalysis/config.cfg",  # TODO make this editable and useful
         write_read_location="data/",  # TODO
     )
     try:
-        return runcommits.do_it_all()
+        return summarise_stats.summarise_repo_stats(repo_name=repo_name)
     except RepoNotFoundError as e:
         logger.error(
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
@@ -44,7 +46,7 @@ def multi_repo_method(
     """
     Loop through several repos from a file input, running
     single_repo_method() on each.
-    Return dictionary of repodfs with repo_name as key.
+    Return dictionary of stats dicts with repo_name as key.
     """
     repo_names = list(set(repo_names))
     collation_dict = {}
@@ -88,7 +90,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="INFO",
-        log_name="logs/run_commits_workflow_logs.txt",
+        log_name="logs/run_summarise_repos_stats_workflow_logs.txt",
         in_notebook=False,
     )
 
@@ -103,13 +105,19 @@ if __name__ == "__main__":
         exit(1)
 
     if repo_name is not None:
-        logger.info(f"Running single repo method on {repo_name}")
+        logger.info(
+            f"Running single repo method to summarise repo stats on {repo_name}"
+        )
         single_repo_method(repo_name=repo_name, logger=logger)
 
     elif several_repo_names is not None:
-        logger.info(f"Running multi repo method on list: {several_repo_names}")
+        logger.info(
+            f"Running multi repo method  to summarise repo stats on list: {several_repo_names}"
+        )
         multi_repo_method(repo_names=several_repo_names, logger=logger)
 
     elif filepath is not None:
-        logger.info(f"Running multi repo method on repos in file: {filepath}")
+        logger.info(
+            f"Running multi repo method to summarise repo stats on repos in file: {filepath}"
+        )
         read_repos_from_file(filename=filepath, logger=logger)
