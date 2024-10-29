@@ -1,6 +1,5 @@
 """Summarise key stats for GitHub repository."""
 
-import sys
 import pandas as pd
 import datetime
 from datetime import timezone
