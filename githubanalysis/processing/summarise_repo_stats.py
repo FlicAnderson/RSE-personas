@@ -62,7 +62,7 @@ class RepoStatsSummariser:
         self.gh_token = ghauth.setup_github_auth(config_path=config_path)
         self.headers = {"Authorization": "token " + self.gh_token}
 
-    def summarise_repo_stats(self, repo_name: str):
+    def summarise_repo_stats(self, repo_name: str) -> dict | None:
         """
         Connect to given GitHub repository and get details
         when given 'username' and 'repo_name' repository name.
@@ -432,22 +432,39 @@ class RepoStatsSummariser:
                 self.logger.error(
                     f"Error in checking closed issue numbers at {repo_name} and config path {self.config_path}: {e_closedtix}."
                 )
-                # get age of repo
-                repo_age_days = dayssince.calc_days_since_repo_creation(
-                    datetime.datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
-                    repo_name,
-                    since_date=None,
-                    return_in="whole_days",
-                    config_path=self.config_path,
-                )
-                repo_stats.update({"repo_age_days": repo_age_days})
-                self.logger.debug(
-                    f"Repo age in days is {repo_stats.get('repo_age_days')}."
-                )
 
-                self.logger.error(
-                    f"Error in checking age of repo at {repo_name} with config path {self.config_path}."
-                )
+            # get age of repo
+            repo_age_days = dayssince.calc_days_since_repo_creation(
+                datetime.datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
+                repo_name,
+                since_date=None,
+                return_in="whole_days",
+                config_path=self.config_path,
+            )
+            repo_stats.update({"repo_age_days": repo_age_days})
+            self.logger.debug(f"Repo age in days is {repo_stats.get('repo_age_days')}.")
+
+            ###
+            commits_url = f"{base_repo_url}{repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits.
+            self.logger.info(f"getting json via request url {commits_url}.")
+            commits_api_response = run_with_retries(
+                fn=lambda: raise_if_response_error(
+                    api_response=self.s.get(url=commits_url, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
+                logger=self.logger,
+            )
+            assert commits_api_response.ok, f"API response is: {commits_api_response}"
+
+            commit_links = api_response.links
+            if "last" in commit_links:
+                commit_links_last = commit_links["last"]["url"].split("&page=")[1]
+                n_commits = int(commit_links_last)
+            else:
+                n_commits = 1
+
+            repo_stats.update({"n_commits": n_commits})
 
         else:
             repo_stats.update({"issues_enabled": None})
@@ -462,6 +479,7 @@ class RepoStatsSummariser:
             repo_stats.update({"repo_license": None})
             repo_stats.update({"repo_visibility": None})
             repo_stats.update({"repo_language": None})
+            repo_stats.update({"n_commits": None})
             self.logger.error(
                 f"404 error in connecting to {repo_name}; filling all stats with None"
             )
