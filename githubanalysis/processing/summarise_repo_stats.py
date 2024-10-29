@@ -177,10 +177,6 @@ class RepoStatsSummariser:
             repo_stats.update({"repo_license": license_type})
             self.logger.debug(f"Repo license type is {repo_stats.get('repo_license')}.")
 
-            self.logger.error(
-                f"Error in checking license of repo at {repo_name} with config path {self.config_path}."
-            )
-
             # is repo accessible?
             repo_vis = api_response.json().get("visibility")
             if repo_vis == "public":
@@ -192,10 +188,6 @@ class RepoStatsSummariser:
                 f"Repo visibility (~publicness) is {repo_stats.get('repo_visibility')}."
             )
 
-            self.logger.error(
-                f"Error in checking visibility of repo at {repo_name} with config path {self.config_path} - api_response.json().get('visibility') returns {api_response.json().get('visibility')}."
-            )
-
             # is the repo a fork of something else?
             api_response.json().get("fork")
             if api_response.json().get("fork"):
@@ -203,10 +195,6 @@ class RepoStatsSummariser:
             else:
                 repo_stats.update({"repo_is_fork": api_response.json().get("fork")})
             self.logger.debug(f"Repo is a fork: {repo_stats.get('repo_is_fork')}")
-
-            self.logger.debug(
-                f"Error in checking whether repo is a fork at repo name {repo_name} and config path {self.config_path}."
-            )
 
             # count number of devs (contributors; including anonymous contribs* )
             contribs_url = f"https://api.github.com/repos/{repo_name}/contributors?per_page=1&anon=1"
@@ -251,10 +239,6 @@ class RepoStatsSummariser:
                     f"Repo number of contributors is {repo_stats.get('devs')}"
                 )
 
-                self.logger.error(
-                    f"Error in checking number of contributors with repo name {repo_name} and config path {self.config_path}: API response: {contributors_api_response}"
-                )
-
             # does repo contain code
             # repo languages include: python, (C, C++), (shell?, R?, FORTRAN?)
             languages_url = f"https://api.github.com/repos/{repo_name}/languages"
@@ -284,10 +268,6 @@ class RepoStatsSummariser:
                 repo_stats.update({"repo_language": "other"})
             self.logger.debug(f"Repo language is {repo_stats.get('repo_language')}.")
 
-            self.logger.error(
-                f"Error in checking language of repo at {repo_name} with config path {self.config_path}."
-            )
-
             # count total commits in last year
             # Do something sensible re: no commits in last year returned TODO
             base_commit_stats_url = (
@@ -314,15 +294,9 @@ class RepoStatsSummariser:
             total_commits_df = pd.DataFrame(stats_api_response.json())
             total_commits_1_year = total_commits_df["total"].sum()
 
-            self.logger.error(
-                f"Failed trying to calculate the sum of commits in 1 year for repo {repo_name}."
-            )
             repo_stats.update({"total_commits_last_year": total_commits_1_year})
             self.logger.debug(
                 f"Repo total commits last year is {repo_stats.get('total_commits_last_year')}."
-            )
-            self.logger.error(
-                f"Error in checking commits in last year at {repo_name} and config path {self.config_path}. API response: {stats_api_response}"
             )
 
             # date of most recently updated PR:
@@ -381,9 +355,6 @@ class RepoStatsSummariser:
             self.logger.debug(
                 f"Repo last PR update is {repo_stats.get('last_PR_update')}."
             )
-            self.logger.error(
-                f"Error in checking commits in last year at {repo_name} and config path {self.config_path}"
-            )
 
             # count open issue tickets
             if repo_stats.get("issues_enabled"):
@@ -416,10 +387,6 @@ class RepoStatsSummariser:
 
             self.logger.debug(
                 f"Repo number of open issue tickets is {repo_stats.get('open_tickets')}."
-            )
-
-            self.logger.error(
-                f"Error in checking open issue numbers at {repo_name} and config path {self.config_path}."
             )
 
             # count closed issue tickets
