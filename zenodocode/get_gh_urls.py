@@ -1,6 +1,5 @@
 """Get GitHub urls from metadata of existing zenodo software record IDs read in from csv file."""
 
-import sys
 import os
 import requests
 from requests.adapters import HTTPAdapter, Retry

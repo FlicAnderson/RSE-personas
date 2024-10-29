@@ -1,6 +1,5 @@
 from zenodocode.get_zenodo_ids import get_zenodo_ids as fetch_zs
 from zenodocode.get_gh_urls import GhURLsGetter
-import pandas as pd
 from enum import Enum, auto
 
 
@@ -11,6 +10,10 @@ def get_zenodo_ids(n_records_to_fetch: int, config) -> list[int]:
 def get_gh_repo_urls(zenodo_IDs: list[int]):
     getter = GhURLsGetter()
     return getter.get_gh_urls(zenodo_ids=zenodo_IDs)
+
+
+def summarise_gh_repos(gh_repo_urls):
+    pass
 
 
 """
