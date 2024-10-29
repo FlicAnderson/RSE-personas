@@ -444,8 +444,7 @@ class RepoStatsSummariser:
             repo_stats.update({"repo_age_days": repo_age_days})
             self.logger.debug(f"Repo age in days is {repo_stats.get('repo_age_days')}.")
 
-            ###
-            commits_url = f"{base_repo_url}/{repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits.
+            commits_url = f"{base_repo_url}/{repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits: ON MAIN BRANCH.
             self.logger.info(f"getting json via request url {commits_url}.")
             commits_api_response = run_with_retries(
                 fn=lambda: raise_if_response_error(
@@ -467,7 +466,7 @@ class RepoStatsSummariser:
                     f"else path; api_response links = {commits_api_response.links}"
                 )
 
-            repo_stats.update({"n_commits": n_commits})
+            repo_stats.update({"n_commits_main_branch": n_commits})
 
         else:
             repo_stats.update({"issues_enabled": None})
@@ -482,7 +481,7 @@ class RepoStatsSummariser:
             repo_stats.update({"repo_license": None})
             repo_stats.update({"repo_visibility": None})
             repo_stats.update({"repo_language": None})
-            repo_stats.update({"n_commits": None})
+            repo_stats.update({"n_commits_main_branch": None})
             self.logger.error(
                 f"404 error in connecting to {repo_name}; filling all stats with None"
             )
