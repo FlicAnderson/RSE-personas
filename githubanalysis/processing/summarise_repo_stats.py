@@ -455,14 +455,17 @@ class RepoStatsSummariser:
                 ),
                 logger=self.logger,
             )
-            assert commits_api_response.ok, f"API response is: {commits_api_response}"
+            assert commits_api_response.ok, f"API response is: {commits_api_response}; commit links is: {commits_api_response.links}; commit links last is: {commits_api_response.links['last']['url'].split('&page=')[1]}"
 
-            commit_links = api_response.links
+            commit_links = commits_api_response.links
             if "last" in commit_links:
                 commit_links_last = commit_links["last"]["url"].split("&page=")[1]
                 n_commits = int(commit_links_last)
             else:
                 n_commits = 1
+                self.logger.info(
+                    f"else path; api_response links = {commits_api_response.links}"
+                )
 
             repo_stats.update({"n_commits": n_commits})
 
