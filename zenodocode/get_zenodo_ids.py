@@ -44,7 +44,6 @@ class ZenodoIDGetter:
         self.config_path = config_path
         self.in_notebook = in_notebook
         # write-out file setup
-        self.write_out_location = "data/"
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # run this at start of script not in loop to avoid midnight/long-run commits
@@ -55,6 +54,7 @@ class ZenodoIDGetter:
         total_records=100,
         all_versions=False,
         filename="zn_ids",
+        write_out_location: str = "data/",
     ) -> list[int]:
         """
         Get zenodo record ids for software, saving these out into a csv file.
