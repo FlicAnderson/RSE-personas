@@ -14,12 +14,17 @@ logger = loggit.get_default_logger(
 )
 
 
-def get_Z_IDs(n_total_records: int = 7500) -> list[int]:
+def get_Z_IDs(
+    n_total_records: int = 7500,
+    config_path: str = "zenodocode/zenodoconfig.cfg",
+    logger: Logger = logger,
+    in_notebook: bool = False,
+) -> list[int]:
     """
     Wrapper for zenodo ID gatherer function
     """
     zenodogetter = ZenodoIDGetter(
-        in_notebook=False, config_path="zenodocode/zenodoconfig.cfg", logger=logger
+        in_notebook=in_notebook, config_path=config_path, logger=logger
     )
 
     z_IDs_list = zenodogetter.get_zenodo_ids(
@@ -29,12 +34,17 @@ def get_Z_IDs(n_total_records: int = 7500) -> list[int]:
     return z_IDs_list
 
 
-def get_gh_zenodo_info(zenodo_ids: list[int]) -> pd.DataFrame:
+def get_gh_zenodo_info(
+    zenodo_ids: list[int],
+    config_path: str = "zenodocode/zenodoconfig.cfg",
+    logger: Logger = logger,
+    in_notebook: bool = False,
+) -> pd.DataFrame:
     """
     Wrapper for function which gathers GH urls from Zenodo IDs if present.
     """
     ghurlgetter = GhURLsGetter(
-        config_path="zenodocode/zenodoconfig.cfg", logger=logger, in_notebook=False
+        in_notebook=in_notebook, config_path=config_path, logger=logger
     )
 
     gh_info = ghurlgetter.get_gh_urls(zenodo_ids=zenodo_ids)
@@ -86,18 +96,19 @@ def repo_names_write_out(
 def workflow_preparation(
     n_total_records: int = 7500,
     config_path: str = "zenodocode/zenodoconfig.cfg",
+    write_out_location: str = "data/",
     logger: Logger = logger,
     in_notebook=False,
 ):
-    z_IDs_list = get_Z_IDs(n_total_records=7500)
+    z_IDs_list = get_Z_IDs(n_total_records, config_path, logger, in_notebook)
 
-    gh_info = get_gh_zenodo_info(zenodo_ids=z_IDs_list)
+    gh_info = get_gh_zenodo_info(z_IDs_list, config_path, logger, in_notebook)
 
     repo_names_list = repo_names_extraction(gh_info=gh_info)
 
     filename = repo_names_write_out(
         namelist=repo_names_list,
-        write_out_location="data/",
+        write_out_location=write_out_location,
     )
 
     logger.info(
