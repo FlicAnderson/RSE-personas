@@ -96,11 +96,8 @@ class GhURLsGetter:
 
         # write-out file setup
         # get date for generating extra filename info
-        current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run issues
         write_out = f"{write_out_location}{out_filename}"
-        write_out_extra_info = f"{write_out}_{current_date_info}.csv"
+        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
 
         batch_size = 10
         total_records = len(zenodo_ids)
