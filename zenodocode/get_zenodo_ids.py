@@ -5,6 +5,7 @@ from requests.adapters import HTTPAdapter, Retry
 import logging
 import csv
 import datetime
+import math
 
 import utilities.get_default_logger as loggit
 import zenodocode.setup_zenodo_auth as znauth
@@ -87,8 +88,6 @@ class ZenodoIDGetter:
         records_api_url = "https://zenodo.org/api/records"
         search_query = "type:software"
 
-        page_iterator = 1
-
         self.logger.info(f"Obtaining {total_records} zenodo record IDs")
 
         # pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
@@ -98,51 +97,50 @@ class ZenodoIDGetter:
         else:
             get_all_versions = "false"
 
+        pg_range = range(1, (math.ceil(total_records / 100) + 1))
+
         self.logger.info(
-            f"Trying Zenodo API call with url: {records_api_url} and search query parameters: q={search_query}, all_versions={get_all_versions}, size={per_pg} and page={page_iterator}."
+            f"Querying {math.ceil(total_records / 100)} pages of zenodo record IDs"
         )
-        # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
-        api_response = run_with_retries(
-            lambda: raise_if_response_error(
-                api_response=self.s.get(
-                    url=records_api_url,
-                    params={
-                        "access_token": self.zn_token,
-                        "q": search_query,
-                        "all_versions": get_all_versions,
-                        "size": per_pg,
-                        "page": page_iterator,
-                    },
+
+        identifiers = []  # prep output collection list
+
+        for querypage in pg_range:
+            page_iterator = querypage
+
+            self.logger.info(
+                f"Trying Zenodo API call with url: {records_api_url} and search query parameters: q={search_query}, all_versions={get_all_versions}, size={per_pg} and page={page_iterator}."
+            )
+            # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
+            api_response = run_with_retries(
+                lambda: raise_if_response_error(
+                    api_response=self.s.get(
+                        url=records_api_url,
+                        params={
+                            "access_token": self.zn_token,
+                            "q": search_query,
+                            "all_versions": get_all_versions,
+                            "size": per_pg,
+                            "page": page_iterator,  # increases per querypage
+                        },
+                    ),
+                    logger=self.logger,
                 ),
-                logger=self.logger,
-            ),
-            self.logger,
-        )
+                self.logger,
+            )
 
-        assert api_response.ok, f"API response is: {api_response}"
-
-        headers_out = api_response.headers
-        print(
-            f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}"
-        )
-
-        if "hits" in api_response.json():
-            still_iterating = True
-        else:
-            still_iterating = False
-
-        identifiers = []
-
-        while still_iterating and (len(identifiers) < total_records):
-            api_response.raise_for_status()
+            assert api_response.ok, f"API response is: {api_response}"
 
             if "hits" in api_response.json():
                 for hit in api_response.json()["hits"]["hits"]:
                     identifiers.append(hit["id"])
+            else:
+                raise Exception("Borked zenodo ID getting")
 
-            page_iterator += 1
-
-        self.logger.info(f"Querying {len(identifiers)} zenodo record IDs")
+            headers_out = api_response.headers
+            print(
+                f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}"
+            )
 
         print(identifiers)
 
