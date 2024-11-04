@@ -70,11 +70,6 @@ class GhURLsGetter:
         :type: pd.DataFrame
         """
 
-        # write-out file setup
-        # get date for generating extra filename info
-        write_out = f"{self.write_read_location}{out_filename}"
-        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
-
         # batch_size = 10
         total_records = len(zenodo_ids)
         # num_batches = math.ceil(total_records / batch_size)  # 3
@@ -169,17 +164,23 @@ class GhURLsGetter:
         # create a df from list of dict records:
         gh_urls_df = pd.DataFrame(info_dict)
 
-        self.logger.debug(f"Writing dataframe out to csv at: {write_out_extra_info}")
+        self.logger.debug(
+            f"Writing dataframe out to csv at: {self.write_read_location}{out_filename}_{self.current_date_info}.csv"
+        )
+        write_out = (
+            f"{self.write_read_location}{out_filename}_{self.current_date_info}.csv"
+        )
         # write out df content to csv via WRITE (not append) (use added date filename)
         gh_urls_df.to_csv(
-            write_out_extra_info,
+            write_out,
             mode="w",
             index=False,
             header=True,
+            na_rep="",
         )
 
         self.logger.info(
-            f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}."
+            f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out}."
         )
 
         return gh_urls_df
