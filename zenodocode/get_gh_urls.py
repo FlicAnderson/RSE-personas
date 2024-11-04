@@ -166,6 +166,9 @@ class GhURLsGetter:
                         )
                         record_count += 1
 
+            self.logger.debug(f"Info_dict of dimensions: {len(info_dict)}")
+            return info_dict
+
             # create a df from records_list:
             gh_urls_df = pd.DataFrame(info_dict)
             return gh_urls_df
