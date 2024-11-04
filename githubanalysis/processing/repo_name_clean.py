@@ -46,6 +46,8 @@ def repo_name_clean(repo_url):
             if "tree" in repo_url:
                 repo_url = re.split("(^[\.\w-]+\/[\.\w-]+)", repo_url)[1]
             repo_name = repo_url
+            if ".git" in repo_name:
+                repo_name = repo_name.replace(".git", "")
             return repo_name
 
         except ValueError:
