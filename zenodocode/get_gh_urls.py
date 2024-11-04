@@ -167,13 +167,11 @@ class GhURLsGetter:
                         record_count += 1
 
         self.logger.debug(f"Info_dict of dimensions: {len(info_dict)}")
-        return info_dict
 
-        # create a df from records_list:
+        # create a df from list of dict records:
         gh_urls_df = pd.DataFrame(info_dict)
-        return gh_urls_df
 
-        # write out 'completed' chunk df content to csv via APPEND (use added date filename)
+        # write out df content to csv via WRITE (not append) (use added date filename)
         gh_urls_df.to_csv(
             write_out_extra_info,
             mode="w",
@@ -181,9 +179,8 @@ class GhURLsGetter:
             header=not os.path.exists(write_out_extra_info),
         )
 
-        # print(f"There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}.")
         self.logger.info(
             f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}."
         )
-        # return complete set of github url records as a dataframe
-        # return gh_urls_df
+
+        return gh_urls_df
