@@ -1,6 +1,5 @@
 """Get GitHub urls from metadata of existing zenodo software record IDs read in from csv file."""
 
-import os
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
@@ -170,7 +169,7 @@ class GhURLsGetter:
         # create a df from list of dict records:
         gh_urls_df = pd.DataFrame(info_dict)
 
-        self.logger.debug(f"Writing dataframe out to csv at: {write_out_extra_info}}")
+        self.logger.debug(f"Writing dataframe out to csv at: {write_out_extra_info}")
         # write out df content to csv via WRITE (not append) (use added date filename)
         gh_urls_df.to_csv(
             write_out_extra_info,
