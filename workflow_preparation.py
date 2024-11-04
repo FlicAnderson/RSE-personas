@@ -49,6 +49,7 @@ class RunPrep:
             in_notebook=self.in_notebook,
             config_path=self.config_path,
             logger=self.logger,
+            write_read_location=self.write_read_location,
         )
 
         z_IDs_list = zenodogetter.get_zenodo_ids(

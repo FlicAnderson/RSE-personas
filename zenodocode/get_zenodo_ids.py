@@ -21,6 +21,7 @@ class ZenodoIDGetter:
         in_notebook: bool,
         config_path: str = "zenodocode/zenodoconfig.cfg",
         logger: None | logging.Logger = None,
+        write_read_location: str = "data/",
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -45,6 +46,7 @@ class ZenodoIDGetter:
         self.config_path = config_path
         self.in_notebook = in_notebook
         # write-out file setup
+        self.write_read_location = write_read_location
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # run this at start of script not in loop to avoid midnight/long-run commits
@@ -55,7 +57,6 @@ class ZenodoIDGetter:
         total_records=100,
         all_versions=False,
         filename="zn_ids",
-        write_out_location: str = "data/",
     ) -> list[int]:
         """
         Get zenodo record ids for software, saving these out into a csv file.
@@ -81,7 +82,7 @@ class ZenodoIDGetter:
         # writeout setup:
 
         # build path + filename
-        write_out = f"{write_out_location}{filename}_{self.current_date_info}.csv"
+        write_out = f"{self.write_read_location}{filename}_{self.current_date_info}.csv"
 
         # zenodo API call setup:
 
@@ -165,7 +166,7 @@ class ZenodoIDGetter:
         self.logger.info(f"Retrieved {record_count} zenodo record IDs")
 
         self.logger.info(
-            f"Zenodo IDs file saved out as: {write_out} at {write_out_location}"
+            f"Zenodo IDs file saved out as: {write_out} at {self.write_read_location}"
         )
 
         return identifiers
