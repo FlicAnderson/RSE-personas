@@ -118,6 +118,7 @@ class GhURLsGetter:
             self.logger.debug(
                 f"For record ID {record_id}, API response is {api_response}; with rate limit remaining: {api_response.headers['x-ratelimit-remaining']}"
             )
+            self.logger.debug(f"JSON is: {api_response.json()}")
 
             if "metadata" in api_response.json():
                 # API tag info via https://developers.zenodo.org/#representation at 12 Dec 2023.
