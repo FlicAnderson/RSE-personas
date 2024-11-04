@@ -155,7 +155,9 @@ class GhURLsGetter:
                             "GitHubURL": record_gh_repo_url,
                             "CreatedDate": record_created,
                         }
-                        # print(f"{record_id}; {record_title}; {record_created}; {record_doi}; {record_gh_repo_url}")
+                        self.logger.debug(
+                            f"{record_id}; {record_title}; {record_created}; {record_doi}; {record_gh_repo_url}"
+                        )
                         # add this completed 'row' to the chunk
                         records_list.extend(row_dict)
                         self.logger.debug(
