@@ -168,6 +168,7 @@ class GhURLsGetter:
 
             # create a df from records_list:
             gh_urls_df = pd.DataFrame(records_list)
+            return gh_urls_df
 
             # write out 'completed' chunk df content to csv via APPEND (use added date filename)
             gh_urls_df.to_csv(
@@ -182,4 +183,4 @@ class GhURLsGetter:
             f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out_extra_info}."
         )
         # return complete set of github url records as a dataframe
-        return gh_urls_df
+        # return gh_urls_df
