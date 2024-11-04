@@ -5,10 +5,8 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
 import logging
-import math
 import datetime
 
-import utilities.chunker as chunker
 import utilities.get_default_logger as loggit
 import zenodocode.setup_zenodo_auth as znauth
 from zenodocode.check_zn_response import run_with_retries, raise_if_response_error
