@@ -1,7 +1,7 @@
 """Run zenodo ID to github repo getting workflow."""
 
 import pandas as pd
-from logging import Logger
+import logging
 import datetime
 
 from zenodocode.get_zenodo_ids import ZenodoIDGetter
@@ -9,108 +9,131 @@ from zenodocode.get_gh_urls import GhURLsGetter
 import githubanalysis.processing.repo_name_clean as repo_name_cleaner
 import utilities.get_default_logger as loggit
 
-logger = loggit.get_default_logger(
-    console=False, set_level_to="INFO", log_name="logs/get_zenodo_github_info_logs.txt"
-)
 
+class RunPrep:
+    logger: logging.Logger
+    config_path: str = "zenodocode/zenodoconfig.cfg"
+    in_notebook: bool
+    current_date_info: str
+    write_read_location: str
 
-def get_Z_IDs(
-    n_total_records: int = 7500,
-    config_path: str = "zenodocode/zenodoconfig.cfg",
-    logger: Logger = logger,
-    in_notebook: bool = False,
-) -> list[int]:
-    """
-    Wrapper for zenodo ID gatherer function
-    """
-    zenodogetter = ZenodoIDGetter(
-        in_notebook=in_notebook, config_path=config_path, logger=logger
-    )
+    def __init__(
+        self,
+        in_notebook: bool,
+        config_path: str,
+        write_read_location: str,
+        logger: None | logging.Logger = None,
+    ) -> None:
+        if logger is None:
+            self.logger = loggit.get_default_logger(
+                console=False,
+                set_level_to="INFO",
+                log_name="logs/get_zenodo_github_info_logs.txt",
+                in_notebook=in_notebook,
+            )
+        else:
+            self.logger = logger
 
-    z_IDs_list = zenodogetter.get_zenodo_ids(
-        per_pg=100, total_records=n_total_records, all_versions=False
-    )
-    logger.info(f"Retrieved {len(z_IDs_list)} records to check for github info from.")
-    return z_IDs_list
+        self.config_path = config_path
+        self.in_notebook = in_notebook
+        self.current_date_info = datetime.datetime.now().strftime(
+            "%Y-%m-%d"
+        )  # at start of script to avoid midnight/long-run issues
+        self.write_read_location = write_read_location
 
-
-def get_gh_zenodo_info(
-    zenodo_ids: list[int],
-    config_path: str = "zenodocode/zenodoconfig.cfg",
-    logger: Logger = logger,
-    in_notebook: bool = False,
-) -> pd.DataFrame:
-    """
-    Wrapper for function which gathers GH urls from Zenodo IDs if present.
-    """
-    ghurlgetter = GhURLsGetter(
-        in_notebook=in_notebook, config_path=config_path, logger=logger
-    )
-
-    gh_info = ghurlgetter.get_gh_urls(zenodo_ids=zenodo_ids)
-    return gh_info
-
-
-def repo_names_extraction(gh_info: pd.DataFrame) -> list[str]:
-    """
-    Means of pulling clean repo_name info out of the dataframe returned
-    by get_gh_zenodo_info() or internal function get_gh_urls().
-    """
-    namelist = []
-    assert type(gh_info) is pd.DataFrame, "GH dataframe cannto be of type None"
-    try:
-        if len(gh_info.index) >= 0:
-            record_gh_repo_url = gh_info["GitHubURL"]
-            for repo_url in record_gh_repo_url:
-                cleanurl = repo_name_cleaner.repo_name_clean(repo_url=repo_url)
-                namelist.append(cleanurl)
-            return namelist
-    except Exception as e_repo_names_extraction:
-        logger.error(
-            f"Extracting names from gh repo urls has failed somehow. Please investigate. Error: {e_repo_names_extraction} "
+    def get_Z_IDs(self, n_total_records: int = 7500) -> list[int]:
+        """
+        Wrapper for zenodo ID gatherer function
+        """
+        zenodogetter = ZenodoIDGetter(
+            in_notebook=self.in_notebook,
+            config_path=self.config_path,
+            logger=self.logger,
         )
 
+        z_IDs_list = zenodogetter.get_zenodo_ids(
+            per_pg=100,
+            total_records=n_total_records,
+            all_versions=False,  # don't want all versions as interested in commits from all branches, not a specific fixed version
+        )
+        self.logger.info(
+            f"Retrieved {len(z_IDs_list)} records to check for github info from."
+        )
+        return z_IDs_list
 
-def repo_names_write_out(
-    namelist: list[str],
-    write_out_location: str = "data/",
-    repo_name_filename="repo_names_list",
-):
-    """
-    Write the stripped repo_names to text file one per line.
-    """
-    current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
-    listlen = len(namelist)
-    filename = (
-        f"{write_out_location}{repo_name_filename}_{current_date_info}_x{listlen}.txt"
-    )
+    def get_gh_zenodo_info(
+        self,
+        zenodo_ids: list[int],
+    ) -> pd.DataFrame:
+        """
+        Wrapper for function which gathers GH urls from Zenodo IDs if present.
+        """
+        ghurlgetter = GhURLsGetter(
+            in_notebook=self.in_notebook,
+            config_path=self.config_path,
+            logger=self.logger,
+        )
 
-    with open(filename, "w") as file:
-        for repo in namelist:
-            file.write(repo + "\n")
+        gh_info = ghurlgetter.get_gh_urls(zenodo_ids=zenodo_ids)
+        return gh_info
 
-    logger.info(f"Wrote out {listlen} records to file {filename}.")
-    return filename
+    def repo_names_extraction(self, gh_info: pd.DataFrame) -> list[str]:
+        """
+        Means of pulling clean repo_name info out of the dataframe returned
+        by get_gh_zenodo_info() or internal function get_gh_urls().
+        """
+        namelist = []
+        assert type(gh_info) is pd.DataFrame, "GH dataframe cannto be of type None"
+        try:
+            if len(gh_info.index) >= 0:
+                record_gh_repo_url = gh_info["GitHubURL"]
+                for repo_url in record_gh_repo_url:
+                    cleanurl = repo_name_cleaner.repo_name_clean(repo_url=repo_url)
+                    namelist.append(cleanurl)
+                return namelist
 
+        except Exception as e_repo_names_extraction:
+            self.logger.error(
+                f"Extracting names from gh repo urls has failed somehow. Please investigate. Error: {e_repo_names_extraction} "
+            )
+            raise RuntimeError
 
-def workflow_preparation(
-    n_total_records: int = 7500,
-    config_path: str = "zenodocode/zenodoconfig.cfg",
-    write_out_location: str = "data/",
-    logger: Logger = logger,
-    in_notebook=False,
-):
-    z_IDs_list = get_Z_IDs(n_total_records, config_path, logger, in_notebook)
+    def repo_names_write_out(
+        self,
+        namelist: list[str],
+        write_out_location: str = "data/",
+        repo_name_filename: str = "repo_names_list",
+    ) -> str:
+        """
+        Write the stripped repo_names to text file one per line (no commas).
+        Returns writeout filepath as string.
+        """
+        current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
+        listlen = len(namelist)
+        filename = f"{write_out_location}{repo_name_filename}_{current_date_info}_x{listlen}.txt"
 
-    gh_info = get_gh_zenodo_info(z_IDs_list, config_path, logger, in_notebook)
+        with open(filename, "w") as file:
+            for repo in namelist:
+                file.write(repo + "\n")
 
-    repo_names_list = repo_names_extraction(gh_info=gh_info)
+        self.logger.info(f"Wrote out {listlen} records to file {filename}.")
+        return filename
 
-    filename = repo_names_write_out(
-        namelist=repo_names_list,
-        write_out_location=write_out_location,
-    )
+    def workflow_preparation(
+        self,
+        n_total_records: int = 7500,
+    ):
+        z_IDs_list = self.get_Z_IDs(n_total_records)
 
-    logger.info(
-        f"Preparation workflow completed after running on {n_total_records} and wrote out {len(gh_info.index)} repo names to file at {filename}."
-    )
+        gh_info = self.get_gh_zenodo_info(z_IDs_list)
+
+        repo_names_list = self.repo_names_extraction(gh_info=gh_info)
+
+        filename = self.repo_names_write_out(
+            namelist=repo_names_list,
+            write_out_location=self.write_read_location,
+        )
+
+        self.logger.info(
+            f"Preparation workflow completed after running on {n_total_records} and wrote out {len(gh_info.index)} repo names to file at {filename}."
+        )
