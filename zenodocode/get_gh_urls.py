@@ -21,6 +21,7 @@ class GhURLsGetter:
         config_path: str,
         logger: None | logging.Logger = None,
         in_notebook=False,
+        write_read_location: str = "data/",
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
@@ -45,6 +46,7 @@ class GhURLsGetter:
         self.config_path = config_path
         self.in_notebook = in_notebook
         # write-out file setup
+        self.write_read_location = write_read_location
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # run this at start of script not in loop to avoid midnight/long-run commits
@@ -53,7 +55,6 @@ class GhURLsGetter:
         self,
         zenodo_ids: list[int],
         out_filename="gh_urls",
-        write_out_location="data/",
     ):
         """
         Read in csv of zenodo record IDs for software records and query; pull out GitHub urls from metadata;
@@ -64,7 +65,7 @@ class GhURLsGetter:
         :type: list[int]
         :param out_filename: name to include in write out filename. Saves as CSV.
         :type: str
-        :param write_out_location: desired file location path as string. Default = "data/"
+        :param read_write_location: desired file location path as string. Default = "data/"
         :type: str
         :returns: gh_urls_df - a pd.DataFrame of github url records from zenodo and their metadata in columns: index, ZenodoID, Title, DOI, GitHubURL, CreatedDate.
         :type: pd.DataFrame
@@ -72,7 +73,7 @@ class GhURLsGetter:
 
         # write-out file setup
         # get date for generating extra filename info
-        write_out = f"{write_out_location}{out_filename}"
+        write_out = f"{self.write_read_location}{out_filename}"
         write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
 
         # batch_size = 10
@@ -169,12 +170,13 @@ class GhURLsGetter:
         # create a df from list of dict records:
         gh_urls_df = pd.DataFrame(info_dict)
 
+        self.logger.debug(f"Writing dataframe out to csv at: {write_out_extra_info}}")
         # write out df content to csv via WRITE (not append) (use added date filename)
         gh_urls_df.to_csv(
             write_out_extra_info,
             mode="w",
             index=False,
-            header=not os.path.exists(write_out_extra_info),
+            header=True,
         )
 
         self.logger.info(

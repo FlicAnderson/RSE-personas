@@ -144,7 +144,6 @@ class RunPrep:
         )
         filename = self.repo_names_write_out(
             namelist=repo_names_list,
-            write_out_location=self.write_read_location,
         )
 
         self.logger.info(
