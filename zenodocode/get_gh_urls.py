@@ -88,7 +88,7 @@ class GhURLsGetter:
         loop_num = 0  # counts current 'chunk' loop
         gh_urls_df = pd.DataFrame()  # create empty df to hold complete record set
 
-        records_list = []
+        info_dict = []
 
         records_api_url = "https://zenodo.org/api/records"
 
@@ -160,14 +160,14 @@ class GhURLsGetter:
                             f"{record_id}; {record_title}; {record_created}; {record_doi}; {record_gh_repo_url}"
                         )
                         # add this completed 'row' to the chunk
-                        records_list.extend(row_dict)
+                        info_dict.append(row_dict)
                         self.logger.debug(
                             f"At (including) ID count {id_count} there have been {record_count} github urls records located so far."
                         )
                         record_count += 1
 
             # create a df from records_list:
-            gh_urls_df = pd.DataFrame(records_list)
+            gh_urls_df = pd.DataFrame(info_dict)
             return gh_urls_df
 
             # write out 'completed' chunk df content to csv via APPEND (use added date filename)
