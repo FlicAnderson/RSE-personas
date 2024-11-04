@@ -123,12 +123,24 @@ class RunPrep:
         self,
         n_total_records: int = 7500,
     ):
+        self.logger.info(
+            f"Running preparation workflow from {n_total_records} Zenodo software records."
+        )
         z_IDs_list = self.get_Z_IDs(n_total_records)
 
+        self.logger.info(
+            f"Gathering Github information (if present) for {len(z_IDs_list)} Zenodo software records."
+        )
         gh_info = self.get_gh_zenodo_info(z_IDs_list)
 
+        self.logger.info(
+            f"Pulling out repo names from all {len(gh_info)} records with GitHub information."
+        )
         repo_names_list = self.repo_names_extraction(gh_info=gh_info)
 
+        self.logger.info(
+            f"Writing out {len(repo_names_list)} repo names for consumption by GitHub commits- and issues- data gathering workflows to files."
+        )
         filename = self.repo_names_write_out(
             namelist=repo_names_list,
             write_out_location=self.write_read_location,
