@@ -144,7 +144,7 @@ class RunPrep:
         filename = self.repo_names_write_out(
             namelist=repo_names_list,
         )
-
         self.logger.info(
             f"Preparation workflow completed after running on {n_total_records} and wrote out {len(gh_info.index)} repo names to file at {filename}."
         )
+        return filename

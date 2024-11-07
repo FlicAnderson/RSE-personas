@@ -5,6 +5,7 @@ from requests.adapters import HTTPAdapter, Retry
 import pandas as pd
 import logging
 import datetime
+from pathlib import Path
 
 import utilities.get_default_logger as loggit
 import zenodocode.setup_zenodo_auth as znauth
@@ -171,15 +172,37 @@ class GhURLsGetter:
         write_out = (
             f"{self.write_read_location}{out_filename}_{self.current_date_info}.csv"
         )
-        self.logger.debug(f"Writing out target is: {write_out}")
-        # write out df content to csv via WRITE (not append) (use added date filename)
-        gh_urls_df.to_csv(
-            f"{self.write_read_location}{out_filename}_{self.current_date_info}.csv",
-            mode="w",
-            index=False,
-            header=True,
-            na_rep="",
+
+        write_out = (
+            f"{self.write_read_location}{out_filename}_{self.current_date_info}.csv"
         )
+        write_out_path = Path(self.write_read_location)
+        self.logger.debug(
+            f"Checking whether location for writing out file exists at path {write_out_path}."
+        )
+
+        path = Path.cwd()
+        self.logger.debug(
+            f"Current path is {path}; two up is {path.parent.parent.absolute()}."
+        )
+
+        write_out = (
+            f"{self.write_read_location}{out_filename}_{self.current_date_info}.csv"
+        )
+
+        self.logger.debug(f"Writing out target is: {write_out}")
+
+        try:
+            # write out df content to csv via WRITE (not append) (use added date filename)
+            gh_urls_df.to_csv(
+                write_out_path,
+                mode="w",
+                index=False,
+                header=True,
+                na_rep="",
+            )
+        except RuntimeError:
+            raise
 
         self.logger.info(
             f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out}."
