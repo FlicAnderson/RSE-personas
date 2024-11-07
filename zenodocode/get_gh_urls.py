@@ -178,7 +178,7 @@ class GhURLsGetter:
         )
         write_out_path = Path(self.write_read_location)
         self.logger.debug(
-            f"Checking whether location for writing out file exists at path {write_out_path}."
+            f"Checking whether location for writing out file exists at path {write_out_path.absolute()}."
         )
 
         path = Path.cwd()
@@ -186,11 +186,7 @@ class GhURLsGetter:
             f"Current path is {path}; two up is {path.parent.parent.absolute()}."
         )
 
-        write_out = (
-            f"{self.write_read_location}{out_filename}_{self.current_date_info}.csv"
-        )
-
-        self.logger.debug(f"Writing out target is: {write_out}")
+        self.logger.debug(f"Writing out target is: {write_out}.")
 
         try:
             # write out df content to csv via WRITE (not append) (use added date filename)
@@ -205,7 +201,8 @@ class GhURLsGetter:
             raise
 
         self.logger.info(
-            f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out}."
+            f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out}.\n
+            Returning DataFrame of length {len(gh_urls_df)}"
         )
 
         return gh_urls_df
