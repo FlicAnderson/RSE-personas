@@ -102,7 +102,6 @@ class RunPrep:
     def repo_names_write_out(
         self,
         namelist: list[str],
-        write_out_location: str = "data/",
         repo_name_filename: str = "repo_names_list",
     ) -> str:
         """
@@ -111,7 +110,7 @@ class RunPrep:
         """
         current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
         listlen = len(namelist)
-        filename = f"{write_out_location}{repo_name_filename}_{current_date_info}_x{listlen}.txt"
+        filename = f"{self.write_read_location}{repo_name_filename}_{current_date_info}_x{listlen}.txt"
 
         with open(filename, "w") as file:
             for repo in namelist:
