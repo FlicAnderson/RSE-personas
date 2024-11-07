@@ -201,8 +201,10 @@ class GhURLsGetter:
             raise
 
         self.logger.info(
-            f"\n ... ENDING RUN. There are {record_count} records with github urls, out of {total_records} records in total; saved out to {write_out}.\n
-            Returning DataFrame of length {len(gh_urls_df)}"
+            f"There are {record_count} records with github urls, out of {total_records} records in total."
+        )
+        self.logger.info(
+            f"Saved out to {write_out}; returning DataFrame of length {len(gh_urls_df)}"
         )
 
         return gh_urls_df
