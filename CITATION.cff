@@ -1,0 +1,35 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: RSE Personas
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Felicity
+    family-names: Anderson
+    name-particle: F
+    email: Felicity.Anderson@ed.ac.uk
+    affiliation: 'EPCC, University of Edinburgh'
+    orcid: 'https://orcid.org/0000-0001-8778-6779'
+identifiers:
+  - type: url
+    value: >-
+      https://github.com/FlicAnderson/coding-smart/tree/v0.6.0-deRSE2025-poster
+    description: DeRSE 2025 poster generation version of code
+repository-code: 'https://github.com/FlicAnderson/coding-smart/'
+abstract: >-
+  Coding-Smart repository is the basis for the RSE Personas
+  data gathering, processing and analysis workflow. 
+keywords:
+  - RS
+  - Research Software
+  - MSR
+  - Mining Software Repositories
+  - RSE
+  - Research Software Engineering
+license: BSD-3-Clause
+version: v0.6.0-deRSE2025-poster
+date-released: '2025-02-27'
