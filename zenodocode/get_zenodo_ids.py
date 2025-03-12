@@ -90,7 +90,7 @@ class ZenodoIDGetter:
         # zenodo API call setup:
 
         records_api_url = "https://zenodo.org/api/records"
-        search_query = "type:software"
+        search_query = "type:software +metadata.related_identifiers.identifier:*github*"
 
         valid_sort_types = [
             "mostviewed",
