@@ -121,6 +121,7 @@ class ZenodoIDGetter:
         if sort_type == "all":
             for s_type in valid_sort_types:
                 print(f"s_type is {s_type}")
+                type_batch = []
                 for querypage in pg_range:
                     page_iterator = querypage
 
@@ -150,7 +151,7 @@ class ZenodoIDGetter:
 
                     if "hits" in api_response.json():
                         for hit in api_response.json()["hits"]["hits"]:
-                            identifiers.append(hit["id"])
+                            type_batch.append(hit["id"])
                     else:
                         raise Exception("Borked zenodo ID getting")
 
@@ -158,8 +159,11 @@ class ZenodoIDGetter:
                     print(
                         f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}"
                     )
+                print(type_batch)
+                # print(len(identifiers))
+                identifiers.extend(type_batch)
+            print(len(identifiers))
 
-                print(identifiers)
         else:
             if sort_type in valid_sort_types:
                 for querypage in pg_range:
