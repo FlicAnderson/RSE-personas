@@ -55,6 +55,7 @@ class ZenodoIDGetter:
         self,
         per_pg=20,
         total_records=100,
+        sort_type="all",
         all_versions=False,
         filename="zn_ids",
     ) -> list[int]:
@@ -65,6 +66,8 @@ class ZenodoIDGetter:
         :type: int
         :param total_records: Total number of zenodo records to iterate through to pull github URLS from if present. Default=100.
         :type: int
+        :param sort_type: TODO TODO TODO
+        :type: str
         :param all_versions: retrieve all versions of a record e.g. v1.0 and v2.0 record info? (default: False)
         :type: bool
         :param filename: name to include in write out filename. Saves as CSV.
@@ -89,6 +92,15 @@ class ZenodoIDGetter:
         records_api_url = "https://zenodo.org/api/records"
         search_query = "type:software"
 
+        valid_sort_types = [
+            "mostviewed",
+            "bestmatch",
+            "newest",
+            "oldest",
+            "version",
+            "mostdownloaded",
+        ]
+
         self.logger.info(f"Obtaining {total_records} zenodo record IDs")
 
         # pull out N zenodo record IDs using a records query, paging through until N = page_iterator:
@@ -106,44 +118,91 @@ class ZenodoIDGetter:
 
         identifiers = []  # prep output collection list
 
-        for querypage in pg_range:
-            page_iterator = querypage
+        if sort_type == "all":
+            for s_type in valid_sort_types:
+                print(f"s_type is {s_type}")
+                for querypage in pg_range:
+                    page_iterator = querypage
 
-            self.logger.info(
-                f"Trying Zenodo API call with url: {records_api_url} and search query parameters: q={search_query}, all_versions={get_all_versions}, size={per_pg} and page={page_iterator}."
-            )
-            # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
-            api_response = run_with_retries(
-                lambda: raise_if_response_error(
-                    api_response=self.s.get(
-                        url=records_api_url,
-                        params={
-                            "access_token": self.zn_token,
-                            "q": search_query,
-                            "all_versions": get_all_versions,
-                            "size": per_pg,
-                            "page": page_iterator,  # increases per querypage
-                        },
-                    ),
-                    logger=self.logger,
-                ),
-                self.logger,
-            )
+                    self.logger.info(
+                        f"Trying Zenodo API call with url: {records_api_url} and search query parameters: q={search_query}, sort={s_type}, all_versions={get_all_versions}, size={per_pg} and page={page_iterator}."
+                    )
+                    # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
+                    api_response = run_with_retries(
+                        lambda: raise_if_response_error(
+                            api_response=self.s.get(
+                                url=records_api_url,
+                                params={
+                                    "access_token": self.zn_token,
+                                    "q": search_query,
+                                    "sort": s_type,
+                                    "all_versions": get_all_versions,
+                                    "size": per_pg,
+                                    "page": page_iterator,  # increases per querypage
+                                },
+                            ),
+                            logger=self.logger,
+                        ),
+                        self.logger,
+                    )
 
-            assert api_response.ok, f"API response is: {api_response}"
+                    assert api_response.ok, f"API response is: {api_response}"
 
-            if "hits" in api_response.json():
-                for hit in api_response.json()["hits"]["hits"]:
-                    identifiers.append(hit["id"])
+                    if "hits" in api_response.json():
+                        for hit in api_response.json()["hits"]["hits"]:
+                            identifiers.append(hit["id"])
+                    else:
+                        raise Exception("Borked zenodo ID getting")
+
+                    headers_out = api_response.headers
+                    print(
+                        f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}"
+                    )
+
+                print(identifiers)
+        else:
+            if sort_type in valid_sort_types:
+                for querypage in pg_range:
+                    page_iterator = querypage
+
+                    self.logger.info(
+                        f"Trying Zenodo API call with url: {records_api_url} and search query parameters: q={search_query}, sort={sort_type}, all_versions={get_all_versions}, size={per_pg} and page={page_iterator}."
+                    )
+                    # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
+                    api_response = run_with_retries(
+                        lambda: raise_if_response_error(
+                            api_response=self.s.get(
+                                url=records_api_url,
+                                params={
+                                    "access_token": self.zn_token,
+                                    "q": search_query,
+                                    "sort": sort_type,
+                                    "all_versions": get_all_versions,
+                                    "size": per_pg,
+                                    "page": page_iterator,  # increases per querypage
+                                },
+                            ),
+                            logger=self.logger,
+                        ),
+                        self.logger,
+                    )
+
+                    assert api_response.ok, f"API response is: {api_response}"
+
+                    if "hits" in api_response.json():
+                        for hit in api_response.json()["hits"]["hits"]:
+                            identifiers.append(hit["id"])
+                    else:
+                        raise Exception("Borked zenodo ID getting")
+
+                    headers_out = api_response.headers
+                    print(
+                        f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}"
+                    )
+                print(identifiers)
+
             else:
-                raise Exception("Borked zenodo ID getting")
-
-            headers_out = api_response.headers
-            print(
-                f"record ID request headers limit/remaining: {headers_out.get('x-ratelimit-limit')}/{headers_out.get('x-ratelimit-remaining')}"
-            )
-
-        print(identifiers)
+                print("failure :c")
 
         # Create file connection
         f = open(write_out, "w")
