@@ -55,6 +55,7 @@ class RunPrep:
         z_IDs_list = zenodogetter.get_zenodo_ids(
             per_pg=100,
             total_records=n_total_records,
+            sort_type="all",
             all_versions=False,  # don't want all versions as interested in commits from all branches, not a specific fixed version
         )
         self.logger.info(
