@@ -9,6 +9,10 @@ from logging import Logger
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import RepoNotFoundError
 
+"""
+$ python githubanalysis/processing/run_summarise_repo_stats.py -f data/repo_names_list_2025-02-17_x157.txt
+"""
+
 
 def single_repo_method(repo_name: str, logger: Logger) -> dict | None:
     """
@@ -38,6 +42,39 @@ def read_repos_from_file(filename, logger: Logger) -> dict[str, pd.DataFrame | N
     with open(filename, "r") as f:
         repos = [txtline.strip() for txtline in f.readlines()]
         return multi_repo_method(repo_names=repos, logger=logger)
+
+
+# def writeout_repo_stats(repo_stats:dict, logger: Logger, write_read_location:str = "data/",):
+#         logger.info("Writing summarised stats for repo(s) out to file")
+
+#         filelocation = f""
+
+#         with open("person.txt", "w") as fp:
+#             json.dump(person, fp)  # encode dict into JSON
+
+#         logger.info("Wrote repo stats out to file at {filelocation}.")
+
+
+# write out
+# # assume you have the following dictionary
+# person = {"name": "Jessa", "country": "USA", "telephone": 1178}
+# print('Person dictionary')
+# print(person)
+
+# print("Started writing dictionary to a file")
+# with open("person.txt", "w") as fp:
+#     json.dump(person, fp)  # encode dict into JSON
+# print("Done writing dict into .txt file")
+
+
+# read in
+# # Open the file for reading
+# with open("person.txt", "r") as fp:
+#     # Load the dictionary from the file
+#     person_dict = json.load(fp)
+
+# # Print the contents of the dictionary
+# print(person_dict)
 
 
 def multi_repo_method(
