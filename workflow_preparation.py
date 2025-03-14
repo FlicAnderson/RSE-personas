@@ -6,7 +6,7 @@ import datetime
 
 from zenodocode.get_zenodo_ids import ZenodoIDGetter
 from zenodocode.get_gh_urls import GhURLsGetter
-import githubanalysis.processing.repo_name_clean as repo_name_cleaner
+import githubanalysis.processing.repo_name_from_url as repo_name_cleaner
 import utilities.get_default_logger as loggit
 
 
@@ -88,21 +88,16 @@ class RunPrep:
         Means of pulling clean repo_name info out of the dataframe returned
         by get_gh_zenodo_info() or internal function get_gh_urls().
         """
-        namelist = []
         assert type(gh_info) is pd.DataFrame, "GH dataframe cannto be of type None"
-        try:
-            if len(gh_info.index) >= 0:
-                record_gh_repo_url = gh_info["GitHubURL"]
-                for repo_url in record_gh_repo_url:
-                    cleanurl = repo_name_cleaner.repo_name_clean(repo_url=repo_url)
-                    namelist.append(cleanurl)
-                return namelist
+        if len(gh_info.index) == 0:
+            raise RuntimeError("gh_info df was empty; cannot extract names")
 
-        except Exception as e_repo_names_extraction:
-            self.logger.error(
-                f"Extracting names from gh repo urls has failed somehow. Please investigate. Error: {e_repo_names_extraction} "
-            )
-            raise RuntimeError
+        namelist = []
+        record_gh_repo_url = gh_info["GitHubURL"]
+        for repo_url in record_gh_repo_url:
+            cleanurl = repo_name_cleaner.repo_name_from_url(repo_url=repo_url)
+            namelist.append(cleanurl)
+        return namelist
 
     def repo_names_write_out(
         self,

@@ -3,14 +3,14 @@
 import sys
 import os
 import pandas as pd
-import datetime
+from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
-import githubanalysis.processing.repo_name_clean as name_clean
+import githubanalysis.processing.repo_name_from_url as name_clean
 
 
 class DevsGetter:
@@ -19,7 +19,7 @@ class DevsGetter:
 
     def __init__(
         self,
-        logger: logging.Logger = None,
+        logger: logging.Logger | None = None,
         in_notebook=False,
     ) -> None:
         if logger is None:
@@ -244,7 +244,7 @@ if __name__ == "__main__":
         raise IndexError("Please enter a repo_name.")
 
     if "github" in repo_name:
-        repo_name = name_clean.repo_name_clean(repo_name)
+        repo_name = name_clean.repo_name_from_url(repo_name)
 
     contributors_df = pd.DataFrame()
 
