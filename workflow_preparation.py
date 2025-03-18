@@ -83,7 +83,7 @@ class RunPrep:
         gh_info = ghurlgetter.get_gh_urls(zenodo_ids=zenodo_ids)
         return gh_info
 
-    def repo_names_extraction(self, gh_info: pd.DataFrame) -> list[str]:
+    def repo_names_extraction(self, gh_info: pd.DataFrame) -> list[str | None]:
         """
         Means of pulling clean repo_name info out of the dataframe returned
         by get_gh_zenodo_info() or internal function get_gh_urls().
@@ -101,7 +101,7 @@ class RunPrep:
 
     def repo_names_write_out(
         self,
-        namelist: list[str],
+        namelist: list[str | None],
         repo_name_filename: str = "repo_names_list",
     ) -> str:
         """
@@ -114,7 +114,10 @@ class RunPrep:
 
         with open(filename, "w") as file:
             for repo in namelist:
-                file.write(repo + "\n")
+                if repo is not None:
+                    file.write(repo + "\n")
+                else:
+                    continue
 
         self.logger.info(f"Wrote out {listlen} records to file {filename}.")
         return filename
