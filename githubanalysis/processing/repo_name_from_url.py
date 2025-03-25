@@ -7,10 +7,12 @@ from pathlib import Path
 def repo_name_from_url(repo_url: str) -> str | None:
     """
     Remove trailing slashes and github url root from string repo names.
+    Returns string composed of gh_user or organisation / repository name if valid;
+    Returns None if repository url is not validly composed.
     :param repo_url: repository names in url format or as 'username/repo_name' format.
     :type str:
-    :returns: `repo_name` string without github url root or trailing slashes.
-    :type str:
+    :returns: `repo_name` string without github url root or trailing slashes, or None.
+    :type str | None:
 
     Examples:
     ----------
