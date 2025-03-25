@@ -130,18 +130,6 @@ class RepoStatsSummariser:
 
         repo_stats.update({"initial_HTTP_code": api_status})
 
-        # if api_response.status_code == 404:
-        #     self.logger.error(
-        #         f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?"
-        #     )
-        # if api_response.status_code == 401:
-        #     self.logger.error(
-        #         f"401 (unauthorized) error in connecting to {repo_name}. Is your GitHub Personal Authentication Token valid and config.cfg file correctly formatted?"
-        #     )
-        # self.logger.error(
-        #     f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}."
-        # )
-
         if api_response.status_code != 404:
             try:
                 # issue tickets enabled y/n:
