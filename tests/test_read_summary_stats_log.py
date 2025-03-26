@@ -1,8 +1,6 @@
-import pytest
 from githubanalysis.processing.read_summary_stats_log import parse_log
 
 import datetime
-
 
 input = [
     "[2025-03-25 10:39:18,556] INFO:getting json via request url https://api.github.com/repos/openconnectome/m2g/languages.",
