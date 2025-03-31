@@ -209,7 +209,7 @@ class ZenodoIDGetter:
                 print("failure :c")
 
         # remove duplicate IDs
-        identifiers = list(set(identifiers))
+        identifiers = list(sorted(set(identifiers)))
 
         # Create file connection
         f = open(write_out, "w")

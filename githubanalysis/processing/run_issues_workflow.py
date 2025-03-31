@@ -55,7 +55,7 @@ def multi_repo_method(
     single_repo_method() on each.
     Return dictionary of repodfs with repo_name as key.
     """
-    repo_names = list(set(repo_names))
+    repo_names = list(sorted(set(repo_names)))
     collation_dict = {}
     for repo in repo_names:
         logger.info(f"Trying to reading repo {repo} issue data from GH API.")

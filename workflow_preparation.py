@@ -64,7 +64,7 @@ class RunPrep:
         self.logger.info(
             f"Returning unique Zenodo IDs only: {len(set(z_IDs_list))} records to check for github info from."
         )
-        z_IDs_list = list(set(z_IDs_list))
+        z_IDs_list = list(sorted(set(z_IDs_list)))
         return z_IDs_list
 
     def get_gh_zenodo_info(
