@@ -228,12 +228,24 @@ This code expects a 'classic' type [GitHub Personal Access Token](https://docs.g
 This token should have read access to repo permissions, and in my case also has GitHub Workflow permissions. 
 DO NOT allow this file to enter version control! 
 
+Steps: 
+    1) Ensure you are in the coding-smart-github conda environment and have the following packages in your environment  
+    2) Create a classic access token via Github Authentication Settings and create a file called `config.cfg` with the following content:
+```
+[ACCESS]
+token = <your-access-token-string>
+```
+    3) Ensure you've pasted in your token, but leave `[ACCESS]` and `token = `. 
+    4) Ensure that the `.gitignore` file avoids committing this file (it is stored under `# private data` heading)
+
 
 #### Zenodo Authentication  
 
 This code expects a [Zenodo Access Token](https://zenodo.org/account/settings/applications/tokens/new/) stored in a file called `zenodoconfig.cfg`  within `coding-smart/zenodocode` folder.  
 This token does not need `deposit:` permissions as it will only be used to read records, not upload.  
 DO NOT allow this file to enter version control! 
+
+This file should follow the same file and token format as above for the github `config.cfg` file. 
 
 
 #### Generating datasets (Processing) 
