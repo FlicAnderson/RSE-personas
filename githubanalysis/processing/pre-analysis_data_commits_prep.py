@@ -236,6 +236,9 @@ class PrepDataCommits:
             f"Run time for {len(repolist)} repos with {len(devs_commits_data)} devs cumulatively: {end_time - start_time}"
         )
 
+        logger.info(
+            f"Saved devs_commits_data df for {len(repolist)} repos with {len(devs_commits_data)} devs to file: {filestr}"
+        )
         return devs_commits_data
 
 
