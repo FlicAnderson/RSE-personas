@@ -7,7 +7,6 @@ import re
 import pandas as pd
 import logging
 import category_encoders as ce
-from sklearn.preprocessing import OneHotEncoder
 
 import utilities.get_default_logger as loggit
 
@@ -60,7 +59,7 @@ class PrepDataCommits:
 
         repolist = [
             f
-            for f in os.listdir(read_location)
+            for f in os.listdir(self.read_location)
             if re.match(r"(commits_cats_stats_).*(.csv)", f)
         ]
         logger.info("{repolist}")
@@ -72,7 +71,7 @@ class PrepDataCommits:
 
         for repofile in repolist:
             logger.debug(f"{repofile}")
-            tmplocat = f"{read_location}{repofile}"
+            tmplocat = f"{self.read_location}{repofile}"
             repo = pd.read_csv(tmplocat)
             logger.debug(f"{len(repo)}")  # this number is N of Commits per repo
 
@@ -225,9 +224,7 @@ class PrepDataCommits:
             :, ~devs_commits_data.columns.duplicated()
         ]  # remove duplicated 2 columns
 
-        current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
-
-        filestr = f"{read_location}commits-data-per-dev_x{devs_commits_data['repo_name'].nunique()}-repos_{current_date_info}.csv"
+        filestr = f"{self.write_location}commits-data-per-dev_x{devs_commits_data['repo_name'].nunique()}-repos_{self.current_date_info}.csv"
         devs_commits_data.to_csv(path_or_buf=filestr, header=True, index=False)
 
         end_time = datetime.datetime.now()
