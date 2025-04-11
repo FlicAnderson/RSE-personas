@@ -65,7 +65,7 @@ class PrepDataIssues:
 
         repolist = [
             f
-            for f in os.listdir(self.read_location)
+            for f in os.listdir(read_location)
             if re.match(r"(processed-issues_).*(.csv)", f)
         ]
         logger.info("{repolist}")
