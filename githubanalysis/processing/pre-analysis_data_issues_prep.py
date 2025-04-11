@@ -78,7 +78,7 @@ class PrepDataIssues:
 
         for repofile in repolist:
             logger.debug(f"{repofile}")
-            tmplocat = f"{self.read_location}{repofile}"
+            tmplocat = f"{read_location}{repofile}"
             repo = pd.read_csv(tmplocat)
 
             tmpname = repo["repo_name"][0]
