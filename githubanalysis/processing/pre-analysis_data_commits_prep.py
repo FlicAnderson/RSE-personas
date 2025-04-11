@@ -59,7 +59,7 @@ class PrepDataCommits:
 
         repolist = [
             f
-            for f in os.listdir(self.read_location)
+            for f in os.listdir(read_location)
             if re.match(r"(commits_cats_stats_).*(.csv)", f)
         ]
         logger.info("{repolist}")
@@ -71,7 +71,7 @@ class PrepDataCommits:
 
         for repofile in repolist:
             logger.debug(f"{repofile}")
-            tmplocat = f"{self.read_location}{repofile}"
+            tmplocat = f"{read_location}{repofile}"
             repo = pd.read_csv(tmplocat)
             logger.debug(f"{len(repo)}")  # this number is N of Commits per repo
 
