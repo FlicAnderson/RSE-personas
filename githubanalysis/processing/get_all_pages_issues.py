@@ -5,11 +5,14 @@ import json
 import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
+import traceback
 import logging
 
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
+
+REPOS_API_URL = "https://api.github.com/repos/"
 
 
 class NoIssuesError(RuntimeError):
@@ -27,6 +30,21 @@ def make_url(
     return f"{repos_api_url}{repo_name}/issues?state={state}&pulls={pulls}&per_page={per_pg}&page={page}"
 
 
+def is_this_single_page(issue_links: dict) -> bool:
+    if issue_links == {}:
+        return True
+    next_val = issue_links.get("next")
+    if next_val is None:
+        return True
+    rel = next_val.get("rel")
+    if rel is None or not isinstance(rel, str):
+        raise RuntimeError(f"No 'rel' key in {issue_links}")
+    if rel == "next":
+        return False
+    else:
+        raise RuntimeError(f"unexpected 'rel' value: {rel}")
+
+
 class IssueGetter:
     # if not given a better option, use my default settings for logging
     logger: logging.Logger
@@ -36,12 +54,12 @@ class IssueGetter:
         repo_name: str,
         in_notebook: bool,
         config_path: str,
-        logger: None | logging.Logger = None,
+        logger: None,
     ) -> None:
         if logger is None:
             self.logger = loggit.get_default_logger(
                 console=False,
-                set_level_to="INFO",
+                set_level_to="DEBUG",
                 log_name="logs/get_all_pages_issues_logs.txt",
                 in_notebook=in_notebook,
             )
@@ -80,7 +98,7 @@ class IssueGetter:
         )
         assert api_response.ok, f"API response is: {api_response}"
 
-        self.logger.info(f"API shows repo {repo_name} has issues_enabled.")
+        self.logger.debug(f"API shows repo {repo_name} has issues_enabled.")
 
         json_response = api_response.json()
         assert isinstance(
@@ -90,15 +108,7 @@ class IssueGetter:
         if len(json_response) > 0:
             assert isinstance(json_response.get("has_issues"), bool)
 
-            n_open_isses = json_response.get("open_issues_count")
-            assert (
-                n_open_isses is not None
-            ), f"The value for repo {repo_name} 'open_issues_count' is None; this is not ideal."
-            assert isinstance(
-                n_open_isses, int
-            ), f"The value for repo {repo_name} 'open_issues_count' is not an integer, instead it is {type(n_open_isses)}."
-
-            if json_response.get("has_issues") and n_open_isses > 0:
+            if json_response.get("has_issues"):
                 return True  # this is what we're hoping for: has issues, and more than zero of them.
         else:
             self.logger.error(
@@ -108,76 +118,37 @@ class IssueGetter:
             f"Repository {repo_name} does NOT have issues enabled OR there are NO issues created despite being enabled."
         )
 
-    def _singlepage_issues_grabber(
+    def _page_issues_grabber(
         self,
         repos_api_url: str,
         repo_name: str,
-        state: str,
-        pulls: bool,
-        per_pg: str | int,
     ) -> list[dict]:
+        page = 1
+
         issues_url = make_url(
             repos_api_url=repos_api_url,
             repo_name=repo_name,
-            state=state,
-            pulls=pulls,
-            per_pg=per_pg,
-            page=1,
+            state="all",  # alternatives: "open" (default) | "closed"
+            pulls=True,
+            per_pg=100,  # default is 30 on GH API
+            page=page,
         )
-        self.logger.debug(
-            f"Trying to pull issue information from repo {repo_name} with query {issues_url}."
-        )
-        api_reponse = run_with_retries(
-            fn=lambda: raise_if_response_error(
-                api_response=self.s.get(url=issues_url, headers=self.headers),
-                repo_name=repo_name,
-                logger=self.logger,
-            ),
-            logger=self.logger,
-        )
-        assert api_reponse.ok, f"API response is {api_reponse}."
-
-        all_issues = api_reponse.json()
-        return all_issues  # THIS IS JSON OUTPUT CURRENTLY
-
-    def _multipage_issues_grabber(
-        self,
-        issue_links: dict,
-        repos_api_url: str,
-        repo_name: str,
-        state: str,
-        pulls: bool,
-        per_pg: str | int,
-    ) -> list[dict]:
-        issue_links_last = issue_links["last"]["url"].split("&page=")[1]
-        pages_issues = int(issue_links_last)
 
         all_issues = []
-        pg_range = range(1, (pages_issues + 1))
+        api_response = None
 
-        for i in pg_range:
+        while page < 50000:  # stupidly large number just in case we never escape
             self.logger.info(
-                f">> Running issues grab for repo {repo_name}, on page {i} of {pages_issues}."
+                f">> Running issue grab for repo {repo_name}, in page {page}."
             )
-            page = i
-            issues_url = make_url(
-                repos_api_url=repos_api_url,
-                repo_name=repo_name,
-                state=state,
-                pulls=pulls,
-                per_pg=per_pg,
-                page=page,
-            )
-            self.logger.info(f"API is checking url: {issues_url}")
 
-            # this is the important part: run API call with retries and sleeps if necessary to avoid rate limit issues
             api_response = run_with_retries(
-                lambda: raise_if_response_error(
+                fn=lambda: raise_if_response_error(
                     api_response=self.s.get(url=issues_url, headers=self.headers),
                     repo_name=repo_name,
                     logger=self.logger,
                 ),
-                self.logger,
+                logger=self.logger,
             )
 
             assert api_response.ok, f"API response is: {api_response}"
@@ -188,14 +159,34 @@ class IssueGetter:
                 f"API request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
             )
 
-            json_pg = api_response.json()
+            json_pg = api_response.json()  # get crucial json
+            if not json_pg:  # check emptiness of result.
+                self.logger.debug("Result of api_response.json() is empty list.")
+                self.logger.error(
+                    f"Result of API request is an empty json. Error - cannot currently handle this result nicely. Traceback: {traceback.format_exc()}"
+                )
+
+            # this should be the important aggregator bit...
             all_issues.extend(json_pg)
+            self.logger.info(f"all_issues length is now {len(all_issues)}")
 
-            self.logger.debug(
-                f"Total number of issues grabbed is {len(all_issues)} in {pages_issues} page(s)."
-            )
+            self.logger.debug(f"Total number of issues grabbed is {len(all_issues)}.")
 
-        return all_issues
+            # expect None if there is no next. .get() doesn't fail if out of scope:
+            response_next = api_response.links.get("next")
+
+            # if this is a single-page repo, it runs once then returns out.
+            if response_next is not None:
+                issues_url = response_next[
+                    "url"
+                ]  # square brackets means we get an error not silent None
+            else:  #
+                return all_issues  # returning something breaks the while loop
+
+            page += 1
+        raise RuntimeError(
+            f"This (multi-page) issue-getting exceeded {page} pages; API repsonse links was: {api_response.links if api_response else None}"
+        )
 
     def get_all_pages_issues(
         self,
@@ -226,59 +217,18 @@ class IssueGetter:
 
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
-        # create empty df to store issues data
+        # create empty dict to store issues data
         all_issues = {}
 
         # count open issue tickets
         try:
-            page = 1  # try first page only
-            repos_api_url = "https://api.github.com/repos/"
-
-            issues_url = make_url(
-                repos_api_url=repos_api_url,
-                repo_name=repo_name,
-                state="all",  # alternatives: "open" (default) | "closed"
-                pulls=True,
-                per_pg=100,  # default is 30 on GH API
-                page=page,
+            self.logger.info("issue_links: multipage function used.")
+            all_issues = self._page_issues_grabber(
+                REPOS_API_URL,
+                repo_name,
             )
-            self.logger.debug(f"Issues URL being queried is: {issues_url}.")
+            self.logger.debug(f"Type of all_issues is: {type(all_issues)}")
 
-            api_response = run_with_retries(
-                fn=lambda: raise_if_response_error(
-                    api_response=self.s.get(url=issues_url, headers=self.headers),
-                    repo_name=repo_name,
-                    logger=self.logger,
-                ),
-                logger=self.logger,
-            )
-
-            assert (
-                api_response.status_code != 401
-            ), f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {issues_url} is {api_response}"
-            # assertion check on 401 only as unauthorise is more likely to stop whole run than 404 which may apply to given repo only
-
-            issue_links = api_response.links
-
-            if "last" in issue_links:
-                all_issues = self._multipage_issues_grabber(
-                    issue_links,
-                    repos_api_url,
-                    repo_name,
-                    state="all",
-                    pulls=True,
-                    per_pg=100,
-                )
-                self.logger.debug(f"Type of all_issues is: {type(all_issues)}")
-            else:
-                all_issues = self._singlepage_issues_grabber(
-                    repos_api_url,
-                    repo_name,
-                    state="all",
-                    pulls=True,
-                    per_pg=100,
-                )
-                self.logger.debug(f"Type of all_issues is: {type(all_issues)}")
         except Exception as e:
             self.logger.error(
                 f"Error in getting issues for repo name {repo_name}: {e}."
@@ -297,6 +247,6 @@ class IssueGetter:
                 f"JSON file was not written out correctly and does NOT exist at path: {os.path.exists(write_out_extra_info_json)}"
             )
 
-        self.logger.debug(f"Type of all_issues is: {type(all_issues)}")
+        # self.logger.debug(f"Type of all_issues is: {type(all_issues)}")
 
         return all_issues
