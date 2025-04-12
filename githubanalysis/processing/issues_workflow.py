@@ -30,7 +30,7 @@ class RunIssues:
         if logger is None:
             self.logger = loggit.get_default_logger(
                 console=False,
-                set_level_to="INFO",
+                set_level_to="DEBUG",
                 log_name="logs/issues_workflow_logs.txt",
                 in_notebook=in_notebook,
             )
