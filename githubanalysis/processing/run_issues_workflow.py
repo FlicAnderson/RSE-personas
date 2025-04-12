@@ -42,7 +42,7 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
         return None
     except Exception as e:
         logger.error(
-            f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}"
+            f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}; type {type(e)}"
         )
         return None
 
@@ -58,7 +58,7 @@ def multi_repo_method(
     repo_names = list(sorted(set(repo_names)))
     collation_dict = {}
     for repo in repo_names:
-        logger.info(f"Trying to reading repo {repo} issue data from GH API.")
+        logger.info(f"Trying to read repo {repo} issue data from GH API.")
         print(f"Getting repo data for {repo}.")
         collation_dict[repo] = single_repo_method(repo_name=repo, logger=logger)
         logger.info(f"Completed repo issue data get for {repo}.")
