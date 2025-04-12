@@ -61,6 +61,7 @@ class PrepDataIssues:
         ### NOTE:
         # known issue where: n_of_issues_creators can be NaN if the gh_username is assigned to an issue, but has not created any issues in the repo
         """
+
         start_time = datetime.datetime.now()
 
         repolist = [
@@ -68,22 +69,34 @@ class PrepDataIssues:
             for f in os.listdir(read_location)
             if re.match(r"(processed-issues_).*(.csv)", f)
         ]
-        logger.info("{repolist}")
+
+        self.logger.debug(f"Operating on list of repositories: {repolist}")
+        self.logger.debug(".........................")
 
         multirepo = pd.DataFrame()
         multirepo_assigns = pd.DataFrame()
 
-        print(f"Currently processing {len(repolist)} repos' worth of issues")
-        print("---")
+        self.logger.info(f"Currently processing {len(repolist)} repos' worth of issues")
+        self.logger.debug("-------")
+
+        list_of_repos = []
 
         for repofile in repolist:
-            logger.debug(f"{repofile}")
-            tmplocat = f"{read_location}{repofile}"
+            logger.debug(f"Working on file: {repofile}")
+            # self.logger.debug(file)
+            tmplocat = Path(read_location, repofile)
+            # self.logger.debug(tmplocat)
             repo = pd.read_csv(tmplocat)
+            self.logger.debug(f"repo issues data shape: {repo.shape}")
+            # self.logger.debug(len(repo.index))
 
             tmpname = repo["repo_name"][0]
+            self.logger.debug(tmpname)
+            list_of_repos.append(tmpname)
             n_issues_pr_repo = len(repo)
-            logger.debug(f"Number of issues for repo {tmpname} is: {n_issues_pr_repo}")
+            self.logger.debug(
+                f"Number of issues for repo {tmpname} is: {n_issues_pr_repo}"
+            )
 
             tmp_nonempty_fields = {
                 "repo_name": tmpname,
@@ -93,8 +106,12 @@ class PrepDataIssues:
                 ).sum(),
             }
             tmpdf_nonempty_fields = pd.DataFrame(tmp_nonempty_fields, index=[0])
+            #     self.logger.debug(f"number of issues is {tmp_nonempty_fields['n_issues_total']}")
+            #     self.logger.debug(f"number of assigned issues is {tmpdf_nonempty_fields['assignees_list_usernames'][0]}")
 
             exploded_devs = repo
+            # self.logger.debug(len(exploded_devs))
+
             exploded_devs["assigned_devs"] = repo["assignees_list_usernames"].apply(
                 literal_eval
             )
@@ -113,7 +130,7 @@ class PrepDataIssues:
             )
 
             number_devs_assigned = assignees["assigned_devs"].nunique()
-            number_issues_assigned_exploded = assignees["Unnamed: 0"].sum()
+
             total_unique_assigned_issues_ids = len(
                 exploded_devs[
                     exploded_devs["assigned_devs"] != "unassigned"
@@ -133,8 +150,8 @@ class PrepDataIssues:
                 ]
             ]
 
-            logger.debug(f"{number_devs_assigned}")
-            logger.debug(f"{number_issues_assigned_exploded}")
+            #     self.logger.debug(f"number of unique developers assigned issues: {number_devs_assigned}")
+            #     self.logger.debug(f"number of assigned issues: {number_issues_assigned_exploded}")
 
             tmpdf = pd.DataFrame(
                 {
@@ -148,11 +165,11 @@ class PrepDataIssues:
                     * 100,
                 }
             )
-            print(
+            self.logger.debug(
                 f"repo {tmpname} has {len(tmpdf)} people creating {n_issues_pr_repo} issues."
             )
 
-            print(
+            self.logger.debug(
                 f"repo {tmpname} has {number_devs_assigned} devs assigned to {tmpdf_nonempty_fields['n_issues_total'][0]} unique issues, of which {total_unique_assigned_issues_ids} issues are assigned to one or more dev."
             )
 
@@ -166,10 +183,10 @@ class PrepDataIssues:
             logger.debug("----")
             # end of loop
 
-        # join issues data and assignment data to give single richer df
+            # # join issues data and assignment data to give single richer df
         devs_issues_data = pd.merge(
-            left=multirepo,
-            right=multirepo_assigns,
+            left=multirepo,  # collated repo-focussed issues data df
+            right=multirepo_assigns,  # collated dev-focussed assignment df
             how="outer",
             left_on=["issue_author_username", "repo_name"],
             right_on=["assigned_devs", "repo_name"],
@@ -200,17 +217,25 @@ class PrepDataIssues:
             devs_issues_data["assigned_devs"],
         )
 
+        self.logger.debug(
+            f"Total df of repo-individual issues data size: {devs_issues_data.shape}"
+        )
+        self.logger.debug(f"Total df x{devs_issues_data['repo_name'].nunique()}-repos")
+        self.logger.debug(
+            f"Number of repos issues info used: {len(repolist)}. Number of repos at end: x{devs_issues_data['repo_name'].nunique()}."
+        )
+
         # write out issues data with informative filename
-        filestr = f"{self.write_location}issues-data-per-dev_x{devs_issues_data['repo_name'].nunique()}-repos_{self.current_date_info}.csv"
+        filestr = f"{write_location}issues-data-per-dev_x{devs_issues_data['repo_name'].nunique()}-repos_x{len(devs_issues_data)}-repo-individuals_{self.current_date_info}.csv"
         devs_issues_data.to_csv(path_or_buf=filestr, header=True, index=False)
 
         end_time = datetime.datetime.now()
 
-        logger.info(
+        self.logger.info(
             f"Run time for {len(repolist)} repos with {len(devs_issues_data)} devs cumulatively: {end_time - start_time}"
         )
 
-        logger.info(
+        self.logger.info(
             f"Saved devs_issues_data df for {len(repolist)} repos with {len(devs_issues_data)} devs to file: {filestr}"
         )
         return devs_issues_data
