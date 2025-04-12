@@ -228,7 +228,7 @@ class RunIssues:
 
             # final happy case return:
             self.logger.debug(
-                f"Info details of FINAL `processed_issues` object is {processed_issues.info()}"
+                f"Info details of FINAL `processed_issues` object is {processed_issues.shape}"
             )
             return processed_issues
 
