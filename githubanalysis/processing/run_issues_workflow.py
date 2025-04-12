@@ -59,7 +59,6 @@ def multi_repo_method(
     collation_dict = {}
     for repo in repo_names:
         logger.info(f"Trying to read repo {repo} issue data from GH API.")
-        print(f"Getting repo data for {repo}.")
         collation_dict[repo] = single_repo_method(repo_name=repo, logger=logger)
         logger.info(f"Completed repo issue data get for {repo}.")
     return collation_dict
