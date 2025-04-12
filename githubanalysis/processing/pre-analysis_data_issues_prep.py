@@ -60,6 +60,16 @@ class PrepDataIssues:
 
         ### NOTE:
         # known issue where: n_of_issues_creators can be NaN if the gh_username is assigned to an issue, but has not created any issues in the repo
+
+        EXAMPLE:
+        (coding-smart-github) flic@eidf103-vm:~/clonezone/coding-smart$(parse_git_branch)$ time python githubanalysis/processing/pre-analysis_data_issues_prep.py
+        INFO:Currently processing 1707 repos' worth of issues
+        INFO:Run time for 1707 repos with 15342 devs cumulatively: 0:00:31.781448
+        INFO:Saved devs_issues_data df for 1707 repos with 15342 devs to file: data/issues-data-per-dev_x1704-repos_x15342-repo-individuals_2025-04-12.csv
+
+        real    0m32.120s
+        user    0m31.238s
+        sys     0m0.868s
         """
 
         start_time = datetime.datetime.now()
