@@ -121,6 +121,20 @@ class PrepDataIssues:
 
             exploded_devs = repo
             # self.logger.debug(len(exploded_devs))
+            self.logger.info(
+                f"Total number of GH users assigned issues who have not created any issues: {sum(repo['assignees_list_usernames'].isnull())}"
+            )
+
+            # if the GH user hasn't created any issues, assign special username 'GHNONISSUECREATOR' into assignment list;
+            # avoids NaN breaks, also means I can search for how widespread this case is
+            if sum(repo["assignees_list_usernames"].isna()) > 0:
+                repo.loc[
+                    repo["assignees_list_usernames"].isnull(),
+                    "assignees_list_usernames",
+                ] = repo.loc[
+                    repo["assignees_list_usernames"].isnull(),
+                    "assignees_list_usernames",
+                ].apply(lambda x: "['GHNONISSUECREATOR']")
 
             exploded_devs["assigned_devs"] = repo["assignees_list_usernames"].apply(
                 literal_eval
