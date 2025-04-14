@@ -121,7 +121,7 @@ class PrepDataIssues:
 
             exploded_devs = repo
             # self.logger.debug(len(exploded_devs))
-            self.logger.info(
+            self.logger.debug(
                 f"Total number of GH users assigned issues who have not created any issues: {sum(repo['assignees_list_usernames'].isnull())}"
             )
 
