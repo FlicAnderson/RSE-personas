@@ -226,7 +226,8 @@ class PrepDataCommits:
             :, ~devs_commits_data.columns.duplicated()
         ]  # remove duplicated 2 columns
 
-        filestr = f"{self.write_location}commits-data-per-dev_x{devs_commits_data['repo_name'].nunique()}-repos_{self.current_date_info}.csv"
+        filestr = f"commits-data-per-dev_x{devs_commits_data['repo_name'].nunique()}-repos_{self.current_date_info}.csv"
+        filestr = Path(self.write_location, filestr)
         devs_commits_data.to_csv(path_or_buf=filestr, header=True, index=False)
 
         end_time = datetime.datetime.now()
