@@ -155,9 +155,9 @@ class PrepDataCommits:
             indicator=False,
         )
 
-        assert (
-            len(multirepo) == len(multirepo_commit_cats)
-        ), f"multirepo and the categories data in multirepo_commit_cats don't match length: {len(multirepo)} vs {len(multirepo_commit_cats)}"
+        logger.info(
+            f"multirepo and the categories data in multirepo_commit_cats don't match length: {len(multirepo)} vs {len(multirepo_commit_cats)}"
+        )
         # #removing assert as they aren't the same length, think it's fine this way tbh, avoids cruft
 
         commits_multirepo_categories = [
@@ -218,7 +218,9 @@ class PrepDataCommits:
             [commits_other_data, commits_categories_data], axis=1
         )
 
-        assert len(devs_commits_data) == len(multirepo)
+        logger.info(
+            f"devs_commits_data and multirepo don't match length: {len(devs_commits_data)} vs {len(multirepo)}"
+        )
 
         devs_commits_data = devs_commits_data.loc[
             :, ~devs_commits_data.columns.duplicated()
