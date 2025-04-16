@@ -52,10 +52,9 @@ class PrepDataCombined:
         Combines per-dev (per repo-individual) data from commits and issue tickets
         into single dataframe for analysis.
 
+        Outputs: returns omnirepo, generates output csv file.
 
-        Outputs:
-
-        Example Run:
+        Example Run: python githubanalysis/processing/pre-analysis_data_combined_prep.py -c commits-data-per-dev_x2320-repos_2025-04-15.csv -i issues-data-per-dev_x2829-repos_x237715-repo-individuals_2025-04-15.csv
         """
 
         commits_data_file = Path(read_location, commits_data_file)
