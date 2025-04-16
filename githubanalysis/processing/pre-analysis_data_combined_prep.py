@@ -3,7 +3,6 @@
 from pathlib import Path
 import argparse
 import datetime
-import os
 import numpy as np
 import pandas as pd
 import logging
@@ -141,7 +140,7 @@ class PrepDataCombined:
 
         except Exception as e:
             self.logger.error(
-                "Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+                f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
             )
 
 
