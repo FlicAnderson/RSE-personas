@@ -4,6 +4,7 @@ from pathlib import Path
 import datetime
 import os
 import re
+from ast import literal_eval
 import pandas as pd
 import logging
 
@@ -111,6 +112,9 @@ class PrepDataTimes:
         pd.options.mode.copy_on_write = True
 
         rawissuesdf = pd.read_csv(datafile, index_col=0)
+        assert (
+            len(rawissuesdf) != 0
+        ), f"File does not contain a dataframe; check input file {datafile}"
 
         # remove unwanted columns ahead of data melt / reshape:
         rawissuesdf = rawissuesdf[
@@ -127,19 +131,20 @@ class PrepDataTimes:
             ]
         ]
 
-        self.logger.debug(f"read in dataset from file {datafile}.")
-
         # create open issues df set; copy datetime info into new column, create interaction column to mimic melt() on closed issues
-        open_issues = rawissuesdf.query("issue_state == 'open'")
-        if not open_issues.empty:
-            open_issues.loc[:, "datetime"] = rawissuesdf.query("issue_state == 'open'")[
-                ["created_at"]
-            ]
-            open_issues.loc[:, "interaction"] = "created_at"
+
+        if not (open_issues_df := rawissuesdf.query("issue_state == 'open'")).empty:
+            open_issues_df.loc[:, "datetime"] = rawissuesdf.query(
+                "issue_state == 'open'"
+            )[["created_at"]]
+            open_issues_df.loc[:, "interaction"] = "created_at"
+            open_issues = [open_issues_df]
+        else:
+            open_issues = []
 
         issuesdf = pd.concat(  # rejoin open and closed issues but treated differently
-            [
-                open_issues,  # don't melt open issues as we only want 1 'interaction' for them
+            open_issues  # don't melt open issues as we only want 1 'interaction' for them
+            + [
                 rawissuesdf.query(
                     "issue_state == 'closed'"
                 ).melt(  # create duplicate issue_number entries by splitting 'closed' into created_at and closed_at
@@ -149,17 +154,20 @@ class PrepDataTimes:
                         "issue_number",
                         "issue_state",
                         "closed_by",
+                        "pull_request",
                     ],
                     value_vars=["created_at", "closed_at"],
                     var_name="interaction",
                     value_name="datetime",
-                ),
+                )
             ]
-        ).drop(columns=["created_at", "closed_at", "author_association"])
+        ).drop(
+            columns=["created_at", "closed_at", "author_association"], errors="ignore"
+        )
 
         issuesdf.loc[:, "contribution"] = "issue"
         issuesdf.loc[issuesdf["pull_request"].notna(), "contribution"] = (
-            "pull_request"  # YASSS
+            "pull_request"  # D:
         )
 
         # pull out only date (YYYY-MM-DD) info to allow 'unique DAYs' to be obtained
@@ -177,9 +185,7 @@ class PrepDataTimes:
 
         # pull out the closed_by info:
         issuesdf["closer"] = issuesdf["closed_by"].apply(
-            lambda row: row
-            if pd.isna(row)
-            else eval(row)["login"]  # ? should this be literal_eval instead of eval?
+            lambda row: row if pd.isna(row) else literal_eval(row)["login"]
         )
 
         # update gh_username based on closer data if issue is closed
@@ -217,10 +223,37 @@ class PrepDataTimes:
             [issues_interactions, commits_interactions],
             join="outer",
         )
-
+        self.logger.debug("joined issues and commits interactions")
         # # remove rows where gh_username is NaN/NA
         all_types_interactions = all_types_interactions.dropna(
             subset="gh_username", axis=0
+        )
+        self.logger.debug("removed missing GH_username rows")
+
+        self.logger.debug(
+            type(
+                all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ].max()
+            )
+        )
+        self.logger.debug(
+            type(
+                all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ].min()
+            )
+        )
+
+        self.logger.debug(
+            all_types_interactions.groupby(["repo_name", "gh_username"])[
+                "datetime_day"
+            ].max()
+        )
+        self.logger.debug(
+            all_types_interactions.groupby(["repo_name", "gh_username"])[
+                "datetime_day"
+            ].min()
         )
 
         # pull out the number of days timediff between 1st and latest interactions
@@ -232,12 +265,15 @@ class PrepDataTimes:
                 "datetime_day"
             ].min()
         )
+        self.logger.debug(
+            "completed timediff calculation: datetime_day max - datetime_day min by groups"
+        )
         timediff = timediff.apply(
             lambda x: x + datetime.timedelta(days=1)
         )  # add 1 day so the time difference is inclusive of both first and last days (ie no zeroes!)
         timediff = timediff.apply(lambda x: x.days).reset_index()
         timediff = timediff.rename(columns={"datetime_day": "interaction_period_days"})
-        # timediff
+        self.logger.debug("rename timediff as interaction_period_days")
 
         # pull interaction_types into separate columns, and add counts of each category into them
         status_df = (
@@ -268,11 +304,22 @@ class PrepDataTimes:
             status_df, timediff, how="inner", on=["repo_name", "gh_username"]
         )
 
+        for col in [
+            "commit_created",
+            "issue_closed",
+            "issue_created",
+            "pull_request_created",
+        ]:
+            if col not in status_df.columns:
+                status_df.loc[:, col] = 0
+
         # create ratio of created:closed issues per user:
         status_df["created-closed_issues"] = (
             status_df["issue_created"] - status_df["issue_closed"]
         )
 
+        # should not result in a divide by zero issue because no issues datafile exists if no issues in repo
+        # (hopefully)
         status_df["pc_created-closed_issues"] = (
             status_df["issue_created"]
             / status_df.groupby("repo_name")["issue_created"].transform("sum")
@@ -359,6 +406,13 @@ class PrepDataTimes:
 
         return status_df
 
+    _COMMITS_PATTERN = re.compile(
+        r"^processed-commits_(.*)[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv$"
+    )
+    _ISSUES_PATTERN = re.compile(
+        r"^processed-issues_(.*)[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv$"
+    )
+
     def interactions_data_workflow(
         self,
         read_location: str | Path,
@@ -377,17 +431,32 @@ class PrepDataTimes:
 
         start_time = datetime.datetime.now()
 
+        commit_matches = list(
+            filter(
+                lambda x: x is not None,
+                (re.match(self._COMMITS_PATTERN, f) for f in os.listdir(read_location)),
+            )
+        )
+
+        issues_files_repolist = [
+            f for f in os.listdir(read_location) if re.match(self._ISSUES_PATTERN, f)
+        ]
+
+        for i in commit_matches:
+            assert i
+            name = i.group(1)
+
         # get all the processed-commits files from the folder:
         commits_files_repolist = [
             f
             for f in os.listdir(read_location)
-            if re.match(r"(processed-commits_).*(.csv)", f)
+            if re.match(r"(processed-commits_).*(\.csv)", f)
         ]
         # same for issues files:
         issues_files_repolist = [
             f
             for f in os.listdir(read_location)
-            if re.match(r"(processed-issues_).*(.csv)", f)
+            if re.match(r"(processed-issues_).*(\.csv)", f)
         ]
 
         self.logger.info(
