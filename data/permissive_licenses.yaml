@@ -2,14 +2,14 @@
 # non-exhaustive subset collated by FlicAnderson based on licenses listed here: https://opensource.org/licenses in April 2025
 # (NOTE: superceded, other/miscellaneous categories included as they may have been valid at time, and suggest permissive intentions)
 
-accept_licenses: {
+accept_licenses: [
     "MIT", "MIT-0", # MIT License
     "GPL", "GPL-3.0", "GPL-2.0", "AGPL-3.0", "LGPL-3.0", "LGPL-2.1", # GNU Public License 
     "Apache", "Apache-2.0", "Apache-1.0", # Apache License
     "CC0", "CC-BY", "CC-BY-SA", "CC-BY-NC", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", # Creative Commons 
     "BSD", "BSD-3-Clause", "BSD-2-Clause", "BSD-3-Clause-Clear", # BSD License
     "ISC", "0BSD", # ISC License, ~= MIT/BSD2Clause (Zero-Clause BSD is alteration of ISC, not BSD family)
-    "MPL", "MPL-2.0", "MPL-1.0" # Mozilla Public License
+    "MPL", "MPL-2.0", "MPL-1.0", # Mozilla Public License
     "CDDL", # Common Development and Distribution License
     "Unlicense", # Unlicense
     "EPL-2.0", "EPL-1.0", # Eclipse Public License
@@ -18,4 +18,4 @@ accept_licenses: {
     "Artistic-2.0", "Artistic-1.0", # Artistic License
     "Zlib", # Zlib/libpng License
     "WTFPL", # WTF Public License (https://choosealicense.com/licenses/wtfpl/) :D
-    }
+]
