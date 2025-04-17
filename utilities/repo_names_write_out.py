@@ -11,7 +11,7 @@ class RepoNamesListCreator:
     logger: logging.Logger
     in_notebook: bool
     current_date_info: str
-    write_location: Path
+    write_location: Path | str
 
     def __init__(
         self,
@@ -37,6 +37,7 @@ class RepoNamesListCreator:
 
     def repo_names_write_out(
         self,
+        write_location,
         namelist: list[str | None],
         repo_name_filename: str = "repo_names_list",
     ) -> str:
@@ -47,9 +48,10 @@ class RepoNamesListCreator:
         """
         current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
         listlen = len(namelist)
-        filename = f"{self.write_location}{repo_name_filename}_{current_date_info}_x{listlen}.txt"
+        filename = f"{repo_name_filename}_{current_date_info}_x{listlen}.txt"
+        filepath = Path(self.write_location, filename)
 
-        with open(filename, "w") as file:
+        with open(filepath, "w") as file:
             for repo in namelist:
                 if repo is not None:
                     file.write(repo + "\n")
