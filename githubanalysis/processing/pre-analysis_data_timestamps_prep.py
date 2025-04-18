@@ -314,7 +314,12 @@ class PrepDataTimes:
                 f"error {e}: value_counts of types for datetime_day are: {all_types_interactions['datetime_day'].apply(lambda x: str(type(x))).value_counts(dropna=False)}"
             )
             self.logger.error(f"tmp_errors is: {tmp_errors}")
-            tmp_errors.to_csv(Path(self.write_location, "error-rows_interactions_data"))
+            tmp_errors.to_csv(
+                Path(
+                    self.write_location,
+                    f"error_rows_interactions_data_{self.current_date_info}.csv",
+                )
+            )
 
             raise
 
