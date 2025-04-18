@@ -267,12 +267,26 @@ class PrepDataTimes:
                 ]
             )
         )
+        n_all_before = len(all_types_interactions)
+        n_gh_users = all_types_interactions["gh_username"].isna().sum()
+        n_repos = all_types_interactions["repo_name"].isna().sum()
+        n_missing_date = all_types_interactions["datetime_day"].isna().sum()
+
+        self.logger.info(
+            f"Filtering out rows including {n_gh_users + n_repos + n_missing_date} missing data elements: {n_repos} rows missing repo_names; {n_missing_date} rows missing date_time days."
+        )
 
         # remove missing repo_name data, and rows with missing gh_usernames
         # AND with missing datetime_day values (NaT)
         all_types_interactions = all_types_interactions.dropna(
             subset=["gh_username", "repo_name", "datetime_day"]
         )
+        n_after_drop = len(all_types_interactions)
+
+        self.logger.info(
+            f"Filtering out {n_all_before - n_after_drop} rows with missing data out of {n_all_before} rows in total."
+        )
+        self.logger.info(f"{n_after_drop} rows remaining.")
 
         all_types_interactions.to_csv(
             Path(self.write_location, "combined_interactions_data")
