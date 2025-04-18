@@ -273,14 +273,10 @@ class PrepDataTimes:
             subset=["gh_username", "repo_name"]
         )
 
-        # )
-        # self.logger.debug(
-        #     type(
-        #         all_types_interactions.groupby(["repo_name", "gh_username"])[
-        #             "datetime_day"
-        #         ].min()
-        #     )
-        # )
+        all_types_interactions.to_csv(
+            Path(self.write_location, "combined_interactions_data")
+        )
+
         try:
             self.logger.debug(
                 all_types_interactions.groupby(["repo_name", "gh_username"])[
@@ -302,18 +298,17 @@ class PrepDataTimes:
                     "datetime_day"
                 ].min()
             )
+
         except Exception as e:
-            tmp_errors = (
-                all_types_interactions["datetime_day"]
-                .apply(lambda x: str(type(x)))
-                .apply(lambda x: "str" if "str" in x else "float")
-            )
-            tmp_errors = all_types_interactions[tmp_errors != "str"]
+            tmp_errors = all_types_interactions["datetime_day"].isna()
+            tmp_errors = all_types_interactions[tmp_errors]
 
             self.logger.error(
                 f"error {e}: value_counts of types for datetime_day are: {all_types_interactions['datetime_day'].apply(lambda x: str(type(x))).value_counts(dropna=False)}"
             )
             self.logger.error(f"tmp_errors is: {tmp_errors}")
+            tmp_errors.to_csv(Path(self.write_location, "error-rows_interactions_data"))
+
             raise
 
         self.logger.debug(
