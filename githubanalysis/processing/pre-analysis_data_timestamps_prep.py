@@ -224,6 +224,16 @@ class PrepDataTimes:
         self.logger.debug(issues_interactions.columns)
         self.logger.debug(commits_interactions.columns)
 
+        filestr_iss = f"issues_interactions_x{len(issues_interactions)}_{self.current_date_info}.csv"
+        writeout_path_iss = Path(self.write_location, filestr_iss)
+
+        issues_interactions.to_csv(writeout_path_iss, header=True, index=False)
+
+        filestr_cmt = f"commits_interactions_x{len(commits_interactions)}_{self.current_date_info}.csv"
+        writeout_path_cmt = Path(self.write_location, filestr_cmt)
+
+        commits_interactions.to_csv(writeout_path_cmt, header=True, index=False)
+        self.logger.debug(f"wrote out commits and issues intercations dfs to separate csv files: {writeout_path_cmt} and {writeout_path_iss}")
 
         # JOIN ISSUES AND COMMITS DATA TOGETHER HERE:
         all_types_interactions = pd.concat(
@@ -236,21 +246,36 @@ class PrepDataTimes:
             subset="gh_username", axis=0
         )
         self.logger.debug("removed missing GH_username rows")
+      
+        print(all_types_interactions["datetime_day"])
+        print(all_types_interactions["datetime_day"].describe())
 
         self.logger.debug(
-            type(
-                all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ].max()
-            )
+            all_types_interactions.groupby(["repo_name", "gh_username"])[
+                "datetime_day"
+            ]
         )
+        
+        print(all_types_interactions.groupby(["repo_name", "gh_username"])[
+                'datetime_day'
+            ]
+        )
+        
         self.logger.debug(
-            type(
-                all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ].min()
-            )
+            type(all_types_interactions.groupby(["repo_name", "gh_username"])[
+                'datetime_day'
+            ])
         )
+
+        exit()
+        # )
+        # self.logger.debug(
+        #     type(
+        #         all_types_interactions.groupby(["repo_name", "gh_username"])[
+        #             "datetime_day"
+        #         ].min()
+        #     )
+        # )
 
         self.logger.debug(
             all_types_interactions.groupby(["repo_name", "gh_username"])[
