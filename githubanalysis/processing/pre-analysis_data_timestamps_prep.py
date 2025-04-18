@@ -289,7 +289,10 @@ class PrepDataTimes:
         self.logger.info(f"{n_after_drop} rows remaining.")
 
         all_types_interactions.to_csv(
-            Path(self.write_location, "combined_interactions_data")
+            Path(
+                self.write_location,
+                f"combined_interactions_data_{self.current_date_info}.csv",
+            )
         )
 
         try:
