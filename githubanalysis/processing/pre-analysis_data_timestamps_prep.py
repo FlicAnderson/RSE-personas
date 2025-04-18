@@ -269,8 +269,9 @@ class PrepDataTimes:
         )
 
         # remove missing repo_name data, and rows with missing gh_usernames
+        # AND with missing datetime_day values (NaT)
         all_types_interactions = all_types_interactions.dropna(
-            subset=["gh_username", "repo_name"]
+            subset=["gh_username", "repo_name", "datetime_day"]
         )
 
         all_types_interactions.to_csv(
@@ -278,17 +279,6 @@ class PrepDataTimes:
         )
 
         try:
-            self.logger.debug(
-                all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ].max()
-            )
-            self.logger.debug(
-                all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ].min()
-            )
-
             # pull out the number of days timediff between 1st and latest interactions
             timediff = (
                 all_types_interactions.groupby(["repo_name", "gh_username"])[
@@ -473,20 +463,20 @@ class PrepDataTimes:
 
         start_time = datetime.datetime.now()
 
-        commit_matches = list(
-            filter(
-                lambda x: x is not None,
-                (re.match(self._COMMITS_PATTERN, f) for f in os.listdir(read_location)),
-            )
-        )
+        # commit_matches = list(
+        #     filter(
+        #         lambda x: x is not None,
+        #         (re.match(self._COMMITS_PATTERN, f) for f in os.listdir(read_location)),
+        #     )
+        # )
 
         issues_files_repolist = [
             f for f in os.listdir(read_location) if re.match(self._ISSUES_PATTERN, f)
         ]
 
-        for i in commit_matches:
-            assert i
-            name = i.group(1)
+        # for i in commit_matches:
+        #     assert i
+        #     name = i.group(1)
 
         # get all the processed-commits files from the folder:
         commits_files_repolist = [
