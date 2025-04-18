@@ -1,4 +1,4 @@
-"""Get timestamp info for issues AND commits datasets."""
+"""Get timestamp and interaction types info for issues AND commits datasets."""
 
 from pathlib import Path
 import datetime
@@ -218,6 +218,13 @@ class PrepDataTimes:
         """
         pd.options.mode.copy_on_write = True
 
+        self.logger.debug(issues_interactions.info)
+        self.logger.debug(commits_interactions.info)
+
+        self.logger.debug(issues_interactions.columns)
+        self.logger.debug(commits_interactions.columns)
+
+
         # JOIN ISSUES AND COMMITS DATA TOGETHER HERE:
         all_types_interactions = pd.concat(
             [issues_interactions, commits_interactions],
@@ -422,10 +429,6 @@ class PrepDataTimes:
         Reads in processed data from commits and issue tickets
         gathers timestamp information and processes it, then combines all
         into single dataframe for analysis.
-
-        Outputs:
-
-        Example Run:
         """
         pd.options.mode.copy_on_write = True
 
@@ -469,7 +472,7 @@ class PrepDataTimes:
         for file in commits_files_repolist:
             file = Path(read_location, file)
             if file.exists():
-                print(file)
+                self.logger.debug(f"Running get_commit_interactions on file {file}.")
                 commits_interactions_next = self.get_commit_interactions(file)
                 commits_interactions = pd.concat(
                     [commits_interactions, commits_interactions_next]
@@ -482,7 +485,9 @@ class PrepDataTimes:
         for file in issues_files_repolist:
             file = Path(read_location, file)
             if file.exists():
-                print(file)
+                self.logger.debug(
+                    f"Running get_issues_PRs_interactions on file {file}."
+                )
                 issues_interactions_next = self.get_issues_PRs_interactions(file)
                 issues_interactions = pd.concat(
                     [issues_interactions, issues_interactions_next]
@@ -499,47 +504,61 @@ class PrepDataTimes:
             issues_interactions is not None
         ), "issues_interactions type is None; something went wrong!"
 
-        all_interactions_data = self.join_and_calculate_all_interactions(
-            commits_interactions, issues_interactions
-        )
+        try: 
 
-        all_interactions_data.fillna(value=0, inplace=True)
-
-        self.logger.info(
-            f"Dataset of combined issues and commits interactions info contains {all_interactions_data.repo_name.nunique()} unique repo_names."
-        )
-
-        n_repos_all_interactions_data = int(
-            all_interactions_data.groupby("repo_name").ngroups
-        )
-        filestr = f"merged-interactions-data-per-dev_x{n_repos_all_interactions_data}-repos_{self.current_date_info}.csv"
-        writeout_path = Path(write_location, filestr)
-
-        try:
-            # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
-            all_interactions_data.to_csv(
-                path_or_buf=writeout_path, header=True, index=False
+            all_interactions_data = self.join_and_calculate_all_interactions(
+                commits_interactions, issues_interactions
             )
 
-            self.logger.info(f"Merged dataset file written out to {writeout_path}")
-
-            end_time = datetime.datetime.now()
+            # replace misisng data with zeroes: 
+            # this shows NO interactions if we don't have any entries for 
+            # that repo-individ from any of the API endpoints
+            all_interactions_data.fillna(value=0, inplace=True)
 
             self.logger.info(
-                f"Run time for {n_repos_all_interactions_data} repos with {len(all_interactions_data)} devs cumulatively: {end_time - start_time}"
+                f"Dataset of combined issues and commits interactions info contains {all_interactions_data.repo_name.nunique()} unique repo_names."
             )
-
             self.logger.info(
-                f"Saved devs_commits_data df for {n_repos_all_interactions_data} repos with {len(all_interactions_data)} devs to file: {filestr}"
+                f"... and contains {all_interactions_data.gh_username.nunique()} unique GH_usernames."
+            )
+            self.logger.info(
+                f"... BUT the interactions info contains {all_interactions_data.groupby(['repo_name', 'gh_username']).ngroups)} unique repo-individuals."
             )
 
-            return all_interactions_data  # RETURN MERGED DATASET
+            n_repos_all_interactions_data = int(
+                all_interactions_data.groupby("repo_name").ngroups
+            )
+            filestr = f"merged-interactions-data-per-dev_x{n_repos_all_interactions_data}-repos_{self.current_date_info}.csv"
+            writeout_path = Path(write_location, filestr)
+
+            try:
+                # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
+                all_interactions_data.to_csv(
+                    path_or_buf=writeout_path, header=True, index=False
+                )
+
+                self.logger.info(f"Merged dataset file written out to {writeout_path}")
+
+                end_time = datetime.datetime.now()
+
+                self.logger.info(
+                    f"Run time for {n_repos_all_interactions_data} repos with {len(all_interactions_data)} devs cumulatively: {end_time - start_time}"
+                )
+
+                self.logger.info(
+                    f"Saved devs_commits_data df for {n_repos_all_interactions_data} repos with {len(all_interactions_data)} devs to file: {filestr}"
+                )
+
+                return all_interactions_data  # RETURN MERGED DATASET
+
+            except Exception as e:
+                self.logger.error(
+                    f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+                )
 
         except Exception as e:
-            self.logger.error(
-                f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
-            )
-
+            self.logger.error(f"Attempting to run join_and_calculate_all_interactions(commits_interactions, issues_interactions) went wrong, with error {e}")
+        
 
 if __name__ == "__main__":
     logger = loggit.get_default_logger(
@@ -554,7 +573,7 @@ if __name__ == "__main__":
     )
 
     prepdatatimes = PrepDataTimes(in_notebook=False, logger=logger)
-
+    
     times_data = prepdatatimes.interactions_data_workflow(
         read_location="data/",
         write_location="data/",
