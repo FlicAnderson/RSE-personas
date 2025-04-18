@@ -233,7 +233,9 @@ class PrepDataTimes:
         writeout_path_cmt = Path(self.write_location, filestr_cmt)
 
         commits_interactions.to_csv(writeout_path_cmt, header=True, index=False)
-        self.logger.debug(f"wrote out commits and issues intercations dfs to separate csv files: {writeout_path_cmt} and {writeout_path_iss}")
+        self.logger.debug(
+            f"wrote out commits and issues intercations dfs to separate csv files: {writeout_path_cmt} and {writeout_path_iss}"
+        )
 
         # JOIN ISSUES AND COMMITS DATA TOGETHER HERE:
         all_types_interactions = pd.concat(
@@ -246,25 +248,24 @@ class PrepDataTimes:
             subset="gh_username", axis=0
         )
         self.logger.debug("removed missing GH_username rows")
-      
+
         print(all_types_interactions["datetime_day"])
         print(all_types_interactions["datetime_day"].describe())
 
         self.logger.debug(
-            all_types_interactions.groupby(["repo_name", "gh_username"])[
-                "datetime_day"
-            ]
+            all_types_interactions.groupby(["repo_name", "gh_username"])["datetime_day"]
         )
-        
-        print(all_types_interactions.groupby(["repo_name", "gh_username"])[
-                'datetime_day'
-            ]
+
+        print(
+            all_types_interactions.groupby(["repo_name", "gh_username"])["datetime_day"]
         )
-        
+
         self.logger.debug(
-            type(all_types_interactions.groupby(["repo_name", "gh_username"])[
-                'datetime_day'
-            ])
+            type(
+                all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ]
+            )
         )
 
         exit()
@@ -529,14 +530,13 @@ class PrepDataTimes:
             issues_interactions is not None
         ), "issues_interactions type is None; something went wrong!"
 
-        try: 
-
+        try:
             all_interactions_data = self.join_and_calculate_all_interactions(
                 commits_interactions, issues_interactions
             )
 
-            # replace misisng data with zeroes: 
-            # this shows NO interactions if we don't have any entries for 
+            # replace misisng data with zeroes:
+            # this shows NO interactions if we don't have any entries for
             # that repo-individ from any of the API endpoints
             all_interactions_data.fillna(value=0, inplace=True)
 
@@ -547,7 +547,7 @@ class PrepDataTimes:
                 f"... and contains {all_interactions_data.gh_username.nunique()} unique GH_usernames."
             )
             self.logger.info(
-                f"... BUT the interactions info contains {all_interactions_data.groupby(['repo_name', 'gh_username']).ngroups)} unique repo-individuals."
+                f"... BUT the interactions info contains {all_interactions_data.groupby(['repo_name', 'gh_username']).ngroups} unique repo-individuals."
             )
 
             n_repos_all_interactions_data = int(
@@ -582,8 +582,10 @@ class PrepDataTimes:
                 )
 
         except Exception as e:
-            self.logger.error(f"Attempting to run join_and_calculate_all_interactions(commits_interactions, issues_interactions) went wrong, with error {e}")
-        
+            self.logger.error(
+                f"Attempting to run join_and_calculate_all_interactions(commits_interactions, issues_interactions) went wrong, with error {e}"
+            )
+
 
 if __name__ == "__main__":
     logger = loggit.get_default_logger(
@@ -598,7 +600,7 @@ if __name__ == "__main__":
     )
 
     prepdatatimes = PrepDataTimes(in_notebook=False, logger=logger)
-    
+
     times_data = prepdatatimes.interactions_data_workflow(
         read_location="data/",
         write_location="data/",
