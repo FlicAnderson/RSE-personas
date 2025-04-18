@@ -56,7 +56,7 @@ class PrepDataTimes:
         """
         pd.options.mode.copy_on_write = True
 
-        commitsdf = pd.read_csv(datafile, index_col=0)
+        commitsdf = pd.read_csv(datafile, index_col=0, lineterminator="\n")
 
         # remove unwanted columns:
         commitsdf = commitsdf[
@@ -111,7 +111,7 @@ class PrepDataTimes:
         """
         pd.options.mode.copy_on_write = True
 
-        rawissuesdf = pd.read_csv(datafile, index_col=0)
+        rawissuesdf = pd.read_csv(datafile, index_col=0, lineterminator="\n")
         assert (
             len(rawissuesdf) != 0
         ), f"File does not contain a dataframe; check input file {datafile}"
@@ -218,8 +218,8 @@ class PrepDataTimes:
         """
         pd.options.mode.copy_on_write = True
 
-        self.logger.debug(issues_interactions.info)
-        self.logger.debug(commits_interactions.info)
+        self.logger.debug(issues_interactions.info())
+        self.logger.debug(commits_interactions.info())
 
         self.logger.debug(issues_interactions.columns)
         self.logger.debug(commits_interactions.columns)
@@ -250,7 +250,7 @@ class PrepDataTimes:
         self.logger.debug("removed missing GH_username rows")
 
         print(all_types_interactions["datetime_day"])
-        print(all_types_interactions["datetime_day"].describe())
+        print(all_types_interactions["datetime_day"])
 
         self.logger.debug(
             all_types_interactions.groupby(["repo_name", "gh_username"])["datetime_day"]
@@ -268,7 +268,11 @@ class PrepDataTimes:
             )
         )
 
-        exit()
+        # remove missing repo_name data, and rows with missing gh_usernames
+        all_types_interactions = all_types_interactions.dropna(
+            subset=["gh_username", "repo_name"]
+        )
+
         # )
         # self.logger.debug(
         #     type(
@@ -277,27 +281,41 @@ class PrepDataTimes:
         #         ].min()
         #     )
         # )
+        try:
+            self.logger.debug(
+                all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ].max()
+            )
+            self.logger.debug(
+                all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ].min()
+            )
 
-        self.logger.debug(
-            all_types_interactions.groupby(["repo_name", "gh_username"])[
-                "datetime_day"
-            ].max()
-        )
-        self.logger.debug(
-            all_types_interactions.groupby(["repo_name", "gh_username"])[
-                "datetime_day"
-            ].min()
-        )
+            # pull out the number of days timediff between 1st and latest interactions
+            timediff = (
+                all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ].max()
+                - all_types_interactions.groupby(["repo_name", "gh_username"])[
+                    "datetime_day"
+                ].min()
+            )
+        except Exception as e:
+            tmp_errors = (
+                all_types_interactions["datetime_day"]
+                .apply(lambda x: str(type(x)))
+                .apply(lambda x: "str" if "str" in x else "float")
+            )
+            tmp_errors = all_types_interactions[tmp_errors != "str"]
 
-        # pull out the number of days timediff between 1st and latest interactions
-        timediff = (
-            all_types_interactions.groupby(["repo_name", "gh_username"])[
-                "datetime_day"
-            ].max()
-            - all_types_interactions.groupby(["repo_name", "gh_username"])[
-                "datetime_day"
-            ].min()
-        )
+            self.logger.error(
+                f"error {e}: value_counts of types for datetime_day are: {all_types_interactions['datetime_day'].apply(lambda x: str(type(x))).value_counts(dropna=False)}"
+            )
+            self.logger.error(f"tmp_errors is: {tmp_errors}")
+            raise
+
         self.logger.debug(
             "completed timediff calculation: datetime_day max - datetime_day min by groups"
         )
@@ -580,11 +598,13 @@ class PrepDataTimes:
                 self.logger.error(
                     f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
                 )
+                raise
 
         except Exception as e:
             self.logger.error(
                 f"Attempting to run join_and_calculate_all_interactions(commits_interactions, issues_interactions) went wrong, with error {e}"
             )
+            raise
 
 
 if __name__ == "__main__":
