@@ -42,7 +42,7 @@ class UpsetPlotter:
             "%Y-%m-%d"
         )  # at start of script to avoid midnight/long-run issues
         self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("data/" if not in_notebook else "../../data/")
+        self.write_location = Path("images/" if not in_notebook else "../../images/")
 
     def plot_upset_plot_interaction_combinations(
         self,
@@ -127,6 +127,7 @@ class UpsetPlotter:
                 f"{file_name}_cluster0_{self.current_date_info}",  # << NOTE: hardcoded cluster name
             )
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
+            self.logger.info(f"Plot saved out to file {plot_file}.")
             plt.close()
 
             upset = UpSet(
@@ -147,6 +148,7 @@ class UpsetPlotter:
                 f"{file_name}_cluster1_{self.current_date_info}",  # << NOTE: hardcoded cluster name
             )
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
+            self.logger.info(f"Plot saved out to file {plot_file}.")
             plt.close()
 
             # if n_clusters was 3, would add separate support for that here...
@@ -183,5 +185,6 @@ class UpsetPlotter:
             )
 
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
+            self.logger.info(f"Plot saved out to file {plot_file}.")
 
             plt.close()
