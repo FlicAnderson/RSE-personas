@@ -51,7 +51,7 @@ class UpsetPlotter:
         separate_by_clusters: bool = False,
         sort_combos_by: str = "cardinality",
         file_name: str = "upset_plot_",
-        save_type: str = "svg",  # one of: ['png', 'pdf', 'svg']
+        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
         # min_repo_individs_per_combo: int = 2,
         # show_counts_per_combo: boolean = True,
         # show_pc: boolean = False,
@@ -121,14 +121,13 @@ class UpsetPlotter:
             plt.suptitle(
                 f"Interaction-Combinations made by >1 Repo-Individuals in CLUSTER 0,  N={len(data_by_interaction.query('cluster_labels == 0'))}"
             )
-            plt.show()
             plot_file = Path(
                 self.write_location,
                 f"{file_name}_cluster0_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
             )
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
-            self.logger.info(f"Plot saved out to file {plot_file}.")
             plt.close()
+            self.logger.info(f"Plot saved out to file {plot_file}.")
 
             upset = UpSet(
                 data_by_interaction.query("cluster_labels == 1"),
@@ -142,14 +141,13 @@ class UpsetPlotter:
             plt.suptitle(
                 f"Interaction-Combinations made by >1 Repo-Individuals in CLUSTER 1, N={len(data_by_interaction.query('cluster_labels == 1'))}"
             )
-            plt.show()
             plot_file = Path(
                 self.write_location,
                 f"{file_name}_cluster1_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
             )
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
-            self.logger.info(f"Plot saved out to file {plot_file}.")
             plt.close()
+            self.logger.info(f"Plot saved out to file {plot_file}.")
 
             # if n_clusters was 3, would add separate support for that here...
 
@@ -177,14 +175,10 @@ class UpsetPlotter:
             plt.suptitle(
                 f"Interaction-Combinations made by >1 Repo-Individuals,  N={len(data_by_interaction)}"
             )
-            plt.show()
-
             # build path + filename
             plot_file = Path(
                 self.write_location, f"{file_name}_{self.current_date_info}.{save_type}"
             )
-
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
-            self.logger.info(f"Plot saved out to file {plot_file}.")
-
             plt.close()
+            self.logger.info(f"Plot saved out to file {plot_file}.")
