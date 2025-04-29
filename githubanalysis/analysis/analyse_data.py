@@ -606,7 +606,6 @@ class DataAnalyser:
         save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
     ):
         sns.barplot(data=df, x="N_clusters_evaluated", y="CH_score")
-        plt.show()
         plot_file = Path(
             self.write_location,
             f"{file_name}_{self.current_date_info}.{save_type}",
@@ -855,7 +854,7 @@ class DataAnalyser:
         threedimpca = ThreeDimPCA(in_notebook=self.in_notebook, logger=self.logger)
         threedimpca.plot_threedim_PCA(
             cluster_labels=cluster_labels,
-            labelled_data=labelled_data,
+            clustering_data=clustering_data,
         )
 
         # log out axis importance
