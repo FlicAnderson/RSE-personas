@@ -46,7 +46,7 @@ class ThreeDimPCA:
     def plot_threedim_PCA(
         self,
         cluster_labels: np.ndarray,
-        labelled_data: pd.DataFrame,
+        clustering_data: pd.DataFrame,
         colours: list | dict = {
             0: "#D50032",
             1: "#1D2A3D",
@@ -55,6 +55,9 @@ class ThreeDimPCA:
         file_name: str = "sample_3D_PCA_",
         save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
     ):
+        clustering_data_labelled = pd.concat(
+            [pd.DataFrame({"cluster_labels": cluster_labels}), clustering_data], axis=1
+        )
         label_color_dict = colours
         # label_color_dict = {0:'#D50032', 1:'#1D2A3D', 2:'#FDBC42'} # universityred, epccnavy, dandelion,
 
@@ -69,7 +72,7 @@ class ThreeDimPCA:
 
         cvec = [label_color_dict[label] for label in labels]
 
-        X_reduced = PCA(n_components=3).fit_transform(labelled_data)
+        X_reduced = PCA(n_components=3).fit_transform(clustering_data_labelled)
         ax.scatter(
             X_reduced[:, 0],
             X_reduced[:, 1],
