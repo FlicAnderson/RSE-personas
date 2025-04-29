@@ -47,7 +47,7 @@ class UpsetPlotter:
     def plot_upset_plot_interaction_combinations(
         self,
         data: pd.DataFrame | Path,
-        colours: list | dict = sns.color_palette("colorblind"),
+        # colours: list | dict = sns.color_palette("colorblind"),
         separate_by_clusters: bool = False,
         sort_combos_by: str = "cardinality",
         file_name: str = "upset_plot_",
@@ -88,26 +88,26 @@ class UpsetPlotter:
             assert isinstance(data, pd.DataFrame), "data could not be read in properly."
             self.logger.info(f"data is df, with shape: {data.shape}.")
 
+        colours = list(sns.color_palette("colorblind").as_hex())
+
+        data_by_interaction = from_memberships(  # format data to upsetplot requirements
+            data.which_interactions.apply(lambda x: [x.strip() for x in x.split(",")]),
+            data=data,
+        )
         # if colours is a list and separate_by_clusters is true, does len(colours) match nunique('cluster_labels')?
         if separate_by_clusters:
             assert (
                 "cluster_labels" in data.columns
             ), "df has no column 'cluster_labels - please check this is present in the data."
+
             n_clusters = data.cluster_labels.nunique()
-            assert (
-                len(colours) >= n_clusters
-            ), f"length/number of colours supplied not enough for number of clusters: N colours={len(colours)} but N of clusters is {n_clusters}."
+            # assert (
+            #     len(colours) >= n_clusters
+            # ), f"length/number of colours supplied not enough for number of clusters: N colours={len(colours)} but N of clusters is {n_clusters}."
 
             assert (
                 n_clusters > 2
             ), "Support for 3+ clusters not written into this function yet."
-
-            data_by_interaction = from_memberships(
-                data.which_interactions.apply(
-                    lambda x: [x.strip() for x in x.split(",")]
-                ),
-                data=data,
-            )
 
             upset = UpSet(
                 data_by_interaction.query("cluster_labels == 0"),
@@ -152,22 +152,14 @@ class UpsetPlotter:
             # if n_clusters was 3, would add separate support for that here...
 
         else:  # if not plotting separately by clusters:
-            data_by_interaction = (
-                from_memberships(  # format data to upsetplot requirements
-                    data.which_interactions.apply(
-                        lambda x: [x.strip() for x in x.split(",")]
-                    ),
-                    data=data,
-                )
-            )
-
             upset = UpSet(
-                data_by_interaction,
+                data=data_by_interaction,
                 show_counts="{:,}",
                 sort_by="degree",
-                facecolor=colours[
-                    0
-                ],  # use first colour in colours as single colour option
+                facecolor="black",
+                # facecolor=colours[
+                #     0
+                # ],  # use first colour in colours as single colour option
                 orientation="horizontal",
                 min_subset_size=2,
             )
