@@ -74,7 +74,7 @@ class Dendrogrammer:
         )
         plot_file = Path(
             self.write_location,
-            f"{file_name}_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
+            f"{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
