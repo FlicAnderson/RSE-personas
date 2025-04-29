@@ -3,24 +3,22 @@
 # import modules
 from pathlib import Path
 import datetime
-from ast import literal_eval
 
 import logging
 import utilities.get_default_logger as loggit
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
-from githubanalysis.visualization.plot_3D_PCA import ThreeDimPCA
+from githubanalysis.visualization.plot_repoindividual_upset_plot import UpsetPlotter
+from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
 
 import pandas as pd
 import numpy as np
 
 from sklearn.cluster import AgglomerativeClustering
-from scipy.cluster.hierarchy import linkage, cut_tree, dendrogram
 from sklearn.metrics import calinski_harabasz_score
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import cast
-from scipy.stats import zscore
 
 import re
 
@@ -847,12 +845,23 @@ class DataAnalyser:
         # means for key variables by cluster
 
         # create upset plot for interaction combinations
+        upsetplotter = UpsetPlotter(
+            in_notebook=self.in_notebook,
+            logger=self.logger,
+        )
+        upsetplotter.plot_upset_plot_interaction_combinations(
+            data=labelled_data,
+        )
 
         # PCA: run PCA to assess how variance is distributed
-        # plot 2D
         # plot 3D
-        threedimpca = ThreeDimPCA(in_notebook=self.in_notebook, logger=self.logger)
-        threedimpca.plot_threedim_PCA(
+        plotpca = PlotPCA(in_notebook=self.in_notebook, logger=self.logger)
+        # plot 2D
+        plotpca.plot_twodim_PCA(
+            cluster_labels=cluster_labels,
+            clustering_data=clustering_data,
+        )
+        plotpca.plot_threedim_PCA(
             cluster_labels=cluster_labels,
             clustering_data=clustering_data,
         )
