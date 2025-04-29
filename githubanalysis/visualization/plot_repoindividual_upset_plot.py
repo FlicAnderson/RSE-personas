@@ -44,6 +44,72 @@ class UpsetPlotter:
         self.read_location = Path("data/" if not in_notebook else "../../data/")
         self.write_location = Path("images/" if not in_notebook else "../../images/")
 
+    def upset_plot(
+        self,
+        cluster: int | None,
+        data: pd.DataFrame,
+        sort_combos_by: str = "cardinality",
+        file_name: str = "upset_plot_",
+        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+    ):
+        assert (
+            isinstance(cluster, int) or cluster is None
+        ), f"give valid input for 'cluster': should be a number or None. You supplied {cluster}."
+        assert save_type in [
+            "svg",
+            "pdf",
+            "png",
+        ], "save_type is not valid; check you have entered one of: 'svg', 'pdf', 'png'."
+        assert (
+            sort_combos_by
+            in ["cardinality", "-cardinality", "degree", "-degree", "input", "-input"]
+        ), "sort_combos_by is not valid, check you've entered one of: 'cardinality', 'degree', 'input' or '-cardinality', '-degree', '-input'."
+
+        # what type is data?
+        if isinstance(data, pd.DataFrame):
+            assert data.empty is False, "Dataframe data is empty; check inputs."
+            self.logger.info(f"data is df, with shape: {data.shape}.")
+
+        colours = list(sns.color_palette("colorblind").as_hex())
+
+        data_by_interaction = from_memberships(  # format data to upsetplot requirements
+            data.which_interactions.apply(lambda x: [x.strip() for x in x.split(",")]),
+            data=data,
+        )
+        assert isinstance(
+            data_by_interaction, pd.DataFrame
+        ), "data_by_interaction needs to be a dataframe, check this was generated correctly."
+
+        if cluster is not None:
+            cluster_query = f"cluster_labels == {cluster}"
+            data = data_by_interaction.query("@cluster_query", engine="python")
+            plot_colour = colours[cluster]
+            cluster_name = f"cluster{cluster}"
+        else:  # if no clusters supplied:
+            data = data_by_interaction
+            plot_colour = "black"
+            cluster_name = "whole_dataset"
+
+        upset = UpSet(
+            data=data,
+            show_counts="{:,}",
+            sort_by=sort_combos_by,
+            facecolor=plot_colour,
+            orientation="horizontal",
+            min_subset_size=2,
+        )
+        upset.plot()
+        plt.suptitle(
+            f"Interaction-Combinations made by >1 Repo-Individuals in {cluster_name},  N={len(data)}"
+        )
+        plot_file = Path(
+            self.write_location,
+            f"{file_name}_{cluster_name}_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
+        )
+        plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
+        plt.close()
+        self.logger.info(f"Plot saved out to file {plot_file}.")
+
     def plot_upset_plot_interaction_combinations(
         self,
         data: pd.DataFrame | Path,
@@ -63,114 +129,30 @@ class UpsetPlotter:
         TODO: pull the plot upsetplot into a function, so I can loop it for n_clusters from data and avoid repetition
 
         """
-
         assert isinstance(
             data, (pd.DataFrame, Path)
         ), "Data is not of type pandas dataframe or Path; check your inputs."
-        assert save_type in [
-            "svg",
-            "pdf",
-            "png",
-        ], "save_type is not valid; check you have entered one of: 'svg', 'pdf', 'png'."
-        assert (
-            sort_combos_by
-            in ["cardinality", "-cardinality", "degree", "-degree", "input", "-input"]
-        ), "sort_combos_by is not valid, check you've entered one of: 'cardinality', 'degree', 'input' or '-cardinality', '-degree', '-input'."
-
-        # what type is data?
-        if isinstance(data, pd.DataFrame):
-            assert data.empty is False, "Dataframe data is empty; check inputs."
-            self.logger.info(f"data is df, with shape: {data.shape}.")
-
         if isinstance(data, Path):
             self.logger.info(f"data is a path: {data}")
             data = pd.read_csv(filepath_or_buffer=data, header=0)
             assert isinstance(data, pd.DataFrame), "data could not be read in properly."
             self.logger.info(f"data is df, with shape: {data.shape}.")
-
-        colours = list(sns.color_palette("colorblind").as_hex())
-
-        data_by_interaction = from_memberships(  # format data to upsetplot requirements
-            data.which_interactions.apply(lambda x: [x.strip() for x in x.split(",")]),
-            data=data,
-        )
         # if colours is a list and separate_by_clusters is true, does len(colours) match nunique('cluster_labels')?
+
+        assert isinstance(
+            data, pd.DataFrame
+        ), "data should be dataframe format by now, check why this isn't correct"
+
         if separate_by_clusters:
             assert (
                 "cluster_labels" in data.columns
             ), "df has no column 'cluster_labels - please check this is present in the data."
-
             n_clusters = data.cluster_labels.nunique()
-            # assert (
-            #     len(colours) >= n_clusters
-            # ), f"length/number of colours supplied not enough for number of clusters: N colours={len(colours)} but N of clusters is {n_clusters}."
 
-            assert (
-                n_clusters > 2
-            ), "Support for 3+ clusters not written into this function yet."
-
-            upset = UpSet(
-                data_by_interaction.query("cluster_labels == 0"),
-                show_counts="{:,}",
-                sort_by=sort_combos_by,
-                facecolor=colours[0],
-                orientation="horizontal",
-                min_subset_size=2,
-            )
-            upset.plot()
-            plt.suptitle(
-                f"Interaction-Combinations made by >1 Repo-Individuals in CLUSTER 0,  N={len(data_by_interaction.query('cluster_labels == 0'))}"
-            )
-            plot_file = Path(
-                self.write_location,
-                f"{file_name}_cluster0_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
-            )
-            plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
-            plt.close()
-            self.logger.info(f"Plot saved out to file {plot_file}.")
-
-            upset = UpSet(
-                data_by_interaction.query("cluster_labels == 1"),
-                show_counts="{:,}",
-                sort_by=sort_combos_by,
-                facecolor=colours[1],
-                orientation="horizontal",
-                min_subset_size=2,
-            )
-            upset.plot()
-            plt.suptitle(
-                f"Interaction-Combinations made by >1 Repo-Individuals in CLUSTER 1, N={len(data_by_interaction.query('cluster_labels == 1'))}"
-            )
-            plot_file = Path(
-                self.write_location,
-                f"{file_name}_cluster1_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
-            )
-            plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
-            plt.close()
-            self.logger.info(f"Plot saved out to file {plot_file}.")
-
-            # if n_clusters was 3, would add separate support for that here...
-
-        else:  # if not plotting separately by clusters:
-            upset = UpSet(
-                data=data_by_interaction,
-                show_counts="{:,}",
-                sort_by="degree",
-                facecolor="black",
-                # facecolor=colours[
-                #     0
-                # ],  # use first colour in colours as single colour option
-                orientation="horizontal",
-                min_subset_size=2,
-            )
-            upset.plot()
-            plt.suptitle(
-                f"Interaction-Combinations made by >1 Repo-Individuals,  N={len(data_by_interaction)}"
-            )
-            # build path + filename
-            plot_file = Path(
-                self.write_location, f"{file_name}_{self.current_date_info}.{save_type}"
-            )
-            plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
-            plt.close()
-            self.logger.info(f"Plot saved out to file {plot_file}.")
+            for cluster in range(0, n_clusters - 1, 1):
+                # range: start at 0 because this is how they're named by clustering
+                # end on n_clusters - 1 because we're starting at 0 and off-by-one; increases by 1
+                self.upset_plot(
+                    cluster=cluster,
+                    data=data,
+                )
