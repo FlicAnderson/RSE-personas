@@ -654,7 +654,7 @@ class DataAnalyser:
 
         # if subset_repos_file is not None:
         if subset_repos_file is not None:
-            self.subset_sample_to_repos(
+            data = self.subset_sample_to_repos(
                 data,
                 subset_repos_file=subset_repos_file,
             )
@@ -823,7 +823,7 @@ class DataAnalyser:
 
 def main():
     dataanalyser = DataAnalyser(in_notebook=False)
-    dataanalyser.read_location
+    # dataanalyser.read_location
     data_df = pd.read_csv(
         Path(
             dataanalyser.read_location, "merged-data-per-dev_x3740-repos_2025-04-15.csv"
