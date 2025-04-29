@@ -81,6 +81,7 @@ class PlotPCA:
             s=40,
         )
         PCA_3 = PCA(n_components=3)
+
         eigenvec1 = (PCA_3.explained_variance_ratio_)[0] * 100
         eigenvec2 = (PCA_3.explained_variance_ratio_)[1] * 100
         eigenvec3 = (PCA_3.explained_variance_ratio_)[2] * 100
@@ -140,8 +141,9 @@ class PlotPCA:
         plt.title(
             "Principal Component Analysis of Repo-Individuals Interactions", fontsize=20
         )
-        targets = [0, 1, 2]
-
+        targets = [0, 1]
+        if isinstance(colours, dict):
+            colours = list(colours.values())
         for target, color in zip(targets, colours):
             indicesToKeep = clustering_data_labelled["cluster_labels"] == target
             plt.scatter(
