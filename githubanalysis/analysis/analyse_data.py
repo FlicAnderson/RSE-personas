@@ -574,8 +574,8 @@ class DataAnalyser:
             n_clusters = n
             model = AgglomerativeClustering(
                 n_clusters=n_clusters,
-                metric=literal_eval(use_metric),
-                linkage=literal_eval(use_linkage),
+                metric="euclidean",
+                linkage="ward",
             )
             model_predictions = model.fit_predict(X)
             cluster_labels = model_predictions
@@ -773,7 +773,7 @@ class DataAnalyser:
         self.logger.info(f"Clustering dataset has shape {clustering_data.shape}")
         # plot dendrogram
         # save out
-        dendrogrammer = Dendrogrammer(in_notebook=False, logger=self.logger)
+        dendrogrammer = Dendrogrammer(in_notebook=self.in_notebook, logger=self.logger)
         dendrogrammer.plot_dendrogram(
             clustering_data=clustering_data,
             colours=["#D50032", "#1D2A3D", "#FDBC42"],
