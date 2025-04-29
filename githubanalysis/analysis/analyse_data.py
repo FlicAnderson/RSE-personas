@@ -8,6 +8,7 @@ from ast import literal_eval
 import logging
 import utilities.get_default_logger as loggit
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
+from githubanalysis.visualization.plot_3D_PCA import ThreeDimPCA
 
 import pandas as pd
 import numpy as np
@@ -531,8 +532,8 @@ class DataAnalyser:
                 "pc_DC",
                 "pc_sum_n_interactions",
                 "pc_interaction_days",
-                "interaction_days",  # ideally should be pc_of_repo_age!
-                "interaction_period_days",  # ideally should be pc_of_repo_age!
+                # "interaction_days",  # ideally should be pc_of_repo_age!
+                # "interaction_period_days",  # ideally should be pc_of_repo_age!
                 "pc_created-closed_issues",
                 # "mean_n_interactions_per_interaction_day",
             ]
@@ -562,16 +563,13 @@ class DataAnalyser:
 
         self.logger.info(f"clustering data is df, with shape: {clustering_data.shape}.")
 
-        clusters_range = range(2, max_clusters_to_eval + 1, 1)
-        # start at 2 because need min of 2 clusters
-        # end on max_clusters_to_eval number
-        # increase by 1
         X = clustering_data  # sample data, naming according to clustering/ML practices
         eval_chs = []
         eval_ns = []
 
-        for n in clusters_range:
-            n_clusters = n
+        for n_clusters in range(2, max_clusters_to_eval + 1, 1):
+            # range: start at 2 because need min of 2 clusters
+            # end on max_clusters_to_eval number, increases by 1
             model = AgglomerativeClustering(
                 n_clusters=n_clusters,
                 metric="euclidean",
@@ -601,17 +599,36 @@ class DataAnalyser:
 
         return eval_df
 
+    def plot_eval_df(
+        self,
+        df: pd.DataFrame,
+        file_name: str = "sample_CHscore_per_Ncluster_",
+        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+    ):
+        sns.barplot(data=df, x="N_clusters_evaluated", y="CH_score")
+        plt.show()
+        plot_file = Path(
+            self.write_location,
+            f"{file_name}_{self.current_date_info}.{save_type}",
+        )
+        plt.title("Calinski-Harabasz Scores for different N Clusters")
+        plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
+        plt.close()
+        self.logger.info(f"Plot saved out to file {plot_file}.")
+
     def do_clustering(
         self,
         clustering_data: pd.DataFrame,
         best_n_clusters: int,
-        cleaned_data_with_interactions: pd.DataFrame,
-    ) -> pd.DataFrame:
+    ) -> np.ndarray:
         model = AgglomerativeClustering(
             n_clusters=best_n_clusters, metric="euclidean", linkage="ward"
-        )  # x2 clusters because of CH Score!
+        )
 
         X = clustering_data
+        self.logger.info(
+            f"Attempting clustering with dataset shape {clustering_data.shape} and {len(clustering_data.columns)} columns: {clustering_data.columns}."
+        )
 
         # fit the hierarchical clustering algorithm to dataset X
         model_predictions = model.fit_predict(X)
@@ -619,11 +636,18 @@ class DataAnalyser:
         # each repo-individual belongs to
         cluster_labels = model_predictions
 
+        return cluster_labels
+
+    def label_clustering_data(
+        self,
+        cluster_labels: np.ndarray,
+        cleaned_data_with_interactions: pd.DataFrame,
+    ) -> pd.DataFrame:
         cleaned_data_with_interactions = cleaned_data_with_interactions.reset_index(
             drop=True
         )
 
-        sklearn_hcwdata = pd.concat(
+        labelled_data = pd.concat(
             [
                 pd.DataFrame({"cluster_labels": cluster_labels}),
                 cleaned_data_with_interactions,
@@ -633,10 +657,10 @@ class DataAnalyser:
 
         # write out dataset used for clustering:
         self.writeout_data_to_csv(
-            sklearn_hcwdata,
+            labelled_data,
             "clustered_sample_data_with_labels_",
         )
-        return sklearn_hcwdata
+        return labelled_data
 
     def analysis_workflow(
         self,
@@ -644,6 +668,7 @@ class DataAnalyser:
         subset_repos_file: str | Path,
         interactions_data_file: str | Path,
         repo_stats_file: str | Path,
+        max_clusters_to_eval: int = 10,
     ):
         # if data is file:
 
@@ -784,7 +809,7 @@ class DataAnalyser:
         # log out n of clusters, ch scores, etc
         eval_CHs = self.evaluate_n_clusters(
             clustering_data=clustering_data,
-            max_clusters_to_eval=10,
+            max_clusters_to_eval=max_clusters_to_eval,
         )
         best_n_clusters = cast(  # cast here means "trust me, this is an int"
             np.int64,
@@ -798,19 +823,28 @@ class DataAnalyser:
         ), "Check that N_clusters_evaluated column contains integers!"
 
         self.logger.info(
-            f"Calinski-Harabasz Score evaluation shows best number of clusters for sample is {best_n_clusters} with score {eval_CHs.loc[eval_CHs['CH_score'].idxmax(), 'CH_score']}."
+            f"Calinski-Harabasz Score evaluation of {max_clusters_to_eval} clusters shows best number of clusters for sample is {best_n_clusters} with score {eval_CHs.loc[eval_CHs['CH_score'].idxmax(), 'CH_score']}."
         )
+        self.plot_eval_df(eval_CHs)  # plot the evaluation CH Scores
 
         # run actual clustering with best N of clusters
         # write out clustering data
         # apply cluster_labels to original data (cleaned_data_with_interactions)
-        self.do_clustering(
+        cluster_labels = self.do_clustering(
             clustering_data=clustering_data,
             best_n_clusters=int(best_n_clusters),
+        )
+
+        labelled_data = self.label_clustering_data(
+            cluster_labels=cluster_labels,
             cleaned_data_with_interactions=cleaned_data_with_interactions,
         )
 
         # log cluster number, sizes of n_repo_individuals, n_repos, distribution, etc.
+        n_clusters = labelled_data.groupby("cluster_labels").ngroups
+        self.logger.info(
+            f"Applied {n_clusters} cluster labels to dataset to create labelled dataset of shape: {labelled_data.shape}."
+        )
         # means for key variables by cluster
 
         # create upset plot for interaction combinations
@@ -818,6 +852,12 @@ class DataAnalyser:
         # PCA: run PCA to assess how variance is distributed
         # plot 2D
         # plot 3D
+        threedimpca = ThreeDimPCA(in_notebook=self.in_notebook, logger=self.logger)
+        threedimpca.plot_threedim_PCA(
+            cluster_labels=cluster_labels,
+            labelled_data=labelled_data,
+        )
+
         # log out axis importance
 
 
@@ -836,6 +876,7 @@ def main():
         subset_repos_file="deRSE-sample-intersection-repos_2025-04-22_x21.txt",
         interactions_data_file="merged-interactions-data-per-dev_x3821-repos_2025-04-18.csv",
         repo_stats_file="summarised_repo_stats_2025-03-26.csv",
+        max_clusters_to_eval=10,
     )
 
 
