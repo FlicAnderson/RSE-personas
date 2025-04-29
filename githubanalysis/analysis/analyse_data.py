@@ -377,8 +377,10 @@ class DataAnalyser:
         cleaned_data: pd.DataFrame,
         all_interaction_data: pd.DataFrame,
     ):
-        self.logger.info(f"{cleaned_data.columns = }")
-        self.logger.info(f"{all_interaction_data.columns = }")
+        self.logger.info(f"{cleaned_data.shape =}")
+
+        self.logger.info(f"{all_interaction_data.shape =}")
+
         # merge interaction data onto main analysis dataset:
         cleaned_data_with_interactions = pd.merge(
             cleaned_data,
@@ -386,7 +388,14 @@ class DataAnalyser:
             how="inner",
             on=["repo_name", "gh_username"],
         )  # join on repo-individual as key
-        self.logger.info(f"{cleaned_data_with_interactions.columns = }")
+        self.logger.info(f"{cleaned_data_with_interactions.shape = }")
+        self.logger.info(
+            f"Number of unique cols in cleaned_data_with_interactions is: {cleaned_data_with_interactions.columns.nunique()}."
+        )
+        self.writeout_data_to_csv(
+            cleaned_data_with_interactions,
+            filename="test_cleaned_data_with_interactions_",
+        )
 
         assert (
             "pc_issues_assigned_of_assigned" in cleaned_data_with_interactions.columns
@@ -485,6 +494,7 @@ class DataAnalyser:
     def plot_sample_languages(
         self,
         dataset_languages: pd.DataFrame,
+        n_repos: int | None,
         save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
     ):
         over1pclanguages = dataset_languages.query("pc_repos_using_language >= 1")
@@ -492,9 +502,11 @@ class DataAnalyser:
         sns.barplot(
             data=over1pclanguages, x="repo_language", y="pc_repos_using_language"
         )
-        plt.title(
-            f"Percentage (>=1%) of SAMPLE Repos using 'Language' (N repos = {dataset_languages.groupby('repo_name').ngroups})"
-        )
+        if n_repos is not None and isinstance(n_repos, int):
+            titletxt = f"Percentage (>=1%) of SAMPLE Repos using 'Language' (N repos = {n_repos})"
+        else:
+            titletxt = "Percentage (>=1%) of SAMPLE Repos using 'Language'"
+        plt.title(titletxt)
         plt.xticks(rotation=90)
         plt.tight_layout()
         plot_file = Path(
@@ -710,7 +722,7 @@ class DataAnalyser:
         # read in summarised repo stats data, subset to repos in sample
         repo_stats = pd.read_csv(
             repo_stats_file,
-            header=True,
+            header=0,
         )
         assert (
             repo_stats is not None
@@ -728,10 +740,14 @@ class DataAnalyser:
             f"Relevant repo_stats subset written out to {write_out_to_repo_stats}"
         )
 
+        n_repos = cleaned_data_with_interactions.groupby("repo_name").ngroups
+        n_users = len(cleaned_data_with_interactions)
+
         # analyse & write out languages from sample
         # plot languages data from sample
         self.plot_sample_languages(
-            self.sample_languages(relevant_repo_stats=repo_stats)
+            self.sample_languages(relevant_repo_stats=repo_stats),
+            n_repos=n_repos,
         )
         self.logger.info(
             "Sample repos languages info collected and written out and plotted."
@@ -752,6 +768,9 @@ class DataAnalyser:
             cleaned_data_with_interactions=cleaned_data_with_interactions
         )
 
+        self.writeout_data_to_csv(clustering_data, filename="test_clustering_data")
+        # clustering
+        self.logger.info(f"Clustering dataset has shape {clustering_data.shape}")
         # plot dendrogram
         # save out
         dendrogrammer = Dendrogrammer(in_notebook=False, logger=self.logger)
@@ -810,11 +829,12 @@ def main():
             dataanalyser.read_location, "merged-data-per-dev_x3740-repos_2025-04-15.csv"
         ),
         header=0,
+        low_memory=False,
     )
     dataanalyser.analysis_workflow(
         data=data_df,
         subset_repos_file="deRSE-sample-intersection-repos_2025-04-22_x21.txt",
-        interactions_data_file="deRSE-sample-intersection-repos_repo_interactions_dataset_used_for_analysis_x21-repos_x1030project-individuals_2025-04-22.csv",
+        interactions_data_file="merged-interactions-data-per-dev_x3821-repos_2025-04-18.csv",
         repo_stats_file="summarised_repo_stats_2025-03-26.csv",
     )
 
