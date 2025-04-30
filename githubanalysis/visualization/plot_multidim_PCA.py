@@ -81,15 +81,27 @@ class PlotPCA:
             s=40,
         )
         PCA_3 = PCA(n_components=3)
+        PCA_3_df = pd.DataFrame(
+            data=PCA_3.fit_transform(clustering_data),
+            columns=[
+                "principal component 1",
+                "principal component 2",
+                "principal component 3",
+            ],
+        )
+
+        self.logger.info(
+            f"{'Explained variability per principal component: {}'.format(PCA_3.explained_variance_ratio_)}"
+        )
 
         eigenvec1 = (PCA_3.explained_variance_ratio_)[0] * 100
         eigenvec2 = (PCA_3.explained_variance_ratio_)[1] * 100
         eigenvec3 = (PCA_3.explained_variance_ratio_)[2] * 100
         ax.set(
             title="Principal Component Analysis of Repo-Individuals Interactions Data",
-            xlabel=f"Principal Component 1: ({round(eigenvec1, 2)}%)",
-            ylabel=f"Principal Component 2: ({round(eigenvec2, 2)}%)",
-            zlabel=f"Principal Component 3: ({round(eigenvec3, 2)}%)",
+            xlabel=f"Eigenvector 1: ({round(eigenvec1, 2)}%)",
+            ylabel=f"Eigenvector 2: ({round(eigenvec2, 2)}%)",
+            zlabel=f"Eigenvector 3: ({round(eigenvec3, 2)}%)",
         )
         ax.xaxis.set_ticklabels([])
         ax.yaxis.set_ticklabels([])
