@@ -129,8 +129,11 @@ class DataAnalyser:
                 f"length of subset_repos_file is: {len(subset_repos)} repos"
             )
 
-            self.logger.info("Subsetting percentage is: {subset_pc}")
-            random.seed(0)
+            flics_seed = 42
+            random.seed(flics_seed)
+            self.logger.info(
+                f"Subsetting percentage is: {subset_pc}; using random seed: {flics_seed}"
+            )
 
             subset_pc_as_n = round((len(subset_repos) * (subset_pc / 100)))
             # Re: behaviour of round: Return number rounded to ndigits precision
