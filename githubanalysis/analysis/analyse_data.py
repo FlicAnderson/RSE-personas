@@ -3,6 +3,7 @@
 # import modules
 from pathlib import Path
 import datetime
+import argparse
 
 import logging
 import utilities.get_default_logger as loggit
@@ -869,23 +870,89 @@ class DataAnalyser:
         # log out axis importance
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-d",
+    "--data-file",
+    metavar="DATA",
+    help="filename of main commits and issues datafile (e.g merged-data-per-dev_x3740-repos_2025-04-15.csv)",
+    type=str,
+    default="merged-data-per-dev_x3740-repos_2025-04-15.csv",
+)
+parser.add_argument(
+    "-s",
+    "--subset-file",
+    metavar="SUBSET",
+    type=str,
+    help="File containing repo names to subset sample to (e.g. study-sample-repo-names_2025-05-01_x2981.txt)",
+    default="study-sample-repo-names_2025-05-01_x2981.txt",
+)
+parser.add_argument(
+    "-i",
+    "--interactions-file",
+    metavar="INTERACTIONS",
+    type=str,
+    help="File containing interaction data (e.g. study-sample-repo-names_2025-05-01_x2981.txt)",
+    default="merged-interactions-data-per-dev_x3821-repos_2025-04-18.csv",
+)
+parser.add_argument(
+    "-r",
+    "--repo-stats-file",
+    metavar="REPO_STATS",
+    help="Summarised repo stats file (e.g. summarised_repo_stats_2025-05-01.csv)",
+    type=str,
+    default="summarised_repo_stats_2025-05-01.csv",
+)
+parser.add_argument(
+    "-n",
+    "--max-n-clusters",
+    metavar="MAX_CLUSTERS",
+    help="Maximum number of clusters to evaluate for CH scores (e.g. 10)",
+    type=int,
+    default=10,
+)
+
+
 def main():
+    args = parser.parse_args()
+    data_arg: str = args.data_file
+    subset_arg: str = args.subset_file
+    interactions_arg: str = args.interactions_file
+    repo_stats_arg: str = args.repo_stats_file
+    n_max_clusters_arg: int = args.max_n_clusters
+
     dataanalyser = DataAnalyser(in_notebook=False)
+
+    dataanalyser.logger.info(
+        f"""
+        Running Data Analysis with arguments: {args}; 
+        data: {data_arg}; 
+        subset to: {subset_arg}; 
+        interactions: {interactions_arg}; 
+        repo_stats summary data: {repo_stats_arg}; 
+        max number of clusters to eval: {n_max_clusters_arg}.
+        """
+    )
+
     # dataanalyser.read_location
     data_df = pd.read_csv(
-        Path(
-            dataanalyser.read_location, "merged-data-per-dev_x3740-repos_2025-04-15.csv"
-        ),
+        Path(dataanalyser.read_location, data_arg),
         header=0,
         low_memory=False,
     )
-    dataanalyser.analysis_workflow(
-        data=data_df,
-        subset_repos_file="deRSE-sample-intersection-repos_2025-04-22_x21.txt",
-        interactions_data_file="merged-interactions-data-per-dev_x3821-repos_2025-04-18.csv",
-        repo_stats_file="summarised_repo_stats_2025-03-26.csv",
-        max_clusters_to_eval=10,
-    )
+    try:
+        dataanalyser.analysis_workflow(
+            data=data_df,
+            subset_repos_file=subset_arg,
+            interactions_data_file=interactions_arg,
+            repo_stats_file=repo_stats_arg,
+            max_clusters_to_eval=n_max_clusters_arg,
+        )
+    except Exception as e:
+        dataanalyser.logger.error(
+            f"Problem running data analysis workflow: {e}; arguments were: {args}."
+        )
+        raise RuntimeError
 
 
 if __name__ == "__main__":
