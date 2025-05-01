@@ -61,11 +61,16 @@ class Dendrogrammer:
             "Created ward clustering linkage object, now attempting to generate dendrogram"
         )
 
+        plt.figure(figsize=(25, 10))
+        plt.xlabel("Clustered Repo-individuals")
+        plt.ylabel("Distance")
         dendrogram(
             ward_clustering,
             show_contracted=True,
+            truncate_mode="lastp",  # show only the last p merged clusters
+            p=10,  # show only the last p merged clusters
             no_labels=True,
-            color_threshold=400,
+            color_threshold=4000,
             above_threshold_color="black",
         )
         # plt.savefig(f"../../images/dendrogram_ward_euclidian_x{n_repos}repos_x{len(clustering_data)}project_individuals_{current_date_info}.png")
