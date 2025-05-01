@@ -11,6 +11,7 @@ from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
 from githubanalysis.visualization.plot_repoindividual_upset_plot import UpsetPlotter
 from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
 
+import random
 import pandas as pd
 import numpy as np
 
@@ -92,6 +93,7 @@ class DataAnalyser:
         self,
         data: pd.DataFrame,
         subset_repos_file: str | Path | None,
+        subset_pc: int,
     ) -> pd.DataFrame:
         """
         Subset a sample dataframe down to only include repositories from a specific file
@@ -125,6 +127,20 @@ class DataAnalyser:
                 subset_repos = [txtline.strip() for txtline in f.readlines()]
             self.logger.info(
                 f"length of subset_repos_file is: {len(subset_repos)} repos"
+            )
+
+            self.logger.info("Subsetting percentage is: {subset_pc}")
+            random.seed(0)
+
+            subset_pc_as_n = round((len(subset_repos) * (subset_pc / 100)))
+            # Re: behaviour of round: Return number rounded to ndigits precision
+            # after the decimal point. If ndigits is omitted or is None,
+            # it returns the nearest integer to its input.
+            # via https://docs.python.org/3/library/functions.html#round on 1 May 2025.
+
+            subset_repos = random.sample(subset_repos, k=subset_pc_as_n)
+            self.logger.info(
+                f"After applying subset percentage, length of subset_repos_file is: {len(subset_repos)} repos"
             )
 
             subset_data = data[data["repo_name"].isin(subset_repos)]
@@ -664,6 +680,7 @@ class DataAnalyser:
         self,
         data: pd.DataFrame,
         subset_repos_file: str | Path,
+        pc_subset: int,
         interactions_data_file: str | Path,
         repo_stats_file: str | Path,
         max_clusters_to_eval: int = 10,
@@ -680,6 +697,7 @@ class DataAnalyser:
             data = self.subset_sample_to_repos(
                 data,
                 subset_repos_file=subset_repos_file,
+                subset_pc=pc_subset,
             )
         # read in file of repos
         # subset data df to include only repo_names from file
@@ -888,6 +906,14 @@ parser.add_argument(
     default="study-sample-repo-names_2025-05-01_x2981.txt",
 )
 parser.add_argument(
+    "-p",
+    "--pc-subset-repos",
+    metavar="PC_SUBSET",
+    help="Percentage (%) of repos from subset file (e.g. 100)",
+    type=int,
+    default=100,
+)
+parser.add_argument(
     "-i",
     "--interactions-file",
     metavar="INTERACTIONS",
@@ -904,7 +930,7 @@ parser.add_argument(
     default="summarised_repo_stats_2025-05-01.csv",
 )
 parser.add_argument(
-    "-n",
+    "-m",
     "--max-n-clusters",
     metavar="MAX_CLUSTERS",
     help="Maximum number of clusters to evaluate for CH scores (e.g. 10)",
@@ -917,9 +943,10 @@ def main():
     args = parser.parse_args()
     data_arg: str = args.data_file
     subset_arg: str = args.subset_file
+    pc_subset_repos_arg: int = args.pc_subset_repos
     interactions_arg: str = args.interactions_file
     repo_stats_arg: str = args.repo_stats_file
-    n_max_clusters_arg: int = args.max_n_clusters
+    max_clusters_arg: int = args.max_n_clusters
 
     dataanalyser = DataAnalyser(in_notebook=False)
 
@@ -928,9 +955,10 @@ def main():
         Running Data Analysis with arguments: {args}; 
         data: {data_arg}; 
         subset to: {subset_arg}; 
+        percentage of subset to use: {pc_subset_repos_arg};
         interactions: {interactions_arg}; 
         repo_stats summary data: {repo_stats_arg}; 
-        max number of clusters to eval: {n_max_clusters_arg}.
+        max number of clusters to eval: {max_clusters_arg}.
         """
     )
 
@@ -944,9 +972,10 @@ def main():
         dataanalyser.analysis_workflow(
             data=data_df,
             subset_repos_file=subset_arg,
+            pc_subset=pc_subset_repos_arg,
             interactions_data_file=interactions_arg,
             repo_stats_file=repo_stats_arg,
-            max_clusters_to_eval=n_max_clusters_arg,
+            max_clusters_to_eval=max_clusters_arg,
         )
     except Exception as e:
         dataanalyser.logger.error(
