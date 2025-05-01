@@ -771,6 +771,7 @@ class DataAnalyser:
         repo_stats = self.subset_sample_to_repos(  # subset to relevant repos only
             repo_stats,
             subset_repos_file=subset_repos_file,
+            subset_pc=pc_subset,
         )
 
         # write out relevant repo stats:
