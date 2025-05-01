@@ -413,7 +413,7 @@ class DataAnalyser:
         )
         self.writeout_data_to_csv(
             cleaned_data_with_interactions,
-            filename="test_cleaned_data_with_interactions_",
+            filename="sample_cleaned_data_with_interactions_",
         )
 
         assert (
@@ -813,7 +813,7 @@ class DataAnalyser:
             cleaned_data_with_interactions=cleaned_data_with_interactions
         )
 
-        self.writeout_data_to_csv(clustering_data, filename="test_clustering_data")
+        self.writeout_data_to_csv(clustering_data, filename="sample_clustering_data")
         # clustering
         self.logger.info(f"Clustering dataset has shape {clustering_data.shape}")
         # plot dendrogram
