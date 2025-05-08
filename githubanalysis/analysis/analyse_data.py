@@ -637,9 +637,22 @@ class DataAnalyser:
         self,
         clustering_data: pd.DataFrame,
         best_n_clusters: int,
+        n_clusters_to_use: int | None = None,  # supply specific N of clusters to use.
     ) -> np.ndarray:
+        if n_clusters_to_use is not None:
+            assert isinstance(
+                n_clusters_to_use, int
+            ), "If supplying a number of clusters to use, this must be an integer. Otherwise, the best_n_clusters will be used from evaluation steps."
+            self.logger.info(
+                f"Generating specific n of clusters: {n_clusters_to_use}, rather than best_n_clusters: {best_n_clusters}."
+            )
+            generate_clusters = n_clusters_to_use  # set the number to use
+        else:
+            generate_clusters = best_n_clusters
+            self.logger.info(f"Generating best_n_clusters: {best_n_clusters}.")
+
         model = AgglomerativeClustering(
-            n_clusters=best_n_clusters, metric="euclidean", linkage="ward"
+            n_clusters=generate_clusters, metric="euclidean", linkage="ward"
         )
 
         X = clustering_data
@@ -687,6 +700,7 @@ class DataAnalyser:
         interactions_data_file: str | Path,
         repo_stats_file: str | Path,
         max_clusters_to_eval: int = 10,
+        n_clusters_to_use: int | None = None,
     ):
         # if data is file:
 
@@ -853,6 +867,7 @@ class DataAnalyser:
         cluster_labels = self.do_clustering(
             clustering_data=clustering_data,
             best_n_clusters=int(best_n_clusters),
+            n_clusters_to_use=n_clusters_to_use,
         )
 
         labelled_data = self.label_clustering_data(
