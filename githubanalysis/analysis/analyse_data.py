@@ -1076,6 +1076,14 @@ parser.add_argument(
     type=int,
     default=10,
 )
+parser.add_argument(
+    "-n",
+    "--n-clusters",
+    metavar="N_CLUSTERS",
+    help="Final number of clusters to generate (e.g. 5)",
+    type=int,
+    default=10,
+)
 
 
 def main():
@@ -1086,6 +1094,7 @@ def main():
     interactions_arg: str = args.interactions_file
     repo_stats_arg: str = args.repo_stats_file
     max_clusters_arg: int = args.max_n_clusters
+    n_clusters_arg: int = args.n_clusters
 
     dataanalyser = DataAnalyser(in_notebook=False)
 
@@ -1097,7 +1106,8 @@ def main():
         percentage of subset to use: {pc_subset_repos_arg};
         interactions: {interactions_arg}; 
         repo_stats summary data: {repo_stats_arg}; 
-        max number of clusters to eval: {max_clusters_arg}.
+        max number of clusters to eval: {max_clusters_arg}; 
+        number of clusters to use: {n_clusters_arg}; .
         """
     )
 
@@ -1115,6 +1125,7 @@ def main():
             interactions_data_file=interactions_arg,
             repo_stats_file=repo_stats_arg,
             max_clusters_to_eval=max_clusters_arg,
+            n_clusters_to_use=n_clusters_arg,
         )
     except Exception as e:
         dataanalyser.logger.error(
