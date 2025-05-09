@@ -1082,7 +1082,7 @@ parser.add_argument(
     metavar="N_CLUSTERS",
     help="Final number of clusters to generate (e.g. 5)",
     type=int,
-    default=10,
+    required=False,
 )
 
 
@@ -1094,7 +1094,7 @@ def main():
     interactions_arg: str = args.interactions_file
     repo_stats_arg: str = args.repo_stats_file
     max_clusters_arg: int = args.max_n_clusters
-    n_clusters_arg: int = args.n_clusters
+    n_clusters_arg: int | None = args.n_clusters
 
     dataanalyser = DataAnalyser(in_notebook=False)
 
