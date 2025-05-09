@@ -90,6 +90,10 @@ class UpsetPlotter:
             plot_colour = "black"
             cluster_name = "whole_dataset"
 
+        self.logger.info(
+            f"Attempting to plot cluster {cluster_name} using colour {plot_colour}."
+        )
+
         upset = UpSet(
             data=data,
             show_counts="{:,}",
