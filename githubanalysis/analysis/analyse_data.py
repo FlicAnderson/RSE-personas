@@ -887,8 +887,22 @@ class DataAnalyser:
             in_notebook=self.in_notebook,
             logger=self.logger,
         )
+        self.logger.info("{Plotting single combined sample UpSet Plot")
         upsetplotter.plot_upset_plot_interaction_combinations(
+            separate_by_clusters=False,
             data=labelled_data,
+            sort_combos_by="cardinality",
+            file_name="sample_upset_plot_",
+            save_type="pdf",  # one of: ['png', 'pdf', 'svg']
+        )
+
+        self.logger.info("Plotting separate clusters into UpSet Plot")
+        upsetplotter.plot_upset_plot_interaction_combinations(
+            separate_by_clusters=True,
+            data=labelled_data,
+            sort_combos_by="cardinality",
+            file_name="sample_upset_plot_",
+            save_type="pdf",  # one of: ['png', 'pdf', 'svg']
         )
 
         # PCA: run PCA to assess how variance is distributed
