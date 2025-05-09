@@ -50,7 +50,7 @@ class UpsetPlotter:
         data: pd.DataFrame,
         sort_combos_by: str = "cardinality",
         file_name: str = "upset_plot_",
-        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+        save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
         assert (
             isinstance(cluster, int) or cluster is None
@@ -117,7 +117,7 @@ class UpsetPlotter:
         separate_by_clusters: bool = False,
         sort_combos_by: str = "cardinality",
         file_name: str = "upset_plot_",
-        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+        save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
         # min_repo_individs_per_combo: int = 2,
         # show_counts_per_combo: boolean = True,
         # show_pc: boolean = False,
@@ -125,8 +125,6 @@ class UpsetPlotter:
         """
         This generates UpSet plots from GH interaction data from a dataframe or csv file.
         Data must be in a per-repo-individual format, and cluster labels must be in column titled "cluster_labels".
-
-        TODO: pull the plot upsetplot into a function, so I can loop it for n_clusters from data and avoid repetition
 
         """
         assert isinstance(
@@ -148,6 +146,9 @@ class UpsetPlotter:
                 "cluster_labels" in data.columns
             ), "df has no column 'cluster_labels - please check this is present in the data."
             n_clusters = data.cluster_labels.nunique()
+            self.logger.info(
+                f"Plotting upset plot separating by {n_clusters} clusters from data labels."
+            )
 
             for cluster in range(0, n_clusters - 1, 1):
                 # range: start at 0 because this is how they're named by clustering
@@ -155,4 +156,18 @@ class UpsetPlotter:
                 self.upset_plot(
                     cluster=cluster,
                     data=data,
+                    file_name=f"{file_name}_cluster-{cluster}_",
                 )
+            self.logger.info(
+                f"Completed UpSet plotting for {n_clusters} clusters from data labels."
+            )
+        else:
+            self.logger.info("Plotting upset plot without separating by clusters")
+            self.upset_plot(
+                cluster=None,
+                data=data,
+                sort_combos_by="cardinality",
+                file_name=file_name,
+                save_type="pdf",  # one of: ['png', 'pdf', 'svg']
+            )
+            self.logger.info("Completed UpSet plotting.")
