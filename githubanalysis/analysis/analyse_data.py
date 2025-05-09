@@ -64,11 +64,12 @@ class DataAnalyser:
     logger: logging.Logger
     in_notebook: bool
     current_date_info: str
-    write_location: Path
-    read_location: Path
+    image_write_location: Path
+    data_read_location: Path
 
     def __init__(
         self,
+        dataset_name: str,
         in_notebook: bool,
         logger: None | logging.Logger = None,
     ) -> None:
@@ -87,8 +88,17 @@ class DataAnalyser:
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("images/" if not in_notebook else "../../images/")
+        self.data_read_location = Path("data/" if not in_notebook else "../../data/")
+        self.data_write_location = (
+            Path("data/" if not in_notebook else "../../data/")
+            / f"analysis_run_{dataset_name}_{self.current_date_info}"
+        )
+        self.image_write_location = (
+            Path("images/" if not in_notebook else "../../images/")
+            / f"analysis_run_{dataset_name}_{self.current_date_info}"
+        )
+        self.data_write_location.mkdir()
+        self.image_write_location.mkdir()
 
     def subset_sample_to_repos(
         self,
@@ -120,7 +130,7 @@ class DataAnalyser:
             ), f"subset_repos_file is neither string nor Path object; {type(subset_repos_file)}"
 
             if isinstance(subset_repos_file, str):
-                subset_repos_file = Path(self.read_location, subset_repos_file)
+                subset_repos_file = Path(self.data_read_location, subset_repos_file)
             # read in file of repos
             # if file is csv: pd.read_csv(subset_repos_file)
             # if file is txt: with file readlines etc
@@ -469,7 +479,7 @@ class DataAnalyser:
 
     def writeout_data_to_csv(self, df: pd.DataFrame, filename: str | Path):
         filestr = f"{filename}_{self.current_date_info}.csv"
-        filepath = Path(self.read_location, filestr)
+        filepath = Path(self.data_write_location, filestr)
         df.to_csv(path_or_buf=filepath, header=True, index=False)
         return filepath
 
@@ -530,7 +540,7 @@ class DataAnalyser:
         plt.xticks(rotation=90)
         plt.tight_layout()
         plot_file = Path(
-            self.write_location,
+            self.image_write_location,
             f"sample_languages_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
@@ -615,7 +625,7 @@ class DataAnalyser:
     ):
         sns.barplot(data=df, x="N_clusters_evaluated", y="CH_score")
         plot_file = Path(
-            self.write_location,
+            self.image_write_location,
             f"{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.title("Calinski-Harabasz Scores for different N Clusters")
@@ -804,8 +814,8 @@ class DataAnalyser:
         # subset data df to include only repo_names from file
         # otherwise use complete data df.
 
-        interactions_data_file = Path(self.read_location, interactions_data_file)
-        repo_stats_file = Path(self.read_location, repo_stats_file)
+        interactions_data_file = Path(self.data_read_location, interactions_data_file)
+        repo_stats_file = Path(self.data_read_location, repo_stats_file)
 
         self.logger.info(
             f"Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
@@ -1084,6 +1094,14 @@ parser.add_argument(
     type=int,
     required=False,
 )
+parser.add_argument(
+    "-z",
+    "--dataset-run-name",
+    metavar="RUN_NAME",
+    help="Tag required for dataset name generating writeout folder",
+    type=str,
+    required=True,
+)
 
 
 def main():
@@ -1095,13 +1113,15 @@ def main():
     repo_stats_arg: str = args.repo_stats_file
     max_clusters_arg: int = args.max_n_clusters
     n_clusters_arg: int | None = args.n_clusters
+    run_name_arg: str = args.dataset_run_name
 
-    dataanalyser = DataAnalyser(in_notebook=False)
+    dataanalyser = DataAnalyser(in_notebook=False, dataset_name=run_name_arg)
 
     dataanalyser.logger.info(
         f"""
         Running Data Analysis with arguments: {args}; 
         data: {data_arg}; 
+        run name: {run_name_arg}; 
         subset to: {subset_arg}; 
         percentage of subset to use: {pc_subset_repos_arg};
         interactions: {interactions_arg}; 
@@ -1113,7 +1133,7 @@ def main():
 
     # dataanalyser.read_location
     data_df = pd.read_csv(
-        Path(dataanalyser.read_location, data_arg),
+        Path(dataanalyser.data_read_location, data_arg),
         header=0,
         low_memory=False,
     )
