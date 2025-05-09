@@ -17,12 +17,12 @@ class PlotPCA:
     logger: logging.Logger
     in_notebook: bool
     current_date_info: str
-    write_location: Path
-    read_location: Path
+    image_write_location: Path
 
     def __init__(
         self,
         in_notebook: bool,
+        image_write_location: Path,
         logger: None | logging.Logger = None,
     ) -> None:
         if logger is None:
@@ -40,8 +40,7 @@ class PlotPCA:
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("images/" if not in_notebook else "../../images/")
+        self.image_write_location = image_write_location
 
     def plot_threedim_PCA(
         self,
@@ -108,7 +107,7 @@ class PlotPCA:
         ax.zaxis.set_ticklabels([])
 
         plot_file = Path(
-            self.write_location,
+            self.image_write_location,
             f"{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
@@ -167,7 +166,7 @@ class PlotPCA:
 
         plt.legend(targets, prop={"size": 15})
         plot_file = Path(
-            self.write_location,
+            self.image_write_location,
             f"{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")

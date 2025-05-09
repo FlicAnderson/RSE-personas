@@ -1017,7 +1017,11 @@ class DataAnalyser:
 
         # PCA: run PCA to assess how variance is distributed
         # plot 3D
-        plotpca = PlotPCA(in_notebook=self.in_notebook, logger=self.logger)
+        plotpca = PlotPCA(
+            in_notebook=self.in_notebook,
+            logger=self.logger,
+            image_write_location=self.image_write_location,
+        )
         # plot 2D
         plotpca.plot_twodim_PCA(
             cluster_labels=cluster_labels,
