@@ -17,6 +17,7 @@ import numpy as np
 
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import calinski_harabasz_score
+from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -538,24 +539,13 @@ class DataAnalyser:
 
     def create_clustering_data_from_sample(
         self,
-        cleaned_data_with_interactions,
+        clustering_variables: list[str],
+        cleaned_data_with_interactions: pd.DataFrame,
     ):
-        clustering_data = cleaned_data_with_interactions[
-            [  # keep only these columns:
-                "pc_commit_created",
-                "pc_issue_created",
-                "pc_issue_closed",
-                "pc_issues_assigned_of_assigned",
-                "pc_pull_request_created",
-                "pc_DC",
-                "pc_sum_n_interactions",
-                "pc_interaction_days",
-                # "interaction_days",  # ideally should be pc_of_repo_age!
-                # "interaction_period_days",  # ideally should be pc_of_repo_age!
-                "pc_created-closed_issues",
-                # "mean_n_interactions_per_interaction_day",
-            ]
-        ]
+        assert isinstance(
+            clustering_variables, list
+        ), f"clustering variables must be a list: please check input variables: {clustering_variables} which are of type {type(clustering_variables)}."
+        clustering_data = cleaned_data_with_interactions[clustering_variables]
         return clustering_data
 
     def evaluate_n_clusters(
@@ -692,6 +682,100 @@ class DataAnalyser:
         )
         return labelled_data
 
+    def get_feature_importance(
+        self,
+        clustering_data: pd.DataFrame,
+        clustering_variables: list,
+    ) -> pd.DataFrame:
+        if isinstance(clustering_data, pd.DataFrame):
+            assert (
+                clustering_data.empty is False
+            ), "Dataframe data is empty; check inputs."
+
+        self.logger.info(f"clustering data is df, with shape: {clustering_data.shape}.")
+
+        self.logger.info(
+            "Re-applying PCA and gathering PCA values from clustering data."
+        )
+        PCA_3 = PCA(n_components=3)
+        PCA_3_df = pd.DataFrame(
+            data=PCA_3.fit_transform(clustering_data),
+            columns=[
+                "principal component 1",
+                "principal component 2",
+                "principal component 3",
+            ],
+        )
+        # write out PCA eigenvalues to csv:
+        self.writeout_data_to_csv(
+            PCA_3_df,
+            "sample_PCA_eigenvalues_per_repo-individual_",
+        )
+
+        self.logger.info(
+            f"Gathering feature importance values for each variable involved in clustering. These were: {clustering_variables}"
+        )
+        PCA_feature_importance = pd.DataFrame(
+            PCA_3.components_,
+            columns=PCA_3.feature_names_in_,
+            index=["PCA_1", "PCA_2", "PCA_3"],
+        )
+        PCA_feature_importance["PCA"] = PCA_feature_importance.index
+        PCA_feature_importance = PCA_feature_importance.reset_index(drop=True)
+
+        PCA_variables_reshape = pd.melt(
+            PCA_feature_importance,
+            id_vars=["PCA"],
+            value_vars=clustering_variables,
+            var_name="variable_involved",
+            value_name="PCA_importance_value",
+        )
+        PCA_features = PCA_variables_reshape.sort_values(
+            by=["PCA", "PCA_importance_value"], ascending=[True, False]
+        )
+        PCA_features["rank"] = PCA_features.groupby("PCA")["PCA_importance_value"].rank(
+            method="max",
+            ascending=False,
+        )
+        top_PCA1_var = PCA_features.query("rank == 1 and PCA == 'PCA_1'")[
+            "variable_involved"
+        ].item()
+        top_PCA1_value = PCA_features.query("rank == 1 and PCA == 'PCA_1'")[
+            "PCA_importance_value"
+        ].item()
+
+        top_PCA2_var = PCA_features.query("rank == 1 and PCA == 'PCA_2'")[
+            "variable_involved"
+        ].item()
+        top_PCA2_value = PCA_features.query("rank == 1 and PCA == 'PCA_2'")[
+            "PCA_importance_value"
+        ].item()
+
+        top_PCA3_var = PCA_features.query("rank == 1 and PCA == 'PCA_3'")[
+            "variable_involved"
+        ].item()
+        top_PCA3_value = PCA_features.query("rank == 1 and PCA == 'PCA_3'")[
+            "PCA_importance_value"
+        ].item()
+
+        self.logger.info("PCA feature importances ranked:")
+        self.logger.info(
+            f"PCA1 mainly explained by {top_PCA1_var} with importance value {top_PCA1_value}."
+        )
+        self.logger.info(
+            f"PCA2 mainly explained by {top_PCA2_var} with importance value {top_PCA2_value}."
+        )
+        self.logger.info(
+            f"PCA3 mainly on {top_PCA3_var} with importance value {top_PCA3_value}."
+        )
+
+        # write out PCA importance rankings to csv:
+        self.writeout_data_to_csv(
+            PCA_features,
+            "sample_feature_importance_data_",
+        )
+        return PCA_features
+
     def analysis_workflow(
         self,
         data: pd.DataFrame,
@@ -823,8 +907,24 @@ class DataAnalyser:
             f"Processed sample data written out to {write_out_to_preprocessed}"
         )
 
+        clustering_variables = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
+            "pc_commit_created",
+            "pc_issue_created",
+            "pc_issue_closed",
+            "pc_issues_assigned_of_assigned",
+            "pc_pull_request_created",
+            "pc_DC",
+            "pc_sum_n_interactions",
+            "pc_interaction_days",
+            "pc_created-closed_issues",
+        ]
+        self.logger.info(
+            f"Data will be clustered on the following {len(clustering_variables)} variables: {clustering_variables}."
+        )
+
         clustering_data = self.create_clustering_data_from_sample(
-            cleaned_data_with_interactions=cleaned_data_with_interactions
+            clustering_variables=clustering_variables,
+            cleaned_data_with_interactions=cleaned_data_with_interactions,
         )
 
         self.writeout_data_to_csv(clustering_data, filename="sample_clustering_data")
@@ -918,7 +1018,13 @@ class DataAnalyser:
             clustering_data=clustering_data,
         )
 
-        # log out axis importance
+        # log out PCA axis importance and variable importances per PCA axis
+        self.logger.info(
+            "Generating feature importance ranking for PCA via clustering data."
+        )
+        self.get_feature_importance(
+            clustering_data=clustering_data, clustering_variables=clustering_variables
+        )
 
 
 parser = argparse.ArgumentParser()
