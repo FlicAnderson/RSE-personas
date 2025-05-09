@@ -17,11 +17,11 @@ class Dendrogrammer:
     logger: logging.Logger
     in_notebook: bool
     current_date_info: str
-    write_location: Path
-    read_location: Path
+    image_write_location: Path
 
     def __init__(
         self,
+        image_write_location: Path,
         in_notebook: bool,
         logger: None | logging.Logger = None,
     ) -> None:
@@ -40,8 +40,7 @@ class Dendrogrammer:
         self.current_date_info = datetime.datetime.now().strftime(
             "%Y-%m-%d"
         )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("images/" if not in_notebook else "../../images/")
+        self.image_write_location = image_write_location
 
     def plot_dendrogram(
         self,
@@ -78,7 +77,7 @@ class Dendrogrammer:
             f"Hierarchical Clustering (Ward Method, Euclidian Distance), N repo-individuals={len(clustering_data)}."
         )
         plot_file = Path(
-            self.write_location,
+            self.image_write_location,
             f"{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")

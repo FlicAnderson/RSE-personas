@@ -942,7 +942,11 @@ class DataAnalyser:
         self.logger.info(f"Clustering dataset has shape {clustering_data.shape}")
         # plot dendrogram
         # save out
-        dendrogrammer = Dendrogrammer(in_notebook=self.in_notebook, logger=self.logger)
+        dendrogrammer = Dendrogrammer(
+            in_notebook=self.in_notebook,
+            logger=self.logger,
+            image_write_location=self.image_write_location,
+        )
         dendrogrammer.plot_dendrogram(
             clustering_data=clustering_data,
             colours=["#D50032", "#1D2A3D", "#FDBC42"],
