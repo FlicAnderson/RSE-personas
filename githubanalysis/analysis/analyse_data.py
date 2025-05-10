@@ -260,10 +260,18 @@ class DataAnalyser:
 
         pd.options.mode.copy_on_write = True
 
-        cleaned_data.loc[:, "n_commits"] = cleaned_data["n_commits"]
+        cleaned_data.loc[:, "n_commits"] = cleaned_data[
+            "n_commits"
+        ]  # THIS DOES NOTHING?
         cleaned_data.loc[:, "pc_n_commits"] = (
-            cleaned_data[["n_commits"]] / cleaned_data[["n_commits"]].sum()
-        ) * 100
+            (
+                cleaned_data[["n_commits"]]
+                / cleaned_data[
+                    ["n_commits"]
+                ].sum()  # calc repo-individual's total N commits as pc of sum of repo's commits.
+            )
+            * 100
+        )
 
         # create percentage of users' commits which fall into each category:
         # this creates human-readble version of these variables
@@ -456,7 +464,7 @@ class DataAnalyser:
                 "CBRI",
                 "contributions_by_user",
                 "pcCDC",
-                "n_commits",  # dropping the older column, keeping commits_created as probably later
+                # "n_commits",  # dropping the older column, keeping commits_created as probably later
                 "_merge",
                 "issue_username",
                 "commiss_merge",
@@ -803,6 +811,20 @@ class DataAnalyser:
             assert data.empty is False, "Dataframe data is empty; check inputs."
             self.logger.info(f"data is df, with shape: {data.shape}.")
 
+        self.logger.info(
+            f"Before subsetting: Number of unique gh_usernames in sample is: {data.groupby('gh_username').ngroups}."
+        )
+        self.logger.info(
+            f"Before subsetting: Number of gh_usernames appearing in more than one repository in this sample is: {len(data.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
+        )
+
+        self.logger.info(
+            f"Before subsetting: Number of repo-individuals (repo_name plus gh_username combos) in sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
+        )
+        self.logger.info(
+            f"Before subsetting: Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
+        )
+
         # if subset_repos_file is not None:
         if subset_repos_file is not None:
             data = self.subset_sample_to_repos(
@@ -813,6 +835,11 @@ class DataAnalyser:
         # read in file of repos
         # subset data df to include only repo_names from file
         # otherwise use complete data df.
+
+        self.writeout_data_to_csv(
+            data,
+            filename="sample_post-subset_data_",
+        )
 
         interactions_data_file = Path(self.data_read_location, interactions_data_file)
         repo_stats_file = Path(self.data_read_location, repo_stats_file)
@@ -844,6 +871,10 @@ class DataAnalyser:
 
         cleaned_data = self.clean_and_contributors(
             data,
+        )
+        self.writeout_data_to_csv(
+            cleaned_data,
+            filename="sample_cleaned_data_",
         )
 
         interact = pd.read_csv(
