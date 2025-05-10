@@ -1081,16 +1081,16 @@ parser.add_argument(
     "-d",
     "--data-file",
     metavar="DATA",
-    help="filename of main commits and issues datafile (e.g merged-data-per-dev_x3740-repos_2025-04-15.csv)",
+    help="filename of main commits and issues datafile (e.g merged-data-per-dev_x2868-repos_2025-05-10.csv)",
     type=str,
-    default="merged-data-per-dev_x3740-repos_2025-04-15.csv",
+    default="merged-data-per-dev_x2868-repos_2025-05-10.csv",
 )
 parser.add_argument(
     "-s",
     "--subset-file",
     metavar="SUBSET",
     type=str,
-    help="File containing repo names to subset sample to (e.g. study-sample-repo-names_2025-05-01_x2981.txt)",
+    help="File containing repo names to subset sample to; e.g. study-sample-repo-names_2025-05-01_x2981.txt",
     default="study-sample-repo-names_2025-05-01_x2981.txt",
 )
 parser.add_argument(
@@ -1106,14 +1106,14 @@ parser.add_argument(
     "--interactions-file",
     metavar="INTERACTIONS",
     type=str,
-    help="File containing interaction data (e.g. study-sample-repo-names_2025-05-01_x2981.txt)",
-    default="merged-interactions-data-per-dev_x3821-repos_2025-04-18.csv",
+    help="File containing interaction data; e.g. merged-interactions-data-per-dev_x2942-repos_2025-05-10.csv",
+    default="merged-interactions-data-per-dev_x2942-repos_2025-05-10.csv",
 )
 parser.add_argument(
     "-r",
     "--repo-stats-file",
     metavar="REPO_STATS",
-    help="Summarised repo stats file (e.g. summarised_repo_stats_2025-05-01.csv)",
+    help="Summarised repo stats file; e.g. summarised_repo_stats_2025-05-01.csv",
     type=str,
     default="summarised_repo_stats_2025-05-01.csv",
 )
@@ -1121,7 +1121,7 @@ parser.add_argument(
     "-m",
     "--max-n-clusters",
     metavar="MAX_CLUSTERS",
-    help="Maximum number of clusters to evaluate for CH scores (e.g. 10)",
+    help="Maximum number of clusters to evaluate for CH scores; e.g. 10",
     type=int,
     default=10,
 )
@@ -1129,7 +1129,7 @@ parser.add_argument(
     "-n",
     "--n-clusters",
     metavar="N_CLUSTERS",
-    help="Final number of clusters to generate (e.g. 5)",
+    help="Final number of clusters to generate; e.g. 5",
     type=int,
     required=False,
 )
