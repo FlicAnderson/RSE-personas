@@ -164,24 +164,24 @@ class DataAnalyser:
 
             return subset_data
 
-    def clean_and_contributors(self, cleaned_data: pd.DataFrame) -> pd.DataFrame:
+    def clean_and_contributors(self, data: pd.DataFrame) -> pd.DataFrame:
         ## gather category text info about what types of contributions users are contributing
 
-        tmp_iss = cleaned_data["pc_repo_issues"].apply(
+        tmp_iss = data["pc_repo_issues"].apply(
             contribution_in_category, category="creates issues"
         )
 
-        tmp_cmt = cleaned_data["pc_repo_commits"].apply(
+        tmp_cmt = data["pc_repo_commits"].apply(
             contribution_in_category, category="creates commits"
         )
 
-        tmp_ast = cleaned_data["pc_issues_assigned_of_assigned"].apply(
+        tmp_ast = data["pc_issues_assigned_of_assigned"].apply(
             contribution_in_category, category="assigned issues"
         )
 
         tmpdf = pd.concat(
             {
-                "gh_username": cleaned_data["gh_username"],
+                "gh_username": data["gh_username"],
                 "contributes_creates_commits": tmp_cmt,
                 "contributes_creates_issues": tmp_iss,
                 "contributes_assigned_issues": tmp_ast,
@@ -196,7 +196,7 @@ class DataAnalyser:
 
         tmpdf = pd.concat(
             {
-                "gh_username": cleaned_data["gh_username"],
+                "gh_username": data["gh_username"],
                 "contribution_types": contribution_categories,
             },
             axis=1,
@@ -204,15 +204,15 @@ class DataAnalyser:
 
         ## gather bool -> numeric info about what types of contributions users are contributing
 
-        tmp_iss_bool = cleaned_data["pc_repo_issues"].apply(
+        tmp_iss_bool = data["pc_repo_issues"].apply(
             bool_contribution_in_category, category="creates issues"
         )
 
-        tmp_cmt_bool = cleaned_data["pc_repo_commits"].apply(
+        tmp_cmt_bool = data["pc_repo_commits"].apply(
             bool_contribution_in_category, category="creates commits"
         )
 
-        tmp_ast_bool = cleaned_data["pc_issues_assigned_of_assigned"].apply(
+        tmp_ast_bool = data["pc_issues_assigned_of_assigned"].apply(
             bool_contribution_in_category, category="assigned issues"
         )
 
@@ -229,7 +229,7 @@ class DataAnalyser:
 
         tmpdf_bool = pd.concat(
             {
-                "gh_username": cleaned_data["gh_username"],
+                "gh_username": data["gh_username"],
                 "CBRI": contribution_categories_bool,
             },
             axis=1,
@@ -237,36 +237,34 @@ class DataAnalyser:
 
         ## pull CBRI and contribution type category values across to cleaned_data dataset
 
-        cleaned_data.loc[:, "CBRI"] = tmpdf_bool["CBRI"]
-        cleaned_data.loc[:, "contribution_types"] = tmpdf["contribution_types"]
+        data.loc[:, "CBRI"] = tmpdf_bool["CBRI"]
+        data.loc[:, "contribution_types"] = tmpdf["contribution_types"]
 
-        cleaned_data.loc[:, "contributions_by_user"] = cleaned_data.apply(
+        data.loc[:, "contributions_by_user"] = data.apply(
             lambda x: contribution_types_editor(
                 CBRI=x.CBRI, rough_type_cat=x.contribution_types
             ),
             axis=1,
         )
 
-        cleaned_data = cleaned_data.drop(columns=["contribution_types"])
+        data = data.drop(columns=["contribution_types"])
 
         # # add AVERAGE Percentage Repo-Contributions' Depth by Contributor (pcCDC):
         # # each user's percentage of a repo's contributions in each contribution category are added together,
         # # ... then divided by number of contribution-types summed (e.g. 3 if combining commits, issue creation, issue assignment)
-        cleaned_data.loc[:, "pcCDC"] = (
-            (cleaned_data["pc_repo_commits"])
-            + (cleaned_data["pc_repo_issues"])
-            + (cleaned_data["pc_issues_assigned_of_assigned"])
+        data.loc[:, "pcCDC"] = (
+            (data["pc_repo_commits"])
+            + (data["pc_repo_issues"])
+            + (data["pc_issues_assigned_of_assigned"])
         ) / 3
 
         pd.options.mode.copy_on_write = True
 
-        cleaned_data.loc[:, "n_commits"] = cleaned_data[
-            "n_commits"
-        ]  # THIS DOES NOTHING?
-        cleaned_data.loc[:, "pc_n_commits"] = (
+        data.loc[:, "n_commits"] = data["n_commits"]  # THIS DOES NOTHING?
+        data.loc[:, "pc_n_commits"] = (
             (
-                cleaned_data[["n_commits"]]
-                / cleaned_data[
+                data[["n_commits"]]
+                / data[
                     ["n_commits"]
                 ].sum()  # calc repo-individual's total N commits as pc of sum of repo's commits.
             )
@@ -275,140 +273,92 @@ class DataAnalyser:
 
         # create percentage of users' commits which fall into each category:
         # this creates human-readble version of these variables
-        cleaned_data.loc[:, "pc_HLs-tiny"] = (
-            cleaned_data["hattori_lanza_size_cat_tiny"].div(
-                cleaned_data["n_commits"], axis=0
+        data.loc[:, "pc_HLs-tiny"] = (
+            data["hattori_lanza_size_cat_tiny"].div(data["n_commits"], axis=0) * 100
+        )
+        data.loc[:, "pc_HLs-sml"] = (
+            data["hattori_lanza_size_cat_small"].div(data["n_commits"], axis=0) * 100
+        )
+        data.loc[:, "pc_HLs-med"] = (
+            data["hattori_lanza_size_cat_medium"].div(data["n_commits"], axis=0) * 100
+        )
+        data.loc[:, "pc_HLs-lrg"] = (
+            data["hattori_lanza_size_cat_large"].div(data["n_commits"], axis=0) * 100
+        )
+
+        data.loc[:, "pc_HL-fweng"] = (
+            data["hattori_lanza_content_cat_forward_engineering"].div(
+                data["n_commits"], axis=0
             )
             * 100
         )
-        cleaned_data.loc[:, "pc_HLs-sml"] = (
-            cleaned_data["hattori_lanza_size_cat_small"].div(
-                cleaned_data["n_commits"], axis=0
+        data.loc[:, "pc_HL-reeng"] = (
+            data["hattori_lanza_content_cat_reengineering"].div(
+                data["n_commits"], axis=0
             )
             * 100
         )
-        cleaned_data.loc[:, "pc_HLs-med"] = (
-            cleaned_data["hattori_lanza_size_cat_medium"].div(
-                cleaned_data["n_commits"], axis=0
+        data.loc[:, "pc_HL-corr"] = (
+            data["hattori_lanza_content_cat_corrective_engineering"].div(
+                data["n_commits"], axis=0
             )
             * 100
         )
-        cleaned_data.loc[:, "pc_HLs-lrg"] = (
-            cleaned_data["hattori_lanza_size_cat_large"].div(
-                cleaned_data["n_commits"], axis=0
+        data.loc[:, "pc_HL-mgmt"] = (
+            data["hattori_lanza_content_cat_management"].div(data["n_commits"], axis=0)
+            * 100
+        )
+        data.loc[:, "pc_HL-empty"] = (
+            data["hattori_lanza_content_cat_empty_message"].div(
+                data["n_commits"], axis=0
+            )
+            * 100
+        )
+        data.loc[:, "pc_HL-nocat"] = (
+            data["hattori_lanza_content_cat_no_categorisation"].div(
+                data["n_commits"], axis=0
             )
             * 100
         )
 
-        cleaned_data.loc[:, "pc_HL-fweng"] = (
-            cleaned_data["hattori_lanza_content_cat_forward_engineering"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-doc"] = (
+            data["vasilescu_category_doc"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_HL-reeng"] = (
-            cleaned_data["hattori_lanza_content_cat_reengineering"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-code"] = (
+            data["vasilescu_category_code"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_HL-corr"] = (
-            cleaned_data["hattori_lanza_content_cat_corrective_engineering"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-confg"] = (
+            data["vasilescu_category_config"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_HL-mgmt"] = (
-            cleaned_data["hattori_lanza_content_cat_management"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-build"] = (
+            data["vasilescu_category_build"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_HL-empty"] = (
-            cleaned_data["hattori_lanza_content_cat_empty_message"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-dvdoc"] = (
+            data["vasilescu_category_devdoc"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_HL-nocat"] = (
-            cleaned_data["hattori_lanza_content_cat_no_categorisation"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-test"] = (
+            data["vasilescu_category_test"].div(data["n_commits"], axis=0) * 100
         )
-
-        cleaned_data.loc[:, "pc_V-doc"] = (
-            cleaned_data["vasilescu_category_doc"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-meta"] = (
+            data["vasilescu_category_meta"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_V-code"] = (
-            cleaned_data["vasilescu_category_code"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-img"] = (
+            data["vasilescu_category_img"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_V-confg"] = (
-            cleaned_data["vasilescu_category_config"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-l10n"] = (
+            data["vasilescu_category_l10n"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_V-build"] = (
-            cleaned_data["vasilescu_category_build"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-ui"] = (
+            data["vasilescu_category_ui"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_V-dvdoc"] = (
-            cleaned_data["vasilescu_category_devdoc"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-media"] = (
+            data["vasilescu_category_media"].div(data["n_commits"], axis=0) * 100
         )
-        cleaned_data.loc[:, "pc_V-test"] = (
-            cleaned_data["vasilescu_category_test"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
-        )
-        cleaned_data.loc[:, "pc_V-meta"] = (
-            cleaned_data["vasilescu_category_meta"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
-        )
-        cleaned_data.loc[:, "pc_V-img"] = (
-            cleaned_data["vasilescu_category_img"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
-        )
-        cleaned_data.loc[:, "pc_V-l10n"] = (
-            cleaned_data["vasilescu_category_l10n"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
-        )
-        cleaned_data.loc[:, "pc_V-ui"] = (
-            cleaned_data["vasilescu_category_ui"].div(cleaned_data["n_commits"], axis=0)
-            * 100
-        )
-        cleaned_data.loc[:, "pc_V-media"] = (
-            cleaned_data["vasilescu_category_media"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
-        )
-        cleaned_data.loc[:, "pc_V-nocat"] = (
-            cleaned_data["vasilescu_category_unknown"].div(
-                cleaned_data["n_commits"], axis=0
-            )
-            * 100
+        data.loc[:, "pc_V-nocat"] = (
+            data["vasilescu_category_unknown"].div(data["n_commits"], axis=0) * 100
         )
 
-        return cleaned_data
+        return data
 
     def combine_cleaned_data_with_interactions(
         self,
