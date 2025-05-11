@@ -1036,9 +1036,9 @@ parser.add_argument(
     "-d",
     "--data-file",
     metavar="DATA",
-    help="filename of main commits and issues datafile e.g merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
+    help="filename of main commits and issues datafile e.g merged-data-per-dev_x2868-repos_2025-05-10.csv",
     type=str,
-    default="merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
+    default="merged-data-per-dev_x2868-repos_2025-05-10.csv",
 )
 parser.add_argument(
     "-s",
@@ -1061,8 +1061,8 @@ parser.add_argument(
     "--interactions-file",
     metavar="INTERACTIONS",
     type=str,
-    help="File containing interaction data; e.g. merged-interactions-data-per-dev_x2942-repos_2025-05-10.csv",
-    default="merged-interactions-data-per-dev_x2942-repos_2025-05-10.csv",
+    help="File containing interaction data; e.g. merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
+    default="merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
 )
 parser.add_argument(
     "-r",
