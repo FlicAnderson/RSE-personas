@@ -11,6 +11,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy.cluster.hierarchy import linkage, dendrogram
+import sys
+
+sys.setrecursionlimit(10000)
 
 
 class Dendrogrammer:
@@ -55,6 +58,8 @@ class Dendrogrammer:
         self.logger.info(
             f"Attempting to use {len(clustering_data)} repo-individuals dataset for clustering"
         )
+
+        sys.setrecursionlimit(100000)  # attempt to address recursion limit error
         ward_clustering = linkage(clustering_data, method="ward", metric="euclidean")
         self.logger.info(
             "Created ward clustering linkage object, now attempting to generate dendrogram"
@@ -66,8 +71,8 @@ class Dendrogrammer:
         dendrogram(
             ward_clustering,
             show_contracted=True,
-            truncate_mode="lastp",  # show only the last p merged clusters
-            p=10,  # show only the last p merged clusters
+            truncate_mode="level",  # show only the last p merged clusters
+            p=5,  # show only the last p merged clusters
             no_labels=True,
             color_threshold=4000,
             above_threshold_color="black",
