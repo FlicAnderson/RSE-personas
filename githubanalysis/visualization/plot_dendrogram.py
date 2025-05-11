@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import datetime
+import gc
 
 import logging
 import utilities.get_default_logger as loggit
@@ -60,6 +61,8 @@ class Dendrogrammer:
         )
 
         sys.setrecursionlimit(100000)  # attempt to address recursion limit error
+        gc.collect()  # garbage collection to free up space/mem: spring cleaning!
+
         ward_clustering = linkage(clustering_data, method="ward", metric="euclidean")
         self.logger.info(
             "Created ward clustering linkage object, now attempting to generate dendrogram"

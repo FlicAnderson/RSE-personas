@@ -2,6 +2,7 @@
 
 # import modules
 from pathlib import Path
+import gc
 import datetime
 import argparse
 
@@ -546,6 +547,8 @@ class DataAnalyser:
         for n_clusters in range(2, max_clusters_to_eval + 1, 1):
             # range: start at 2 because need min of 2 clusters
             # end on max_clusters_to_eval number, increases by 1
+            gc.collect()
+
             model = AgglomerativeClustering(
                 n_clusters=n_clusters,
                 metric="euclidean",
@@ -597,6 +600,8 @@ class DataAnalyser:
         best_n_clusters: int,
         n_clusters_to_use: int | None = None,  # supply specific N of clusters to use.
     ) -> np.ndarray:
+        gc.collect()  # free up space, just in case :)
+
         if n_clusters_to_use is not None:
             assert isinstance(
                 n_clusters_to_use, int
