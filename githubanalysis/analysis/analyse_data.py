@@ -1031,9 +1031,9 @@ parser.add_argument(
     "-d",
     "--data-file",
     metavar="DATA",
-    help="filename of main commits and issues datafile (e.g merged-data-per-dev_x2868-repos_2025-05-10.csv)",
+    help="filename of main commits and issues datafile e.g merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
     type=str,
-    default="merged-data-per-dev_x2868-repos_2025-05-10.csv",
+    default="merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
 )
 parser.add_argument(
     "-s",
@@ -1047,7 +1047,7 @@ parser.add_argument(
     "-p",
     "--pc-subset-repos",
     metavar="PC_SUBSET",
-    help="Percentage (%) of repos from subset file (e.g. 100)",
+    help="Percentage of repos from subset file e.g. 100",
     type=int,
     default=100,
 )
