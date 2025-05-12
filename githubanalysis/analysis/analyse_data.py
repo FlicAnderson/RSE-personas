@@ -909,6 +909,7 @@ class DataAnalyser:
             "pc_issue_closed",
             "pc_issues_assigned_of_assigned",
             "pc_pull_request_created",
+            "pc_pull_request_closed",
             "pc_DC",
             "pc_sum_n_interactions",
             "pc_interaction_days",
