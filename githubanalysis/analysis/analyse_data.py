@@ -8,6 +8,7 @@ import argparse
 
 import logging
 import utilities.get_default_logger as loggit
+from utilities.repo_names_write_out import RepoNamesListCreator
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
 from githubanalysis.visualization.plot_repoindividual_upset_plot import UpsetPlotter
 from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
@@ -751,6 +752,7 @@ class DataAnalyser:
 
     def analysis_workflow(
         self,
+        run_name: str,
         data: pd.DataFrame,
         subset_repos_file: str | Path,
         pc_subset: int,
@@ -857,7 +859,19 @@ class DataAnalyser:
             f"Combined cleaned_data and interaction_data written out to {write_out_to_combined}"
         )
 
-        # read in summarised repo stats data, subset to repos in sample
+        # write out sample repos to file:
+        sample_repo_names = list(cleaned_data_with_interactions.repo_name.unique())
+        reponameslistcreator = RepoNamesListCreator(
+            in_notebook=self.in_notebook,
+            logger=self.logger,
+        )
+        sample_repo_names_file = reponameslistcreator.repo_names_write_out(
+            write_location=self.data_write_location,
+            namelist=sample_repo_names,
+            repo_name_filename=f"{run_name}_subsample_repo_names_list",
+        )
+
+        # read in summarised repo stats data, subset to only repos in sample
         repo_stats = pd.read_csv(
             repo_stats_file,
             header=0,
@@ -867,7 +881,7 @@ class DataAnalyser:
         ), f"repo_stats was not read correctly, please check file {repo_stats_file}"
         repo_stats = self.subset_sample_to_repos(  # subset to relevant repos only
             repo_stats,
-            subset_repos_file=subset_repos_file,
+            subset_repos_file=sample_repo_names_file,
             subset_pc=pc_subset,
         )
 
@@ -1134,6 +1148,7 @@ def main():
     )
     try:
         dataanalyser.analysis_workflow(
+            run_name=run_name_arg,
             data=data_df,
             subset_repos_file=subset_arg,
             pc_subset=pc_subset_repos_arg,
