@@ -1076,8 +1076,8 @@ parser.add_argument(
     "--interactions-file",
     metavar="INTERACTIONS",
     type=str,
-    help="File containing interaction data; e.g. merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
-    default="merged-interactions-data-per-dev_x2946-repos_2025-05-11.csv",
+    help="File containing interaction data; e.g. merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv",
+    default="merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv",
 )
 parser.add_argument(
     "-r",
