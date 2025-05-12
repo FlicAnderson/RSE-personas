@@ -27,7 +27,7 @@ class GenerateStudySample:
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_times_prep.txt",
+                log_name="logs/check_repo_eligibility.txt",
                 in_notebook=in_notebook,
             )
         else:
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
-        log_name="logs/pre-analysis_data_times_preps_logs.txt",
+        log_name="logs/check_repo_eligibility.txt",
         in_notebook=False,
     )
 
