@@ -368,6 +368,7 @@ class PrepDataTimes:
             "issue_closed",
             "issue_created",
             "pull_request_created",
+            "pull_request_closed",
         ]:
             if col not in status_df.columns:
                 status_df.loc[:, col] = 0
@@ -393,6 +394,7 @@ class PrepDataTimes:
             + status_df["issue_closed"]
             + status_df["issue_created"]
             + status_df["pull_request_created"]
+            + status_df["pull_request_closed"]
         )
 
         # mean_n_interactions_per_interaction_days: sum of interactions ()all types) divide by number of unique interaction days
@@ -418,6 +420,12 @@ class PrepDataTimes:
         status_df["pc_pull_request_created"] = (
             status_df["pull_request_created"]
             / status_df.groupby("repo_name")["pull_request_created"].transform("sum")
+            * 100
+        )
+
+        status_df["pc_pull_request_closed"] = (
+            status_df["pull_request_closed"]
+            / status_df.groupby("repo_name")["pull_request_closed"].transform("sum")
             * 100
         )
 
