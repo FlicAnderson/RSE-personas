@@ -871,7 +871,8 @@ class DataAnalyser:
             repo_name_filename=f"{run_name}_subsample_repo_names_list",
         )
 
-        # read in summarised repo stats data, subset to only repos in sample
+        # read in summarised repo stats data, subset to only repos in sample,
+        # but don't subset pc further because we're using an updated list
         repo_stats = pd.read_csv(
             repo_stats_file,
             header=0,
@@ -882,7 +883,7 @@ class DataAnalyser:
         repo_stats = self.subset_sample_to_repos(  # subset to relevant repos only
             repo_stats,
             subset_repos_file=sample_repo_names_file,
-            subset_pc=pc_subset,
+            subset_pc=100,
         )
 
         # write out relevant repo stats:
