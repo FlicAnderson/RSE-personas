@@ -267,6 +267,7 @@ class PrepDataTimes:
                 ]
             )
         )
+        # Gather MISSING data counts:
         n_all_before = len(all_types_interactions)
         n_gh_users = all_types_interactions["gh_username"].isna().sum()
         n_repos = all_types_interactions["repo_name"].isna().sum()
