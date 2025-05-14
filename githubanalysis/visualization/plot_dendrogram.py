@@ -171,7 +171,7 @@ def main():
     dendrogrammer.plot_dendrogram_with_leaf_counts(
         clustering_data=pd.read_csv(
             Path(
-                "data/analysis_run_sample_45pc_2025-05-12/sample_clustering_data_2025-05-12"
+                "data/analysis_run_sample_45pc_2025-05-12/sample_clustering_data_2025-05-12.csv"
             ),
             header=0,
             low_memory=False,
