@@ -100,9 +100,11 @@ class Dendrogrammer:
     def plot_dendrogram_with_leaf_counts(
         self,
         clustering_data: pd.DataFrame,
+        show_leaves: bool = True,
         file_name: str = "sample_dendrogram_leafcounts",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
+        assert isinstance(show_leaves, bool), "show_leaves must be boolean"
         # THIS IS THE SCIPY HIERARCHICAL CLUSTERING METHODS
         self.logger.info(
             f"Attempting to use {len(clustering_data)} repo-individuals dataset for clustering"
@@ -128,15 +130,16 @@ class Dendrogrammer:
         plt.ylabel("Distance")
         dendrogram(
             ward_clustering,
-            show_contracted=True,
-            no_labels=True,
+            show_contracted=False,
+            no_labels=show_leaves,  # set this to false to re-allow values under leafs.
             color_threshold=4000,
             above_threshold_color="black",
             count_sort=False,
             distance_sort=False,
-            show_leaf_counts=True,
+            show_leaf_counts=True,  # use =True to add numbers below leaves
             truncate_mode="level",  # show only the last p merged clusters
             p=5,  # show only the last p merged clusters
+            leaf_rotation=360,  # this does nothing if show_leaf_counts is false
         )
         # plt.savefig(f"../../images/dendrogram_ward_euclidian_x{n_repos}repos_x{len(clustering_data)}project_individuals_{current_date_info}.png")
         plt.title(
@@ -144,7 +147,7 @@ class Dendrogrammer:
         )
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_{self.current_date_info}.{save_type}",
+            f"{file_name}_leaves_{show_leaves}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
