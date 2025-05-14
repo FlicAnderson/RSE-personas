@@ -33,7 +33,7 @@ class Dendrogrammer:
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_times_prep.txt",
+                log_name="logs/plot_dendrograms.txt",
                 in_notebook=in_notebook,
             )
         else:
@@ -97,22 +97,11 @@ class Dendrogrammer:
         plt.close()
         self.logger.info(f"Plot saved out to file {plot_file}.")
 
-        dendrogram(
-            ward_clustering,
-            show_contracted=True,
-            no_labels=True,
-            color_threshold=400,
-            above_threshold_color="black",
-            count_sort=False,
-            distance_sort=False,
-            show_leaf_counts=True,
-        )
-
     def plot_dendrogram_with_leaf_counts(
         self,
         clustering_data: pd.DataFrame,
-        file_name: str = "sample_dendrogram_",
-        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+        file_name: str = "sample_dendrogram_leafcounts",
+        save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
         # THIS IS THE SCIPY HIERARCHICAL CLUSTERING METHODS
         self.logger.info(
@@ -160,26 +149,3 @@ class Dendrogrammer:
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
         self.logger.info(f"Plot saved out to file {plot_file}.")
-
-
-def main():
-    dendrogrammer = Dendrogrammer(
-        in_notebook=False,
-        logger=None,
-        image_write_location=Path("images/"),
-    )
-    dendrogrammer.plot_dendrogram_with_leaf_counts(
-        clustering_data=pd.read_csv(
-            Path(
-                "data/analysis_run_sample_45pc_2025-05-12/sample_clustering_data_2025-05-12.csv"
-            ),
-            header=0,
-            low_memory=False,
-        ),
-        file_name="45pc_dendrogram_w_leafcounts",
-        save_type="pdf",
-    )
-
-
-if __name__ == "__main__":
-    main()
