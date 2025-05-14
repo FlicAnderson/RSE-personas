@@ -100,7 +100,7 @@ class Dendrogrammer:
     def plot_dendrogram_with_leaf_counts(
         self,
         clustering_data: pd.DataFrame,
-        show_leaves: bool = True,
+        show_leaves: bool = False,
         file_name: str = "sample_dendrogram_leafcounts",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
@@ -130,7 +130,7 @@ class Dendrogrammer:
         plt.ylabel("Distance")
         dendrogram(
             ward_clustering,
-            show_contracted=False,
+            show_contracted=True,
             no_labels=show_leaves,  # set this to false to re-allow values under leafs.
             color_threshold=4000,
             above_threshold_color="black",
