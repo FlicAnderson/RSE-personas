@@ -20,6 +20,7 @@ class UpsetPlotter:
     current_date_info: str
     write_location: Path
     read_location: Path
+    image_write_location: Path
 
     def __init__(
         self,
@@ -43,6 +44,7 @@ class UpsetPlotter:
         )  # at start of script to avoid midnight/long-run issues
         self.read_location = Path("data/" if not in_notebook else "../../data/")
         self.write_location = Path("images/" if not in_notebook else "../../images/")
+        self.image_write_location = image_write_location
 
     def upset_plot(
         self,
@@ -110,7 +112,7 @@ class UpsetPlotter:
             f"Interaction-Combinations made by >1 Repo-Individuals in {cluster_name},  N={len(data)}"
         )
         plot_file = Path(
-            self.write_location,
+            self.image_write_location,
             f"{file_name}_{cluster_name}_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
