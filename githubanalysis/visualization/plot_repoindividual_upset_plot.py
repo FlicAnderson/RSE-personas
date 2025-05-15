@@ -24,6 +24,7 @@ class UpsetPlotter:
 
     def __init__(
         self,
+        image_write_location: str | Path,
         in_notebook: bool,
         logger: None | logging.Logger = None,
     ) -> None:
@@ -44,7 +45,7 @@ class UpsetPlotter:
         )  # at start of script to avoid midnight/long-run issues
         self.read_location = Path("data/" if not in_notebook else "../../data/")
         self.write_location = Path("images/" if not in_notebook else "../../images/")
-        self.image_write_location = image_write_location
+        self.image_write_location = Path(image_write_location)
 
     def upset_plot(
         self,
@@ -113,7 +114,7 @@ class UpsetPlotter:
         )
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_{cluster_name}_{self.current_date_info}.{save_type}",  # << NOTE: hardcoded cluster name
+            f"{file_name}_{cluster_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
