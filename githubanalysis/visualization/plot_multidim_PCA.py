@@ -52,7 +52,7 @@ class PlotPCA:
             2: "#FDBC42",
         },  # universityred, epccnavy, dandelion,
         file_name: str = "sample_3D_PCA_",
-        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+        save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
         clustering_data_labelled = pd.concat(
             [pd.DataFrame({"cluster_labels": cluster_labels}), clustering_data], axis=1
@@ -77,7 +77,7 @@ class PlotPCA:
                 X_reduced[:, 0],
                 X_reduced[:, 1],
                 c=cvec,
-                s=20,
+                s=10,
             )
         else:
             assert (
@@ -88,7 +88,7 @@ class PlotPCA:
                 X_reduced[:, 1],
                 X_reduced[:, 2],
                 c=cvec,
-                s=40,
+                s=10,
             )
 
         PCA_3 = PCA(n_components=3)
@@ -136,7 +136,7 @@ class PlotPCA:
             2: "#FDBC42",
         },  # universityred, epccnavy, dandelion,
         file_name: str = "sample_2D_PCA_",
-        save_type: str = "png",  # one of: ['png', 'pdf', 'svg']
+        save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
         clustering_data_labelled = pd.concat(
             [pd.DataFrame({"cluster_labels": cluster_labels}), clustering_data], axis=1
@@ -174,7 +174,7 @@ class PlotPCA:
                     PCA_2_df.loc[indicesToKeep, "principal component 1"],
                     PCA_2_df.loc[indicesToKeep, "principal component 2"],
                     c=color,
-                    s=20,
+                    s=10,
                 )
             plt.legend(targets, prop={"size": 15})
         else:
@@ -190,7 +190,7 @@ class PlotPCA:
                     PCA_2_df.loc[indicesToKeep, "principal component 1"],
                     PCA_2_df.loc[indicesToKeep, "principal component 2"],
                     c=color,
-                    s=50,
+                    s=10,
                 )
             plt.legend(targets, prop={"size": 15})
 
