@@ -33,7 +33,7 @@ class UpsetPlotter:
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_times_prep.txt",
+                log_name="logs/plot_upsetplot_logs.txt",
                 in_notebook=in_notebook,
             )
         else:
@@ -50,13 +50,17 @@ class UpsetPlotter:
             Path("images/" if not in_notebook else "../../images/")
             / f"analysis_run_{dataset_name}_{self.current_date_info}"
         )
+        self.data_write_location.mkdir()
+        self.image_write_location.mkdir()
 
     def upset_plot(
         self,
         cluster: int | None,
         data: pd.DataFrame,
         show_min: float = 0.005,
+        show_counts: bool = False,
         sort_combos_by: str = "cardinality",
+        data_set_name: str = "dataset",  # manual naming, goes into title of plots
         file_name: str = "upset_plot_",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
@@ -96,17 +100,22 @@ class UpsetPlotter:
         else:  # if no clusters supplied:
             data = data_by_interaction
             # plot_colour = "auto"
-            cluster_name = "dataset"
+            cluster_name = data_set_name
 
-        smallest_n_to_show = len(data) * show_min
+        smallest_n_to_show = round(len(data) * show_min)
 
         self.logger.info(
             f"Attempting to plot cluster {cluster_name} and showing as far as {show_min}%, which is {smallest_n_to_show} repo-individuals from the data"  # {plot_colour}."
         )
 
+        if show_counts:
+            format = "{:,}"
+        else:
+            format = ""
+
         upset = UpSet(
             data=data,
-            show_counts="{:,}",
+            show_counts=format,
             sort_by=sort_combos_by,
             # facecolor=plot_colour,
             orientation="horizontal",
@@ -114,7 +123,7 @@ class UpsetPlotter:
         )
         upset.plot()
         plt.suptitle(
-            f"Interaction-Combinations made by >1 Repo-Individuals in {cluster_name},  N={len(data)}"
+            f"{data_set_name} Interaction-Combinations (showing >{smallest_n_to_show} ({show_min}%) Repo-Individuals),  N={len(data)}"
         )
         plot_file = Path(
             self.image_write_location,
@@ -130,7 +139,9 @@ class UpsetPlotter:
         # colours: list | dict = sns.color_palette("colorblind"),
         separate_by_clusters: bool = False,
         show_min: float = 0.005,
+        show_counts: bool = False,
         sort_combos_by: str = "cardinality",
+        data_set_name: str = "dataset",
         file_name: str = "upset_plot_",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
         # min_repo_individs_per_combo: int = 2,
@@ -162,7 +173,7 @@ class UpsetPlotter:
             ), "df has no column 'cluster_labels - please check this is present in the data."
             n_clusters = data.cluster_labels.nunique()
             self.logger.info(
-                f"Plotting upset plot separating by {n_clusters} clusters from data labels."
+                f"Plotting upset plot for {data_set_name}, separating by {n_clusters} clusters from data labels."
             )
 
             for cluster in range(0, n_clusters - 1, 1):
@@ -172,18 +183,24 @@ class UpsetPlotter:
                     cluster=cluster,
                     data=data,
                     show_min=show_min,
+                    data_set_name=data_set_name,
+                    show_counts=show_counts,
                     file_name=f"{file_name}_cluster-{cluster}_",
                 )
             self.logger.info(
                 f"Completed UpSet plotting for {n_clusters} clusters from data labels."
             )
         else:
-            self.logger.info("Plotting upset plot without separating by clusters")
+            self.logger.info(
+                f"Plotting upset plot for {data_set_name} without separating by clusters"
+            )
             self.upset_plot(
                 cluster=None,
                 data=data,
                 show_min=show_min,
+                show_counts=show_counts,
                 sort_combos_by="cardinality",
+                data_set_name=data_set_name,
                 file_name=file_name,
                 save_type="pdf",  # one of: ['png', 'pdf', 'svg']
             )
