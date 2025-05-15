@@ -48,6 +48,7 @@ class UpsetPlotter:
         self,
         cluster: int | None,
         data: pd.DataFrame,
+        show_min: float = 0.005,
         sort_combos_by: str = "cardinality",
         file_name: str = "upset_plot_",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
@@ -70,7 +71,7 @@ class UpsetPlotter:
             assert data.empty is False, "Dataframe data is empty; check inputs."
             self.logger.info(f"data is df, with shape: {data.shape}.")
 
-        colours = list(sns.color_palette("colorblind").as_hex())
+        # colours = list(sns.color_palette("colorblind").as_hex())
 
         data_by_interaction = from_memberships(  # format data to upsetplot requirements
             data.which_interactions.apply(lambda x: [x.strip() for x in x.split(",")]),
@@ -83,24 +84,26 @@ class UpsetPlotter:
         if cluster is not None:
             cluster_query = f"cluster_labels == {cluster}"
             data = data_by_interaction.query("@cluster_query", engine="python")
-            plot_colour = colours[cluster]
+            # plot_colour = colours[cluster]
             cluster_name = f"cluster{cluster}"
         else:  # if no clusters supplied:
             data = data_by_interaction
-            plot_colour = "black"
-            cluster_name = "whole_dataset"
+            # plot_colour = "auto"
+            cluster_name = "dataset"
+
+        smallest_n_to_show = len(data) * show_min
 
         self.logger.info(
-            f"Attempting to plot cluster {cluster_name} using colour {plot_colour}."
+            f"Attempting to plot cluster {cluster_name} and showing as far as {show_min}%, which is {smallest_n_to_show} repo-individuals from the data"  # {plot_colour}."
         )
 
         upset = UpSet(
             data=data,
             show_counts="{:,}",
             sort_by=sort_combos_by,
-            facecolor=plot_colour,
+            # facecolor=plot_colour,
             orientation="horizontal",
-            min_subset_size=2,
+            min_subset_size=smallest_n_to_show,
         )
         upset.plot()
         plt.suptitle(
@@ -119,6 +122,7 @@ class UpsetPlotter:
         data: pd.DataFrame | Path,
         # colours: list | dict = sns.color_palette("colorblind"),
         separate_by_clusters: bool = False,
+        show_min: float = 0.005,
         sort_combos_by: str = "cardinality",
         file_name: str = "upset_plot_",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
@@ -160,6 +164,7 @@ class UpsetPlotter:
                 self.upset_plot(
                     cluster=cluster,
                     data=data,
+                    show_min=show_min,
                     file_name=f"{file_name}_cluster-{cluster}_",
                 )
             self.logger.info(
@@ -170,6 +175,7 @@ class UpsetPlotter:
             self.upset_plot(
                 cluster=None,
                 data=data,
+                show_min=show_min,
                 sort_combos_by="cardinality",
                 file_name=file_name,
                 save_type="pdf",  # one of: ['png', 'pdf', 'svg']
