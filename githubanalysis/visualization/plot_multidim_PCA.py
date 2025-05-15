@@ -77,7 +77,7 @@ class PlotPCA:
                 X_reduced[:, 0],
                 X_reduced[:, 1],
                 c=cvec,
-                s=10,
+                s=5,
             )
         else:
             assert (
@@ -88,7 +88,7 @@ class PlotPCA:
                 X_reduced[:, 1],
                 X_reduced[:, 2],
                 c=cvec,
-                s=10,
+                s=5,
             )
 
         PCA_3 = PCA(n_components=3)
@@ -174,7 +174,7 @@ class PlotPCA:
                     PCA_2_df.loc[indicesToKeep, "principal component 1"],
                     PCA_2_df.loc[indicesToKeep, "principal component 2"],
                     c=color,
-                    s=10,
+                    s=5,
                 )
             plt.legend(targets, prop={"size": 15})
         else:
@@ -190,7 +190,7 @@ class PlotPCA:
                     PCA_2_df.loc[indicesToKeep, "principal component 1"],
                     PCA_2_df.loc[indicesToKeep, "principal component 2"],
                     c=color,
-                    s=10,
+                    s=5,
                 )
             plt.legend(targets, prop={"size": 15})
 
