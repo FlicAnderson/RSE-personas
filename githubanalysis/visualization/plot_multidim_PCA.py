@@ -72,13 +72,25 @@ class PlotPCA:
         cvec = [label_color_dict[label] for label in labels]
 
         X_reduced = PCA(n_components=3).fit_transform(clustering_data_labelled)
-        ax.scatter(
-            X_reduced[:, 0],
-            X_reduced[:, 1],
-            # X_reduced[:, 2],
-            c=cvec,
-            s=40,
-        )
+        if clustering_data_labelled["cluster_labels"].nunique() == 2:
+            ax.scatter(
+                X_reduced[:, 0],
+                X_reduced[:, 1],
+                c=cvec,
+                s=40,
+            )
+        else:
+            assert (
+                clustering_data_labelled["cluster_labels"].nunique() == 3
+            ), "there should be two or three unique labels, this doesn't seem to be the case. Check this."
+            ax.scatter(
+                X_reduced[:, 0],
+                X_reduced[:, 1],
+                X_reduced[:, 2],
+                c=cvec,
+                s=40,
+            )
+
         PCA_3 = PCA(n_components=3)
         PCA_3_df = pd.DataFrame(
             data=PCA_3.fit_transform(clustering_data),
@@ -152,19 +164,36 @@ class PlotPCA:
         plt.title(
             "Principal Component Analysis of Repo-Individuals Interactions", fontsize=20
         )
-        targets = [0, 1]
-        if isinstance(colours, dict):
-            colours = list(colours.values())
-        for target, color in zip(targets, colours):
-            indicesToKeep = clustering_data_labelled["cluster_labels"] == target
-            plt.scatter(
-                PCA_2_df.loc[indicesToKeep, "principal component 1"],
-                PCA_2_df.loc[indicesToKeep, "principal component 2"],
-                c=color,
-                s=50,
-            )
+        if clustering_data_labelled["cluster_labels"].nunique() == 2:
+            targets = [0, 1]
+            if isinstance(colours, dict):
+                colours = list(colours.values())
+            for target, color in zip(targets, colours):
+                indicesToKeep = clustering_data_labelled["cluster_labels"] == target
+                plt.scatter(
+                    PCA_2_df.loc[indicesToKeep, "principal component 1"],
+                    PCA_2_df.loc[indicesToKeep, "principal component 2"],
+                    c=color,
+                    s=50,
+                )
+            plt.legend(targets, prop={"size": 15})
+        else:
+            assert (
+                clustering_data_labelled["cluster_labels"].nunique() == 3
+            ), "there aren't 2 or 3 clusters to plot - is this right?"
+            targets = [0, 1, 2]
+            if isinstance(colours, dict):
+                colours = list(colours.values())
+            for target, color in zip(targets, colours):
+                indicesToKeep = clustering_data_labelled["cluster_labels"] == target
+                plt.scatter(
+                    PCA_2_df.loc[indicesToKeep, "principal component 1"],
+                    PCA_2_df.loc[indicesToKeep, "principal component 2"],
+                    c=color,
+                    s=50,
+                )
+            plt.legend(targets, prop={"size": 15})
 
-        plt.legend(targets, prop={"size": 15})
         plot_file = Path(
             self.image_write_location,
             f"{file_name}_{self.current_date_info}.{save_type}",
@@ -172,9 +201,3 @@ class PlotPCA:
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
         self.logger.info(f"PCA 2D Plot saved out to file {plot_file}.")
-
-        # PCA_2 = PCA(n_components=2)
-        # PCA_2_df = pd.DataFrame(
-        #     data=PCA_2.fit_transform(clustering_data_labelled),
-        #     columns=["principal component 1", "principal component 2"],
-        # )
