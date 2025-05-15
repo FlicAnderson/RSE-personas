@@ -24,7 +24,8 @@ class UpsetPlotter:
 
     def __init__(
         self,
-        image_write_location: str | Path,
+        image_write_location: Path,
+        dataset_name: str,
         in_notebook: bool,
         logger: None | logging.Logger = None,
     ) -> None:
@@ -45,7 +46,10 @@ class UpsetPlotter:
         )  # at start of script to avoid midnight/long-run issues
         self.read_location = Path("data/" if not in_notebook else "../../data/")
         self.write_location = Path("images/" if not in_notebook else "../../images/")
-        self.image_write_location = Path(image_write_location)
+        self.image_write_location = (
+            Path("images/" if not in_notebook else "../../images/")
+            / f"analysis_run_{dataset_name}_{self.current_date_info}"
+        )
 
     def upset_plot(
         self,
