@@ -50,7 +50,6 @@ class UpsetPlotter:
             Path("images/" if not in_notebook else "../../images/")
             / f"analysis_run_{dataset_name}_{self.current_date_info}"
         )
-        self.data_write_location.mkdir()
         self.image_write_location.mkdir()
 
     def upset_plot(
