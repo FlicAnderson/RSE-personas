@@ -1,5 +1,7 @@
-# coding-smart
+# RSE-personas
 PhD research software research code. 
+
+[![DOI](https://zenodo.org/badge/639069825.svg)](https://doi.org/10.5281/zenodo.15458393)
 
 [![python-code-checking](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml/badge.svg)](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml)
 
