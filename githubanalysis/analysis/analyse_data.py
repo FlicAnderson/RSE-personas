@@ -865,7 +865,7 @@ class DataAnalyser:
             in_notebook=self.in_notebook,
             logger=self.logger,
         )
-        sample_repo_names_file = reponameslistcreator.repo_names_write_out(
+        reponameslistcreator.repo_names_write_out(
             write_location=self.data_write_location,
             namelist=sample_repo_names,
             repo_name_filename=f"{run_name}_subsample_repo_names_list",
@@ -880,11 +880,8 @@ class DataAnalyser:
         assert (
             repo_stats is not None
         ), f"repo_stats was not read correctly, please check file {repo_stats_file}"
-        repo_stats = self.subset_sample_to_repos(  # subset to relevant repos only
-            repo_stats,
-            subset_repos_file=sample_repo_names_file,
-            subset_pc=100,
-        )
+
+        repo_stats = repo_stats[repo_stats["repo_name"].isin(sample_repo_names)]
 
         # write out relevant repo stats:
         write_out_to_repo_stats = self.writeout_data_to_csv(
