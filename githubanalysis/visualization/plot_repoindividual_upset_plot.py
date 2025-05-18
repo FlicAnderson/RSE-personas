@@ -2,16 +2,13 @@
 
 from pathlib import Path
 import datetime
-
 import logging
-import utilities.get_default_logger as loggit
-
 import pandas as pd
-
 from matplotlib import pyplot as plt
-import seaborn as sns
-
+import utilities.get_default_logger as loggit
 from upsetplot import UpSet, from_memberships
+
+#  ruff: noqa: F841
 
 
 class UpsetPlotter:

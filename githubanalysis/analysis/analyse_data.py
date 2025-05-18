@@ -10,7 +10,6 @@ import logging
 import utilities.get_default_logger as loggit
 from utilities.repo_names_write_out import RepoNamesListCreator
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
-from githubanalysis.visualization.plot_repoindividual_upset_plot import UpsetPlotter
 from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
 
 import random

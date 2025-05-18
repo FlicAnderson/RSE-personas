@@ -12,6 +12,8 @@ from sklearn.decomposition import PCA
 
 from matplotlib import pyplot as plt
 
+#  ruff: noqa: F841
+
 
 class PlotPCA:
     logger: logging.Logger
