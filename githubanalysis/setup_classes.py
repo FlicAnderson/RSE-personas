@@ -58,6 +58,7 @@ class DatasetSetup(LocationSetup):
         self,
         dataset_name,
         in_notebook: bool,
+        exists_ok: bool = False,
         logger: None | logging.Logger = None,
     ) -> None:
         super().__init__(in_notebook, logger)
@@ -72,5 +73,5 @@ class DatasetSetup(LocationSetup):
             / f"analysis_run_{dataset_name}_{self.current_date_info}"
         )
         self.dataset_name = dataset_name
-        self.data_write_location.mkdir()
-        self.image_write_location.mkdir()
+        self.data_write_location.mkdir(exist_ok=exists_ok)
+        self.image_write_location.mkdir(exist_ok=exists_ok)

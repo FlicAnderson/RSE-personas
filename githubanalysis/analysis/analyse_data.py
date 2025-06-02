@@ -1,6 +1,7 @@
 """Data analysis workflow for github repo analysis."""
 
 # import modules
+from logging import Logger
 from pathlib import Path
 import gc
 import argparse
@@ -1074,6 +1075,13 @@ parser.add_argument(
     type=str,
     required=True,
 )
+parser.add_argument(
+    "-f",
+    "--force-reuse-folder",
+    help="Don't enter anything; use this if you want to use folder if it already exists",
+    action="store_true",
+    default=False,
+)
 
 
 def main():
@@ -1086,8 +1094,13 @@ def main():
     max_clusters_arg: int = args.max_n_clusters
     n_clusters_arg: int | None = args.n_clusters
     run_name_arg: str = args.dataset_run_name
+    force_exists_ok: bool = args.force_reuse_folder
 
-    dataanalyser = DataAnalyser(in_notebook=False, dataset_name=run_name_arg)
+    dataanalyser = DataAnalyser(
+        in_notebook=False,
+        dataset_name=run_name_arg,
+        exists_ok=force_exists_ok,
+    )
 
     dataanalyser.logger.info(
         f"""
@@ -1099,7 +1112,7 @@ def main():
         interactions: {interactions_arg}; 
         repo_stats summary data: {repo_stats_arg}; 
         max number of clusters to eval: {max_clusters_arg}; 
-        number of clusters to use: {n_clusters_arg}; .
+        number of clusters to use: {n_clusters_arg};.
         """
     )
 
