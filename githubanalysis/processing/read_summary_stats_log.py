@@ -5,10 +5,12 @@ from pathlib import Path
 import datetime
 import re
 import pandas as pd
-import logging
 import utilities.get_default_logger as loggit
 from typing import Any
 from ast import literal_eval
+
+from githubanalysis.setup_classes import LocationSetup
+
 
 # """
 # $ python githubanalysis/processing/read_summary_stats_log.py -f logs/summarise_repo_stats_logs.txt
@@ -85,39 +87,13 @@ def parse_log(lines: list[str]) -> list[tuple[str, dict[str, Any]]]:
     return out
 
 
-class RepoStatsReader:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    write_location: Path
-
-    def __init__(
-        self,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/read_repo_stats_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        # self.read_location = read_location
-        self.write_location = Path("data/" if not in_notebook else "../../data/")
+class RepoStatsReader(LocationSetup):
+    def _log_name(self) -> str:
+        return "read_repo_stats_logs"
 
     def read_repo_summary_data(
         self,
         filename: str | Path,
-        write_location="data/",
     ) -> pd.DataFrame | None:
         """
         This function applies parse_log() line by line of the logfile;
@@ -138,7 +114,7 @@ class RepoStatsReader:
         saveas = f"summarised_repo_stats_{self.current_date_info}.csv"
 
         # write out the df to csv file to the write location
-        repo_stats.to_csv(self.write_location / saveas, index=False)
+        repo_stats.to_csv(self.data_location / saveas, index=False)
         return repo_stats
 
 

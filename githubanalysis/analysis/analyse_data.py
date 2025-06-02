@@ -3,11 +3,9 @@
 # import modules
 from pathlib import Path
 import gc
-import datetime
 import argparse
 
-import logging
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import DatasetSetup
 from utilities.repo_names_write_out import RepoNamesListCreator
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
 from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
@@ -59,47 +57,15 @@ def contribution_types_editor(CBRI: int, rough_type_cat: str) -> str:
         return re.sub("(  )", " and ", rough_type_cat)
     elif CBRI == 3:
         return "creates commits and creates issues and assigned issues"
-
-
-class DataAnalyser:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    image_write_location: Path
-    data_read_location: Path
-
-    def __init__(
-        self,
-        dataset_name: str,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/analyse_data.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.data_read_location = Path("data/" if not in_notebook else "../../data/")
-        self.data_write_location = (
-            Path("data/" if not in_notebook else "../../data/")
-            / f"analysis_run_{dataset_name}_{self.current_date_info}"
+    else:
+        raise RuntimeError(
+            f"This needs to be checked: currently workflow adds CBRI > 3 at subsequent stages, not here; CBRI currently {CBRI}."
         )
-        self.image_write_location = (
-            Path("images/" if not in_notebook else "../../images/")
-            / f"analysis_run_{dataset_name}_{self.current_date_info}"
-        )
-        self.data_write_location.mkdir()
-        self.image_write_location.mkdir()
+
+
+class DataAnalyser(DatasetSetup):
+    def _log_name(self) -> str:
+        return "analyse_data"
 
     def subset_sample_to_repos(
         self,
@@ -1158,7 +1124,7 @@ def main():
         dataanalyser.logger.error(
             f"Problem running data analysis workflow: {e}; arguments were: {args}."
         )
-        raise RuntimeError
+        raise
 
 
 if __name__ == "__main__":
