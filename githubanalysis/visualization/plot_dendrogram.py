@@ -1,11 +1,8 @@
 """Generate Dendrogram Plot from Data."""
 
 from pathlib import Path
-import datetime
 import gc
-
-import logging
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import DatasetSetup
 
 import pandas as pd
 
@@ -14,37 +11,12 @@ import seaborn as sns
 from scipy.cluster.hierarchy import linkage, dendrogram
 import sys
 
-sys.setrecursionlimit(10000)
+sys.setrecursionlimit(10000)  # :D
 
 
-class Dendrogrammer:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    image_write_location: Path
-
-    def __init__(
-        self,
-        image_write_location: Path,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/plot_dendrograms.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.image_write_location = image_write_location
+class Dendrogrammer(DatasetSetup):
+    def _log_name(self) -> str:
+        return "plot_dendrograms"
 
     def plot_dendrogram(
         self,

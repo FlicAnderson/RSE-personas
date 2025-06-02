@@ -2,12 +2,10 @@
 
 import logging
 import pandas as pd
-import datetime
 from pathlib import Path
 import numpy as np
 
-
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import LocationSetup
 from utilities.check_gh_reponse import UnexpectedAPIError
 from githubanalysis.processing.get_all_branches_commits import AllBranchesCommitsGetter
 from githubanalysis.processing.get_commit_changes import CommitChanges
@@ -21,42 +19,25 @@ from githubanalysis.analysis.vasilescu_commit_files_classification import (
 )
 
 
-class RunCommits:
-    logger: logging.Logger
+class RunCommits(LocationSetup):
     config_path: str
-    in_notebook: bool
-    current_date_info: str
     sanitised_repo_name: str
     repo_name: str
-    write_read_location: str
+
+    def _log_name(self) -> str:
+        return "commits_workflow_logs"
 
     def __init__(
         self,
         repo_name,
-        in_notebook: bool,
         config_path: str,
-        write_read_location: str,
+        in_notebook: bool,
         logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/commits_workflow_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
+        super().__init__(in_notebook=in_notebook, logger=logger)
         self.config_path = config_path
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
-        self.write_read_location = write_read_location
 
     def generate_all_branches_commits(self):
         allbranchescommitsgetter = AllBranchesCommitsGetter(
@@ -87,7 +68,7 @@ class RunCommits:
 
         if writeout:
             reformat_commits.save_formatted_commits(
-                write_out_location=self.write_read_location
+                write_out_location=self.data_location
             )
             self.logger.info("saved out reformat commits")
 
@@ -99,7 +80,7 @@ class RunCommits:
         to get up to date commits data for that repo, then reformats it.
         """
 
-        formatted_commits_filename = f"{self.write_read_location}processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         formatted_commits_path = Path(formatted_commits_filename)
         self.logger.info(
             f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
@@ -300,7 +281,7 @@ class RunCommits:
             f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
         )
 
-        write_out = f"{self.write_read_location}commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        write_out = f"{self.data_location}/commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         processed_commits.to_csv(
             path_or_buf=write_out,
             header=True,
@@ -335,7 +316,7 @@ class RunCommits:
             f"Info details of `processed_commits` object is {processed_commits.info()}"
         )
 
-        write_out = f"{self.write_read_location}commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        write_out = f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         self.logger.info(
             f"writing post-workflow file out to this path / filename: {write_out}"
         )

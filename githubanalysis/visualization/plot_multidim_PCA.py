@@ -1,10 +1,8 @@
 """Plot 3-Dimensional PCA plot for labelled analysis dataset."""
 
 from pathlib import Path
-import datetime
 
-import logging
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import DatasetSetup
 
 import pandas as pd
 import numpy as np
@@ -15,34 +13,9 @@ from matplotlib import pyplot as plt
 #  ruff: noqa: F841
 
 
-class PlotPCA:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    image_write_location: Path
-
-    def __init__(
-        self,
-        in_notebook: bool,
-        image_write_location: Path,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/plot_3D_PCA.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.image_write_location = image_write_location
+class PlotPCA(DatasetSetup):
+    def _log_name(self) -> str:
+        return "plot_3D_PCA"
 
     def plot_threedim_PCA(
         self,

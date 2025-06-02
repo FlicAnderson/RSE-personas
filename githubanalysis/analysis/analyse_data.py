@@ -1,35 +1,23 @@
 """Data analysis workflow for github repo analysis."""
 
 # import modules
-from logging import Logger
 from pathlib import Path
 import gc
 import argparse
-
+import re
+import random
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from typing import cast
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import calinski_harabasz_score
+from sklearn.decomposition import PCA
 from githubanalysis.setup_classes import DatasetSetup
 from utilities.repo_names_write_out import RepoNamesListCreator
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
 from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
-
-import random
-import pandas as pd
-import numpy as np
-
-from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics import calinski_harabasz_score
-from sklearn.decomposition import PCA
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import cast
-
-import re
-
-# data cleaning stuff:
-# accept / load clean github data for analysis
-# do analysis :D
-# save analysis results out
-# pass analysis results for optional visualisation
 
 
 def contribution_in_category(contribution: float, category: str) -> str:
@@ -910,7 +898,7 @@ class DataAnalyser(DatasetSetup):
         dendrogrammer = Dendrogrammer(
             in_notebook=self.in_notebook,
             logger=self.logger,
-            image_write_location=self.image_write_location,
+            dataset_name=run_name,
         )
         dendrogrammer.plot_dendrogram(
             clustering_data=clustering_data,
@@ -989,7 +977,7 @@ class DataAnalyser(DatasetSetup):
         plotpca = PlotPCA(
             in_notebook=self.in_notebook,
             logger=self.logger,
-            image_write_location=self.image_write_location,
+            dataset_name=run_name,
         )
         # plot 2D
         plotpca.plot_twodim_PCA(

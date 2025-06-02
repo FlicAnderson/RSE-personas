@@ -1,53 +1,17 @@
 """Generate UpSet Plot from Clustered Post-Analysis Data."""
 
 from pathlib import Path
-import datetime
-import logging
 import pandas as pd
 from matplotlib import pyplot as plt
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import DatasetSetup
 from upsetplot import UpSet, from_memberships
 
 #  ruff: noqa: F841
 
 
-class UpsetPlotter:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    write_location: Path
-    read_location: Path
-    image_write_location: Path
-
-    def __init__(
-        self,
-        image_write_location: Path,
-        dataset_name: str,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/plot_upsetplot_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("images/" if not in_notebook else "../../images/")
-        self.image_write_location = (
-            Path("images/" if not in_notebook else "../../images/")
-            / f"analysis_run_{dataset_name}_{self.current_date_info}"
-        )
-        self.image_write_location.mkdir()
+class UpsetPlotter(DatasetSetup):
+    def _log_name(self) -> str:
+        return "plot_upsetplot_logs"
 
     def upset_plot(
         self,
@@ -140,9 +104,6 @@ class UpsetPlotter:
         data_set_name: str = "dataset",
         file_name: str = "upset_plot_",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
-        # min_repo_individs_per_combo: int = 2,
-        # show_counts_per_combo: boolean = True,
-        # show_pc: boolean = False,
     ):
         """
         This generates UpSet plots from GH interaction data from a dataframe or csv file.

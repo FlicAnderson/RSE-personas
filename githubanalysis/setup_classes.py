@@ -2,7 +2,10 @@
 
 from pathlib import Path
 import datetime
+import requests
+from requests.adapters import HTTPAdapter, Retry
 import logging
+import githubanalysis.processing.setup_github_auth as ghauth
 import utilities.get_default_logger as loggit
 from abc import ABC, abstractmethod
 
@@ -46,6 +49,33 @@ class LocationSetup(EnvSetup):
         super().__init__(in_notebook, logger)
 
         self.data_location = Path("data/" if not in_notebook else "../../data/")
+
+
+class RESTRequestSetup(LocationSetup):
+    config_path: str
+    s: requests.Session
+    gh_token: str
+    headers: dict[str, str]
+
+    def __init__(
+        self,
+        config_path: str,
+        in_notebook: bool,
+        logger: None | logging.Logger = None,
+    ) -> None:
+        super().__init__(in_notebook, logger)
+        self.config_path = config_path
+        self.s = requests.Session()
+        retries = Retry(
+            total=10,
+            connect=5,
+            read=3,
+            backoff_factor=1,
+            status_forcelist=[202, 502, 503, 504],
+        )
+        self.s.mount("https://", HTTPAdapter(max_retries=retries))
+        self.gh_token = ghauth.setup_github_auth(config_path=config_path)
+        self.headers = {"Authorization": "token " + self.gh_token}
 
 
 class DatasetSetup(LocationSetup):

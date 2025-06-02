@@ -2,14 +2,9 @@
 
 import os
 import json
-import datetime
-import requests
-from requests.adapters import HTTPAdapter, Retry
 import traceback
 import logging
-
-import utilities.get_default_logger as loggit
-import githubanalysis.processing.setup_github_auth as ghauth
+from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
 
 REPOS_API_URL = "https://api.github.com/repos/"
@@ -45,44 +40,20 @@ def is_this_single_page(issue_links: dict) -> bool:
         raise RuntimeError(f"unexpected 'rel' value: {rel}")
 
 
-class IssueGetter:
-    # if not given a better option, use my default settings for logging
-    logger: logging.Logger
+class IssueGetter(RESTRequestSetup):
+    def _log_name(self) -> str:
+        return "get_all_pages_issues_logs"
 
     def __init__(
         self,
         repo_name: str,
         in_notebook: bool,
         config_path: str,
-        logger: None,
+        logger: logging.Logger | None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/get_all_pages_issues_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.s = requests.Session()
-        retries = Retry(
-            total=10,
-            connect=5,
-            read=3,
-            backoff_factor=1,
-            status_forcelist=[202, 502, 503, 504],
+        super().__init__(
+            config_path=config_path, in_notebook=in_notebook, logger=logger
         )
-        self.s.mount("https://", HTTPAdapter(max_retries=retries))
-        self.gh_token = ghauth.setup_github_auth(config_path=config_path)
-        self.headers = {"Authorization": "token " + self.gh_token}
-        self.config_path = config_path
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
 
     def check_repo_has_issues(self, repo_name: str) -> bool:
@@ -192,7 +163,6 @@ class IssueGetter:
         self,
         repo_name: str,
         out_filename="all-issues",
-        write_out_location="data/",
     ) -> list:
         """
         Obtains all fields of data from all pages for a given github repo `repo_name`.
@@ -209,11 +179,7 @@ class IssueGetter:
         # assert isinstance(repo_name, str), "Ensure repository name in string format (e.g. 'repo-owner/repo-name')"  # move this to outer function to ensure inputs to here are correct
 
         self.logger.info(f"Repo name is {repo_name}. Getting issues.")
-
-        if self.in_notebook:
-            write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}"  # look further up for correct path
-        else:
-            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
+        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}"
 
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 

@@ -5,38 +5,26 @@ import datetime
 import json
 import pandas as pd
 from pathlib import Path
-
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import LocationSetup
 from githubanalysis.processing.get_all_pages_issues import IssueGetter, NoIssuesError
 
 
-class RunIssues:
-    logger: logging.Logger
+class RunIssues(LocationSetup):
+    def _log_name(self) -> str:
+        return "issues_workflow_logs"
+
     config_path: str
-    in_notebook: bool
-    current_date_info: str
     sanitised_repo_name: str
     repo_name: str
-    write_read_location: str
 
     def __init__(
         self,
         repo_name: str,
         in_notebook: bool,
         config_path: str,
-        write_read_location: str,
         logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/issues_workflow_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
+        super().__init__(in_notebook=in_notebook, logger=logger)
         self.config_path = config_path
         self.in_notebook = in_notebook
         # write-out file setup
@@ -45,7 +33,6 @@ class RunIssues:
         )  # at start of script to avoid midnight/long-run issues
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
-        self.write_read_location = write_read_location
 
     def check_repo_valid(self) -> bool:
         issuesgetter = IssueGetter(
@@ -77,7 +64,7 @@ class RunIssues:
             logger=self.logger,
         )
 
-        raw_issues_filename = f"{self.write_read_location}all-issues_{self.sanitised_repo_name}_{self.current_date_info}.json"
+        raw_issues_filename = f"{self.data_location}all-issues_{self.sanitised_repo_name}_{self.current_date_info}.json"
         raw_issues_path = Path(raw_issues_filename)
         self.logger.info(
             f"Checking whether issue tickets data for repo {self.repo_name} for today's date already exists at path {raw_issues_path}."
@@ -169,16 +156,15 @@ class RunIssues:
         issues_df = pd.DataFrame(frame, columns=columns)
         return issues_df
 
-    def save_formatted_issues(
+    def __save_formatted_issues(
         self,
         issues_df: pd.DataFrame,
-        write_out_location: str,
         out_filename: str = "processed-issues",
     ):
         """
         Save the reformatted commits data out to csv file.
         """
-        write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
         if issues_df is not None:
             issues_df.to_csv(path_or_buf=write_out, mode="w", index=True, header=True)
@@ -221,9 +207,7 @@ class RunIssues:
             ), "WARNING: processed_issues is NOT in dataframe format after running format_issues_object(); check types for errors"
 
             # Write out to CSV
-            self.save_formatted_issues(
-                issues_df=processed_issues, write_out_location=self.write_read_location
-            )
+            self.__save_formatted_issues(issues_df=processed_issues)
             self.logger.info("Wrote out processed issues data to csv.")
 
             # final happy case return:
