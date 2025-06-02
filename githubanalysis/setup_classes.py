@@ -15,7 +15,7 @@ class EnvSetup(
     current_date_info: str
 
     @abstractmethod  # show that this thing exists, but needs overwriting each time
-    def log_name(self) -> str: ...
+    def _log_name(self) -> str: ...
 
     def __init__(
         self,
@@ -26,7 +26,7 @@ class EnvSetup(
             self.logger = loggit.get_default_logger(
                 console=False,
                 set_level_to="DEBUG",
-                log_name=f"logs/{self.log_name()}.txt",
+                log_name=f"logs/{self._log_name()}.txt",
                 in_notebook=in_notebook,
             )
         else:
@@ -39,8 +39,18 @@ class EnvSetup(
         )  # at start of script to avoid midnight/long-run issues
 
 
-class LocatSetup(EnvSetup):
+class LocationSetup(EnvSetup):
+    data_location: Path
+
+    def __init__(self, in_notebook: bool, logger: None | logging.Logger = None) -> None:
+        super().__init__(in_notebook, logger)
+
+        self.data_location = Path("data/" if not in_notebook else "../../data/")
+
+
+class DatasetSetup(LocationSetup):
     image_write_location: Path
+    data_write_location: Path
     data_read_location: Path
     dataset_name: str
 
@@ -52,13 +62,15 @@ class LocatSetup(EnvSetup):
     ) -> None:
         super().__init__(in_notebook, logger)
 
-        self.data_read_location = Path("data/" if not in_notebook else "../../data/")
+        self.data_read_location = self.data_location
+
         self.data_write_location = (
-            Path("data/" if not in_notebook else "../../data/")
-            / f"analysis_run_{dataset_name}_{self.current_date_info}"
+            self.data_location / f"analysis_run_{dataset_name}_{self.current_date_info}"
         )
         self.image_write_location = (
             Path("images/" if not in_notebook else "../../images/")
             / f"analysis_run_{dataset_name}_{self.current_date_info}"
         )
         self.dataset_name = dataset_name
+        self.data_write_location.mkdir()
+        self.image_write_location.mkdir()
