@@ -2,17 +2,11 @@
 
 import pandas as pd
 import logging
-import datetime
-import requests
-from requests.adapters import HTTPAdapter, Retry
 from githubanalysis.setup_classes import RESTRequestSetup
-import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
 )
-import githubanalysis.processing.setup_github_auth as ghauth
-
 from typing import TypedDict
 
 
