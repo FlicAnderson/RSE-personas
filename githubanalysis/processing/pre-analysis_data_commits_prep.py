@@ -5,46 +5,18 @@ import datetime
 import os
 import re
 import pandas as pd
-import logging
+from githubanalysis.setup_classes import DatasetSetup
 import category_encoders as ce
-
+from typing import cast
 import utilities.get_default_logger as loggit
 
 
-class PrepDataCommits:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    write_location: Path
-    read_location: Path
-
-    def __init__(
-        self,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_commits_prep.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("data/" if not in_notebook else "../../data/")
+class PrepDataCommits(DatasetSetup):
+    def _log_name(self) -> str:
+        return "pre-analysis_data_commits_prep"
 
     def process_commits(
         self,
-        read_location: str | Path,
-        write_location: str | Path,
     ) -> pd.DataFrame | None:
         """
         Pull in commits_cats_stats_ files from read_location folder (default: data/)
@@ -59,7 +31,7 @@ class PrepDataCommits:
 
         repolist = [
             f
-            for f in os.listdir(read_location)
+            for f in os.listdir(self.data_read_location)
             if re.match(r"(commits_cats_stats_).*(.csv)", f)
         ]
         logger.info("{repolist}")
@@ -71,7 +43,7 @@ class PrepDataCommits:
 
         for repofile in repolist:
             logger.debug(f"{repofile}")
-            tmplocat = f"{read_location}{repofile}"
+            tmplocat = f"{self.data_read_location}{repofile}"
             repo = pd.read_csv(tmplocat)
             logger.debug(f"{len(repo)}")  # this number is N of Commits per repo
 
@@ -84,7 +56,11 @@ class PrepDataCommits:
                 use_cat_names=True,
                 handle_unknown="value",
             )
-            repo = ce_OHE.fit_transform(repo)
+            repo = cast(
+                pd.DataFrame, ce_OHE.fit_transform(repo)
+            )  # THIS IS POTENTIALLY DANGEROUS:
+            # WARNING: code seems to work despite OneHotEncoder returning ndarray, which doesn't have groupby...
+            # This is probably a future failpoint...
 
             tmpname = repo["repo_name"][0]
 
@@ -227,7 +203,7 @@ class PrepDataCommits:
         ]  # remove duplicated 2 columns
 
         filestr = f"commits-data-per-dev_x{devs_commits_data['repo_name'].nunique()}-repos_{self.current_date_info}.csv"
-        filestr = Path(self.write_location, filestr)
+        filestr = Path(self.data_write_location, filestr)
         devs_commits_data.to_csv(path_or_buf=filestr, header=True, index=False)
 
         end_time = datetime.datetime.now()
@@ -250,6 +226,8 @@ if __name__ == "__main__":
         in_notebook=False,
     )
 
-    prepdatacommits = PrepDataCommits(in_notebook=False, logger=logger)
+    prepdatacommits = PrepDataCommits(
+        dataset_name="commits", in_notebook=False, logger=logger, exists_ok=True
+    )
 
-    prepdatacommits.process_commits(read_location="data/", write_location="data/")
+    prepdatacommits.process_commits()
