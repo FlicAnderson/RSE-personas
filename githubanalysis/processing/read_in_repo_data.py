@@ -5,7 +5,10 @@ from pathlib import Path
 
 
 def read_in_repo_data(
-    read_in, repo_name=None, read_in_as="json", read_orientation="table", verbose=True
+    read_in: str,
+    repo_name=None,
+    read_in_as="json",
+    verbose=True,
 ):
     """
     Takes repo dataset file (e.g. issues data) in json and reads in as pd.DataFrame object.
@@ -75,12 +78,9 @@ def read_in_repo_data(
 
         read_in_df = pd.read_json(
             path_or_buf=read_in,
-            orient=read_orientation,
-            typ="frame",
-            dtype=None,
+            orient="table",
             convert_dates=False,
             keep_default_dates=False,
-            precise_float=False,
             date_unit="s",
         )
         # check dates aren't borked up because there's conversions possible in the to_json() and read_json() functions.

@@ -105,7 +105,6 @@ def test_commits_workflow_raises_404():
         repo_name=repo_404,
         in_notebook=False,
         config_path="githubanalysis/config.cfg",
-        write_read_location="data/",
         logger=logger,
     )
 
@@ -128,7 +127,6 @@ def test_run_commits_workflow_succeeds():
         repo_name=repo,
         in_notebook=False,
         config_path="githubanalysis/config.cfg",
-        write_read_location="data/",
         logger=logger,
     )
 

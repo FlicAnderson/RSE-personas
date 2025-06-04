@@ -10,7 +10,6 @@ def write_out_repo_data(
     filename="all_issues",
     write_out_as="json",
     write_out_location="data/",
-    write_orientation="table",
     verbose=True,
 ):
     """
@@ -79,7 +78,7 @@ def write_out_repo_data(
     if write_out_as == "json":
         repo_data_df.to_json(
             path_or_buf=write_out,
-            orient=write_orientation,
+            orient="table",
             date_format="iso",
             date_unit="s",
             index=False,

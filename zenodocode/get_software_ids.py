@@ -19,7 +19,7 @@ class SoftwareIDsGetter:
 
     def __init__(
         self,
-        logger: logging.Logger = None,
+        logger: logging.Logger | None,
         in_notebook=False,
     ) -> None:
         if logger is None:

@@ -1,8 +1,8 @@
 """Workflow for getting GitHub repo urls from Zenodo to create a 'Research Software repo dataset'."""
 
-import zenodocode.setup_zenodo_auth as znconnect
-import zenodocode.get_zenodo_ids as zngetids
-import zenodocode.get_gh_urls as zngetghurls
+from zenodocode.get_zenodo_ids import ZenodoIDGetter
+from utilities.get_default_logger import get_default_logger
+from zenodocode.get_gh_urls import GhURLsGetter
 
 
 def main():
@@ -11,32 +11,31 @@ def main():
     process gh urls
     write out dataset for input to githubanalysis code
     """
+    config_path: str = "zenodocode/zenodoconfig.cfg"
+    logger = get_default_logger(
+        console=True,
+        log_name="get_gh_repo_dataset",
+        in_notebook=False,
+    )
 
-    access_token = znconnect.setup_zenodo_auth(
-        config_path="zenodocode/zenodoconfig.cfg", verbose=True
-    )[1]
+    id_getter = ZenodoIDGetter(
+        config_path=config_path,
+        in_notebook=False,
+        logger=logger,
+    )
 
     # get zenodo IDs
-    zngetids.get_zenodo_ids(
-        auth=access_token,
+    ids = id_getter.get_zenodo_ids(
         per_pg=20,
         total_records=1000,
         filename="zn_ids",
-        write_out_location="data/",
-        verbose=True,
     )
 
     # get github urls
-
-    zngetghurls.get_gh_urls(
-        auth=access_token,
-        zenodo_ids_file="data/zn_ids.csv",
-        per_pg=100,
-        total_records=1000,
-        filename="gh_urls",
-        write_out_location="data/",
-        verbose=True,
+    ghurlsgetter = GhURLsGetter(
+        config_path=config_path, logger=logger, in_notebook=False
     )
+    ghurlsgetter.get_gh_urls(zenodo_ids=ids, out_filename="zenodo_gh_urls")
 
 
 # this bit
