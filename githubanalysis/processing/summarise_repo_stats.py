@@ -3,66 +3,36 @@
 import pandas as pd
 import datetime
 from datetime import timezone
-import requests
-from requests.adapters import HTTPAdapter, Retry
 import logging
-
-import utilities.get_default_logger as loggit
+from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
-import githubanalysis.processing.setup_github_auth as ghauth
 import githubanalysis.analysis.calc_days_since_repo_creation as dayssince
 
 
-class RepoStatsSummariser:
-    logger: logging.Logger
-    config_path: str
-    in_notebook: bool
-    current_date_info: str
-    sanitised_repo_name: str
+class RepoStatsSummariser(RESTRequestSetup):
     repo_name: str
-    write_read_location: str
     # shoutout to @dk949 for advice and patient explanation on using Classes for fun & profit
+    # further shoutout to @dk949 for not crying when they saw I did not use inheritance,
+    # ... and for remaining calm during instructing me how to use inheritance...
+
+    def _log_name(self) -> str:
+        return "summarise_repo_stats"
 
     def __init__(
         self,
         repo_name,
         in_notebook: bool,
         config_path: str,
-        write_read_location: str,
         logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/summarise_repo_stats_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.config_path = config_path
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.sanitised_repo_name = repo_name.replace("/", "-")
-        self.repo_name = repo_name
-        self.write_read_location = write_read_location
-        self.s = requests.Session()
-        retries = Retry(
-            total=10,
-            connect=5,
-            read=3,
-            backoff_factor=1,
-            status_forcelist=[202, 502, 503, 504],
+        super().__init__(
+            config_path=config_path,
+            in_notebook=in_notebook,
+            logger=logger,
         )
-        self.s.mount("https://", HTTPAdapter(max_retries=retries))
-        self.gh_token = ghauth.setup_github_auth(config_path=config_path)
-        self.headers = {"Authorization": "token " + self.gh_token}
+        self.repo_name = repo_name
 
-    def summarise_repo_stats(self, repo_name: str) -> dict | None:
+    def summarise_repo_stats(self) -> dict | None:
         """
         Connect to given GitHub repository and get details
         when given 'username' and 'repo_name' repository name.
@@ -101,11 +71,11 @@ class RepoStatsSummariser:
         repo_stats = {}
 
         # get repo_name gh connection:
-        repo_stats.update({"repo_name": repo_name})
+        repo_stats.update({"repo_name": self.repo_name})
         # self.logger.debug(f"Repo name is {repo_name}")
 
         base_repo_url = "https://api.github.com/repos"
-        connect_to = f"{base_repo_url}/{repo_name}"
+        connect_to = f"{base_repo_url}/{self.repo_name}"
 
         self.logger.info(f"getting json via request url {connect_to}.")
 
@@ -120,10 +90,10 @@ class RepoStatsSummariser:
         assert api_response.ok, f"API response is: {api_response}"
 
         self.logger.info(
-            f"API response at initial connection to {repo_name} is {api_response}"
+            f"API response at initial connection to {self.repo_name} is {api_response}"
         )
         self.logger.info(
-            f"API response at initial connection to {repo_name} for request {api_response.url} is {api_response}."
+            f"API response at initial connection to {self.repo_name} for request {api_response.url} is {api_response}."
         )
 
         api_status = api_response.status_code
@@ -139,7 +109,7 @@ class RepoStatsSummariser:
                     )
                 else:
                     self.logger.debug(
-                        f"GitHub repository {repo_name} does not have issues enabled."
+                        f"GitHub repository {self.repo_name} does not have issues enabled."
                     )
                     repo_stats.update(
                         {"issues_enabled": api_response.json().get("has_issues")}
@@ -150,8 +120,9 @@ class RepoStatsSummariser:
                 )
             except Exception as e_tixenabled:
                 self.logger.error(
-                    f"Error in checking issues enabled with repo name {repo_name} and config path {self.config_path}: {e_tixenabled}."
+                    f"Error in checking issues enabled with repo name {self.repo_name} and config path {self.config_path}: {e_tixenabled}."
                 )
+                raise
 
             # get stats:
 
@@ -185,7 +156,7 @@ class RepoStatsSummariser:
             self.logger.debug(f"Repo is a fork: {repo_stats.get('repo_is_fork')}")
 
             # count number of devs (contributors; including anonymous contribs* )
-            contribs_url = f"https://api.github.com/repos/{repo_name}/contributors?per_page=1&anon=1"
+            contribs_url = f"https://api.github.com/repos/{self.repo_name}/contributors?per_page=1&anon=1"
 
             self.logger.info(f"getting json via request url {contribs_url}.")
             contributors_api_response = run_with_retries(
@@ -210,7 +181,7 @@ class RepoStatsSummariser:
 
                 if total_contributors >= 500:
                     self.logger.debug(
-                        f"Repo {repo_name} has over 500 contributors, so API may not return contributors numbers accurately."
+                        f"Repo {self.repo_name} has over 500 contributors, so API may not return contributors numbers accurately."
                     )
 
                 # * NOTE: gh API does NOT return username info where number of contributors is > 500;
@@ -229,7 +200,7 @@ class RepoStatsSummariser:
 
             # does repo contain code
             # repo languages include: python, (C, C++), (shell?, R?, FORTRAN?)
-            languages_url = f"https://api.github.com/repos/{repo_name}/languages"
+            languages_url = f"https://api.github.com/repos/{self.repo_name}/languages"
             # languages_api_response = s.get(languages_url, headers=headers)
             self.logger.info(f"getting json via request url {languages_url}.")
             languages_api_response = run_with_retries(
@@ -259,7 +230,7 @@ class RepoStatsSummariser:
             # count total commits in last year
             # Do something sensible re: no commits in last year returned TODO
             base_commit_stats_url = (
-                f"https://api.github.com/repos/{repo_name}/stats/commit_activity"
+                f"https://api.github.com/repos/{self.repo_name}/stats/commit_activity"
             )
 
             self.logger.info(f"getting json via request url {base_commit_stats_url}.")
@@ -296,7 +267,9 @@ class RepoStatsSummariser:
                 f"?per_pg={per_pg}&state={state}&sort={sort}&direction={direction}"
             )
 
-            PRs_url = f"https://api.github.com/repos/{repo_name}/pulls{params_string}"
+            PRs_url = (
+                f"https://api.github.com/repos/{self.repo_name}/pulls{params_string}"
+            )
 
             self.logger.info(f"getting json via request url {PRs_url}.")
             PRs_api_response = run_with_retries(
@@ -330,7 +303,7 @@ class RepoStatsSummariser:
                     PRs_bool = True
                 except:
                     self.logger.debug(
-                        f"No PRs found for repo {repo_name}; setting PRs_bool to False and last_PR_updated to None."
+                        f"No PRs found for repo {self.repo_name}; setting PRs_bool to False and last_PR_updated to None."
                     )
                     PRs_bool = False
                     last_PR_updated = None
@@ -347,7 +320,7 @@ class RepoStatsSummariser:
             # count open issue tickets
             if repo_stats.get("issues_enabled"):
                 state = "open"
-                issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
+                issues_url = f"https://api.github.com/repos/{self.repo_name}/issues?state={state}&per_page=1"
 
                 self.logger.info(f"getting json via request url {issues_url}.")
                 issues_api_response = run_with_retries(
@@ -381,7 +354,7 @@ class RepoStatsSummariser:
             try:
                 if repo_stats.get("issues_enabled"):
                     state = "closed"
-                    issues_url = f"https://api.github.com/repos/{repo_name}/issues?state={state}&per_page=1"
+                    issues_url = f"https://api.github.com/repos/{self.repo_name}/issues?state={state}&per_page=1"
 
                     self.logger.info(f"getting json via request url {issues_url}.")
                     clsd_issues_api_response = run_with_retries(
@@ -418,13 +391,16 @@ class RepoStatsSummariser:
                 )
             except Exception as e_closedtix:
                 self.logger.error(
-                    f"Error in checking closed issue numbers at {repo_name} and config path {self.config_path}: {e_closedtix}."
+                    f"Error in checking closed issue numbers at {self.repo_name} and config path {self.config_path}: {e_closedtix}."
                 )
+                raise
 
             # get age of repo
             repo_age_days = dayssince.calc_days_since_repo_creation(
-                datetime.datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
-                repo_name,
+                date=datetime.datetime.now(timezone.utc).replace(tzinfo=timezone.utc),
+                repo_name=self.repo_name,
+                in_notebook=self.in_notebook,
+                logger=self.logger,
                 since_date=None,
                 return_in="whole_days",
                 config_path=self.config_path,
@@ -432,12 +408,12 @@ class RepoStatsSummariser:
             repo_stats.update({"repo_age_days": repo_age_days})
             self.logger.debug(f"Repo age in days is {repo_stats.get('repo_age_days')}.")
 
-            commits_url = f"{base_repo_url}/{repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits: ON MAIN BRANCH.
+            commits_url = f"{base_repo_url}/{self.repo_name}/commits?per_page=1"  # 1 commit per page so N pages == N commits: ON MAIN BRANCH.
             self.logger.info(f"getting json via request url {commits_url}.")
             commits_api_response = run_with_retries(
                 fn=lambda: raise_if_response_error(
                     api_response=self.s.get(url=commits_url, headers=self.headers),
-                    repo_name=repo_name,
+                    repo_name=self.repo_name,
                     logger=self.logger,
                 ),
                 logger=self.logger,
@@ -471,9 +447,9 @@ class RepoStatsSummariser:
             repo_stats.update({"repo_language": None})
             repo_stats.update({"n_commits_main_branch": None})
             self.logger.error(
-                f"404 error in connecting to {repo_name}; filling all stats with None"
+                f"404 error in connecting to {self.repo_name}; filling all stats with None"
             )
 
-        self.logger.info(f"Stats for {repo_name}: {repo_stats}")
+        self.logger.info(f"Stats for {self.repo_name}: {repo_stats}")
         self.logger.debug(f"Returned stats object has {len(repo_stats)} categories.")
         return repo_stats

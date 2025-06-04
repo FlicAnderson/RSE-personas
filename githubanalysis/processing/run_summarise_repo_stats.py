@@ -18,12 +18,11 @@ def single_repo_method(repo_name: str, logger: Logger) -> dict | None:
     """
     summarise_stats = RepoStatsSummariser(
         repo_name=repo_name,
-        in_notebook=False,  # TODO
-        config_path="githubanalysis/config.cfg",  # TODO make this editable and useful
-        write_read_location="data/",  # TODO
+        in_notebook=False,
+        config_path="githubanalysis/config.cfg",
     )
     try:
-        return summarise_stats.summarise_repo_stats(repo_name=repo_name)
+        return summarise_stats.summarise_repo_stats()
     except RepoNotFoundError as e:
         logger.error(
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
