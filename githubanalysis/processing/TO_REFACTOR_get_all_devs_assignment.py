@@ -7,7 +7,6 @@ import pandas as pd
 import datetime
 from ast import literal_eval
 import logging
-
 import utilities.get_default_logger as loggit
 
 
@@ -355,3 +354,6 @@ if __name__ == "__main__":
         logger.error(
             f"The outputs of running the function and reading back in data DO NOT MATCH; {e}"
         )
+        raise RuntimeError(
+            "Lengths of assignment dataframes don't match; check this"
+        ) from e

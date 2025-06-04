@@ -5,7 +5,7 @@ import logging
 import datetime
 import requests
 from requests.adapters import HTTPAdapter, Retry
-
+from githubanalysis.setup_classes import RESTRequestSetup
 import utilities.get_default_logger as loggit
 from utilities.check_gh_reponse import (
     raise_if_response_error,
@@ -29,8 +29,9 @@ def make_commit_url(repos_api_url: str, repo_name: str, commit_sha: str):
     return f"{repos_api_url}{repo_name}/commits/{commit_sha}"
 
 
-class CommitChanges:
-    logger: logging.Logger
+class CommitChanges(RESTRequestSetup):
+    def _log_name(self) -> str:
+        return "get_commit_changes_logs"
 
     def __init__(
         self,
@@ -39,37 +40,9 @@ class CommitChanges:
         config_path: str,
         logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/get_commit_changes_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.s = requests.Session()
-        self.s.mount(
-            "https://",
-            HTTPAdapter(
-                max_retries=Retry(
-                    total=10,
-                    connect=5,
-                    read=3,
-                    backoff_factor=1,
-                    status_forcelist=[202, 502, 503, 504],
-                )
-            ),
+        super().__init__(
+            config_path=config_path, in_notebook=in_notebook, logger=logger
         )
-        self.gh_token = ghauth.setup_github_auth(config_path=config_path)
-        self.headers = {"Authorization": "token " + self.gh_token}
-        self.config_path = config_path
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
 
@@ -102,10 +75,13 @@ class CommitChanges:
             f"record ID request headers limit/remaining: {headers_out}/{headers_out.get('x-ratelimit-remaining')}"
         )
 
-        raise_if_response_error(
-            api_response=api_response,
-            commit_hash=commit_hash,
-            repo_name=self.repo_name,
+        api_response = run_with_retries(
+            fn=lambda: raise_if_response_error(
+                api_response=api_response,
+                commit_hash=commit_hash,
+                repo_name=self.repo_name,
+                logger=self.logger,
+            ),
             logger=self.logger,
         )
 

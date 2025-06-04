@@ -45,7 +45,7 @@ class RunCommits(LocationSetup):
             in_notebook=self.in_notebook,
             config_path=self.config_path,
         )
-        # TODO: this does not need to take repo name
+
         all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
             repo_name=self.repo_name
         )
@@ -62,22 +62,22 @@ class RunCommits(LocationSetup):
             in_notebook=self.in_notebook,
         )
         reformat_commits.reformat_commits_object(
-            unique_commits_all_branches=all_branches_commits
+            unique_commits_all_branches=all_branches_commits  # this function adds df to self.reformatted_commits
         )
         self.logger.info("did reformat commits")
 
         if writeout:
-            reformat_commits.save_formatted_commits(
-                write_out_location=self.data_location
-            )
+            reformat_commits.save_formatted_commits()
             self.logger.info("saved out reformat commits")
 
         return reformat_commits.reformatted_commits
 
     def check_existing_formatted_commits(self):
-        """Generate expected filename of formatted commits data from repo name and date,
-        and check if this file had been created already today. If not, run `get_all_branches_commits( repo_name )`
-        to get up to date commits data for that repo, then reformats it.
+        """
+        Generate expected filename of formatted commits data from repo name and date,
+        and check if this file had been created already today.
+        If not, run `get_all_branches_commits( repo_name )` to get up to
+        date commits data for that repo, then reformats it.
         """
 
         formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"

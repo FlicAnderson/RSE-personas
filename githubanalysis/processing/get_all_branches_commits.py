@@ -1,17 +1,13 @@
 """Function to retrieve all commits across ALL branches for a given GitHub repository and remove duplicates."""
 
 import os
-import requests
-from requests.adapters import HTTPAdapter, Retry
 import logging
 import pandas as pd
-import datetime
 import json
-import utilities.get_default_logger as loggit
-import githubanalysis.processing.setup_github_auth as ghauth
+from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
 
-import githubanalysis.processing.get_branches as branchgetter
+from githubanalysis.processing.get_branches import BranchGetter
 # import githubanalysis.processing.deduplicate_commits as dedupcommits
 
 
@@ -41,9 +37,9 @@ def deduplicate_commits(all_branches_commits: dict[str, list]):
     return modified
 
 
-class AllBranchesCommitsGetter:
-    # if not given a better option, use my default settings for logging
-    logger: logging.Logger
+class AllBranchesCommitsGetter(RESTRequestSetup):
+    def _log_name(self) -> str:
+        return "get_all_branches_commits_logs"
 
     def __init__(
         self,
@@ -52,33 +48,9 @@ class AllBranchesCommitsGetter:
         config_path: str,
         logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/get_all_branches_commits_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.s = requests.Session()
-        retries = Retry(
-            total=10,
-            connect=5,
-            read=3,
-            backoff_factor=1,
-            status_forcelist=[202, 502, 503, 504],
+        super().__init__(
+            config_path=config_path, in_notebook=in_notebook, logger=logger
         )
-        self.s.mount("https://", HTTPAdapter(max_retries=retries))
-        self.gh_token = ghauth.setup_github_auth(config_path=config_path)
-        self.headers = {"Authorization": "token " + self.gh_token}
-        self.config_path = config_path
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run commits
         self.sanitised_repo_name = repo_name.replace("/", "-")
 
     def _singlepage_commit_grabber(
@@ -198,15 +170,18 @@ class AllBranchesCommitsGetter:
             f"Getting commits for repo {repo_name}, running within notebook is {self.in_notebook}."
         )
 
-        if self.in_notebook:
-            write_out = f"../../{write_out_location}{out_filename}_{self.sanitised_repo_name}"  # look further up for correct path
-        else:
-            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}"
+        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}"
 
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
+        branchgetter = BranchGetter(
+            in_notebook=self.in_notebook,
+            config_path=self.config_path,
+            logger=self.logger,
+        )
         branches_shas = branchgetter.get_branch_shas(
-            repo_name, self.config_path, per_pg
+            repo_name,
+            per_pg,
         )
 
         all_branches_commits = {}
@@ -249,7 +224,7 @@ class AllBranchesCommitsGetter:
 
             except Exception as e:
                 self.logger.error(f"Exception error at get_all_branches_commits(): {e}")
-                raise
+                raise RuntimeError("failed to get all branches of commits") from e
 
         unique_commits_all_branches = deduplicate_commits(all_branches_commits)
 

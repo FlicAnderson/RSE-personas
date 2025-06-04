@@ -2,36 +2,24 @@
 
 import pandas as pd
 import logging
-import datetime
 import json
+from githubanalysis.setup_classes import LocationSetup
 
-import utilities.get_default_logger as loggit
 
-
-class CommitReformatter:
-    logger: logging.Logger
+class CommitReformatter(LocationSetup):
+    def _log_name(self) -> str:
+        return "commits_reformatters_logs"
 
     def __init__(
         self,
-        repo_name,
+        repo_name: str,
         in_notebook: bool,
         logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/commits_reformatters_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run commits
+        super().__init__(
+            in_notebook=in_notebook,
+            logger=logger,
+        )
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.reformatted_commits = None
 
@@ -108,17 +96,12 @@ class CommitReformatter:
 
         return self.reformat_commits_object(raw_commits)
 
-    def save_formatted_commits(
-        self, write_out_location, out_filename="processed-commits"
-    ):
+    def save_formatted_commits(self, out_filename="processed-commits"):
         """
         Save the reformatted commits data out to csv file.
         """
 
-        if self.in_notebook:
-            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"  # look further up for correct path
-        else:
-            write_out = f"{write_out_location}{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
         if self.reformatted_commits is not None:
             self.reformatted_commits.to_csv(

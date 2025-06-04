@@ -25,7 +25,6 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
         repo_name=repo_name,
         in_notebook=False,
         config_path="githubanalysis/config.cfg",
-        write_read_location="data/",
     )
 
     try:

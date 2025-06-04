@@ -9,34 +9,33 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import logging
 import traceback
-
+from githubanalysis.setup_classes import RESTRequestSetup
 import utilities.get_default_logger as loggit
 import githubanalysis.processing.setup_github_auth as ghauth
 
 
-class CommitsGetter:
-    # if not given a better option, use my default settings for logging
-    logger: logging.Logger
+class CommitsGetter(RESTRequestSetup):
+    def _log_name(self) -> str:
+        return "get_all_pages_commits_logs"
 
-    def __init__(self, logger: logging.Logger = None, in_notebook=False) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/get_all_pages_commits_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
+    def __init__(
+        self,
+        repo_name,
+        config_path: str,
+        in_notebook: bool,
+        logger: None | logging.Logger = None,
+    ) -> None:
+        super().__init__(
+            config_path=config_path, in_notebook=in_notebook, logger=logger
+        )
+        self.sanitised_repo_name = repo_name.replace("/", "-")
 
     def get_all_pages_commits(
         self,
         repo_name,
-        config_path="githubanalysis/config.cfg",
         per_pg=100,
         branch="default",
         out_filename="all-commits",
-        write_out_location="data/",
     ):
         """
         Obtain all commits data from all pages for MAIN BRANCH of a given GitHub repo `repo_name`.
@@ -70,30 +69,10 @@ class CommitsGetter:
             )
         else:
             self.logger.debug(f"Repo name is {repo_name}. Getting commits.")
+        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}"
+        write_out_extra_info = f"{write_out}_{self.current_date_info}.csv"
 
-        # write-out file setup
-        current_date_info = datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run commits
-        sanitised_repo_name = repo_name.replace("/", "-")
-        write_out = f"{write_out_location}{out_filename}_{sanitised_repo_name}"
-        write_out_extra_info = f"{write_out}_{current_date_info}.csv"
-
-        write_out_extra_info_json = f"{write_out}_{current_date_info}.json"
-
-        # get auth string
-        gh_token = ghauth.setup_github_auth(config_path=config_path)
-        headers = {"Authorization": "token " + gh_token}
-
-        s = requests.Session()
-        retries = Retry(
-            total=10,
-            connect=5,
-            read=3,
-            backoff_factor=1.5,
-            status_forcelist=[202, 502, 503, 504],
-        )
-        s.mount("https://", HTTPAdapter(max_retries=retries))
+        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
         # create empty df to store commits data
         all_commits = pd.DataFrame()
@@ -109,7 +88,7 @@ class CommitsGetter:
                 commits_url = f"{repos_api_url}{repo_name}/commits?sha={branch}&per_page={per_pg}&page={page}"
 
             # important bit: API request with auth headers
-            api_response = s.get(url=commits_url, headers=headers)
+            api_response = self.s.get(url=commits_url, headers=self.headers)
             assert (
                 api_response.status_code != 401
             ), f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {commits_url} is {api_response}"
@@ -121,7 +100,7 @@ class CommitsGetter:
                     f"404 error in connecting to {repo_name}. Possibly this repo has been deleted or made private?"
                 )
             self.logger.error(
-                f"Error in setting up repo connection with repo name {repo_name} and config path {config_path}: {e_connect404}. Traceback: {traceback.format_exc()}"
+                f"Error in setting up repo connection with repo name {repo_name} and config path {self.config_path}: {e_connect404}. Traceback: {traceback.format_exc()}"
             )
 
         if api_response.status_code != (404 or 401):
@@ -150,7 +129,9 @@ class CommitsGetter:
                         self.logger.debug(
                             f"Commits query for page {pg_count} is {commits_query}"
                         )
-                        api_response = s.get(url=commits_query, headers=headers)
+                        api_response = self.s.get(
+                            url=commits_query, headers=self.headers
+                        )
                         json_pg = api_response.json()
                         if not json_pg:  # check emptiness of result.
                             self.logger.debug(
@@ -201,6 +182,9 @@ class CommitsGetter:
                                 self.logger.debug(
                                     f"There seems to be some issue: {e_pages}. Traceback: {traceback.format_exc()}"
                                 )
+                                raise RuntimeError(
+                                    "error while getting pages"
+                                ) from e_pages
 
                             # write out 'completed' page of commits as df to csv via APPEND (use added date filename with reponame inc)
                             store_pg.to_csv(
@@ -220,7 +204,7 @@ class CommitsGetter:
                     pg_count += 1
                     commits_query = commits_url
                     self.logger.debug(f"getting json via request url {commits_query}.")
-                    api_response = s.get(url=commits_query, headers=headers)
+                    api_response = self.s.get(url=commits_query, headers=self.headers)
                     json_pg = api_response.json()
                     if not json_pg:  # check emptiness of result.
                         self.logger.debug(
@@ -261,6 +245,9 @@ class CommitsGetter:
                             self.logger.debug(
                                 f"There seem to be no commits on the only page of the query... {e_empty}. Traceback: {traceback.format_exc()}"
                             )
+                            raise RuntimeError(
+                                "error due to empty query response returned"
+                            ) from e_empty
 
                     all_commits = store_pg
                     # write out the page content to csv via APPEND (use added date filename)
@@ -282,6 +269,7 @@ class CommitsGetter:
                 self.logger.error(
                     f"Something failed in getting commits for repo {repo_name}: {e_commits}. API response was: {api_response}. Traceback: {traceback.format_exc()}"
                 )
+                raise RuntimeError("failed to get commits") from e_commits
 
         all_commits.to_json(
             path_or_buf=write_out_extra_info_json,
@@ -315,19 +303,23 @@ if __name__ == "__main__":
         log_name="logs/get_all_pages_commits_logs.txt",
     )
 
-    commits_getter = CommitsGetter(logger)
-
     if len(sys.argv) == 2:
         repo_name = sys.argv[1]  # use second argv (user-provided by commandline)
     else:
         raise IndexError("Please enter a repo_name.")
 
     commits_df = pd.DataFrame()
+    commits_getter = CommitsGetter(
+        repo_name=repo_name,
+        config_path="githubanalysis/config.cfg",  ### THIS NEEDS TO BE ADDRESSED! Detect this somehow or add as param to argvs
+        logger=logger,
+        in_notebook=False,
+    )
 
     # run the main function to get the commits!
     try:
         commits_df = commits_getter.get_all_pages_commits(
-            repo_name=repo_name, config_path="githubanalysis/config.cfg"
+            repo_name=repo_name,
         )
         if len(commits_df) != 0:
             logger.info(
@@ -344,20 +336,14 @@ if __name__ == "__main__":
 
     # generate filename and try to read file in for comparison.
     total_commits = pd.DataFrame()
+    commits_file_extra_info = f"{commits_getter.data_location}/all-commits_{commits_getter.sanitised_repo_name}_{commits_getter.current_date_info}.csv"
     try:
-        current_date_info = datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # run this at start of script not in loop to avoid midnight/long-run issues
-        sanitised_repo_name = repo_name.replace("/", "-")
-        commits_file = "data/all-commits"
-        commits_file_extra_info = (
-            f"{commits_file}_{sanitised_repo_name}_{current_date_info}.csv"
-        )
         total_commits = pd.read_csv(commits_file_extra_info, header=0)
     except Exception as e:
         logger.error(
             f"There's been an exception while trying to read back in data generated by get_all_pages_commits() from {commits_file_extra_info}: {e}. Traceback: {traceback.format_exc()}"
         )
+        raise RuntimeError("error in get_all_pages_commits()") from e
 
     try:
         assert (
@@ -367,3 +353,4 @@ if __name__ == "__main__":
         logger.error(
             f"The outputs of running the function and reading back in data DO NOT MATCH; {e}"
         )
+        raise RuntimeError("error in get_all_pages_commits()") from e

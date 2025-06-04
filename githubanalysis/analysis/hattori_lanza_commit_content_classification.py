@@ -2,9 +2,7 @@
 
 import re
 import logging
-
-import utilities.get_default_logger as loggit
-
+from githubanalysis.setup_classes import LocationSetup
 
 # Hattori-Lanza commit classification method referenced from research paper:
 # L. P. Hattori and M. Lanza, ‘On the nature of commits’,
@@ -12,23 +10,16 @@ import utilities.get_default_logger as loggit
 # doi: 10.1109/ASEW.2008.4686322.
 
 
-class Hattori_Lanza_Content_Classification:
-    logger: logging.Logger
+class Hattori_Lanza_Content_Classification(LocationSetup):
+    def _log_name(self) -> str:
+        return "hattori_lanza_commit_content_classification"
 
     def __init__(
         self,
-        logger: logging.Logger = None,
-        in_notebook=False,
+        in_notebook: bool,
+        logger: None | logging.Logger = None,
     ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="INFO",
-                log_name="logs/hattori_lanza_commit_content_classification_logs.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
+        super().__init__(in_notebook=in_notebook, logger=logger)
 
         self.hattori_lanza_categories = [
             "forward_engineering",  # "activities related to incorporation of new features and implementation of new requirements"
