@@ -5,47 +5,18 @@ import argparse
 import datetime
 import numpy as np
 import pandas as pd
-import logging
-
+from githubanalysis.setup_classes import DatasetSetup
 import utilities.get_default_logger as loggit
 
 
-class PrepDataCombined:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    write_location: Path
-    read_location: Path
-
-    def __init__(
-        self,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_combined_prep.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("data/" if not in_notebook else "../../data/")
+class PrepDataCombined(DatasetSetup):
+    def _log_name(self) -> str:
+        return "pre-analysis_data_combined_prep"
 
     def process_multi_origin_data(
         self,
         commits_data_file: str | Path,
         issues_data_file: str | Path,
-        read_location: str | Path,
-        write_location: str | Path,
     ) -> pd.DataFrame | None:
         """
         Combines per-dev (per repo-individual) data from commits and issue tickets
@@ -56,13 +27,10 @@ class PrepDataCombined:
         Example Run: python githubanalysis/processing/pre-analysis_data_combined_prep.py -c commits-data-per-dev_x2320-repos_2025-04-15.csv -i issues-data-per-dev_x2829-repos_x237715-repo-individuals_2025-04-15.csv
         """
 
-        commits_data_file = Path(read_location, commits_data_file)
-        issues_data_file = Path(read_location, issues_data_file)
+        commits_data_file = Path(self.data_read_location, commits_data_file)
+        issues_data_file = Path(self.data_read_location, issues_data_file)
         self.logger.info(f"Commits data file: {commits_data_file}")
         self.logger.info(f"Issues data file: {issues_data_file}")
-
-        # print(f"Commits data file: {commits_data_file}")
-        # print(f"Issues data file: {issues_data_file}")
 
         start_time = datetime.datetime.now()
 
@@ -120,7 +88,7 @@ class PrepDataCombined:
         n_repos_omnirepo = int(omnirepo.groupby("repo_name").ngroups)
 
         filestr = f"merged-data-per-dev_x{omnirepo['repo_name'].nunique()}-repos_{self.current_date_info}.csv"
-        writeout_path = Path(write_location, filestr)
+        writeout_path = Path(self.data_write_location, filestr)
 
         try:
             omnirepo.to_csv(path_or_buf=writeout_path, header=True, index=False)
@@ -186,11 +154,14 @@ if __name__ == "__main__":
         f"Running data combination pre-analysis preparation methods on commits data file {commits_data} and issues file {issues_data}."
     )
 
-    prepdatacombined = PrepDataCombined(in_notebook=False, logger=logger)
+    prepdatacombined = PrepDataCombined(
+        dataset_name="combined-issues-commits",
+        in_notebook=False,
+        logger=logger,
+        exists_ok=True,
+    )
 
     combined_data = prepdatacombined.process_multi_origin_data(
         commits_data_file=commits_data,
         issues_data_file=issues_data,
-        read_location="data/",
-        write_location="data/",
     )

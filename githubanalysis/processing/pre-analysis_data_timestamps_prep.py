@@ -6,45 +6,17 @@ import os
 import re
 from ast import literal_eval
 import pandas as pd
-import logging
-
-
+from githubanalysis.setup_classes import DatasetSetup
 import utilities.get_default_logger as loggit
 
 pd.options.mode.copy_on_write = True
 
 
-class PrepDataTimes:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    write_location: Path
-    read_location: Path
+class PrepDataTimes(DatasetSetup):
+    def _log_name(self) -> str:
+        return "pre-analysis_data_times_prep"
 
     pd.options.mode.copy_on_write = True
-
-    def __init__(
-        self,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_times_prep.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("data/" if not in_notebook else "../../data/")
 
     def get_commit_interactions(self, datafile: str | Path) -> pd.DataFrame:
         """
@@ -225,12 +197,12 @@ class PrepDataTimes:
         self.logger.debug(commits_interactions.columns)
 
         filestr_iss = f"issues_interactions_x{len(issues_interactions)}_{self.current_date_info}.csv"
-        writeout_path_iss = Path(self.write_location, filestr_iss)
+        writeout_path_iss = Path(self.data_write_location, filestr_iss)
 
         issues_interactions.to_csv(writeout_path_iss, header=True, index=False)
 
         filestr_cmt = f"commits_interactions_x{len(commits_interactions)}_{self.current_date_info}.csv"
-        writeout_path_cmt = Path(self.write_location, filestr_cmt)
+        writeout_path_cmt = Path(self.data_write_location, filestr_cmt)
 
         commits_interactions.to_csv(writeout_path_cmt, header=True, index=False)
         self.logger.debug(
@@ -291,7 +263,7 @@ class PrepDataTimes:
 
         all_types_interactions.to_csv(
             Path(
-                self.write_location,
+                self.data_write_location,
                 f"combined_interactions_data_{self.current_date_info}.csv",
             )
         )
@@ -317,7 +289,7 @@ class PrepDataTimes:
             self.logger.error(f"tmp_errors is: {tmp_errors}")
             tmp_errors.to_csv(
                 Path(
-                    self.write_location,
+                    self.data_write_location,
                     f"error_rows_interactions_data_{self.current_date_info}.csv",
                 )
             )
@@ -482,8 +454,6 @@ class PrepDataTimes:
 
     def interactions_data_workflow(
         self,
-        read_location: str | Path,
-        write_location: str | Path,
     ) -> pd.DataFrame | None:
         """
         Reads in processed data from commits and issue tickets
@@ -502,7 +472,9 @@ class PrepDataTimes:
         # )
 
         issues_files_repolist = [
-            f for f in os.listdir(read_location) if re.match(self._ISSUES_PATTERN, f)
+            f
+            for f in os.listdir(self.data_read_location)
+            if re.match(self._ISSUES_PATTERN, f)
         ]
 
         # for i in commit_matches:
@@ -512,13 +484,13 @@ class PrepDataTimes:
         # get all the processed-commits files from the folder:
         commits_files_repolist = [
             f
-            for f in os.listdir(read_location)
+            for f in os.listdir(self.data_read_location)
             if re.match(r"(processed-commits_).*(\.csv)", f)
         ]
         # same for issues files:
         issues_files_repolist = [
             f
-            for f in os.listdir(read_location)
+            for f in os.listdir(self.data_read_location)
             if re.match(r"(processed-issues_).*(\.csv)", f)
         ]
 
@@ -530,7 +502,7 @@ class PrepDataTimes:
         issues_interactions = pd.DataFrame()
 
         for file in commits_files_repolist:
-            file = Path(read_location, file)
+            file = Path(self.data_read_location, file)
             if file.exists():
                 self.logger.debug(f"Running get_commit_interactions on file {file}.")
                 commits_interactions_next = self.get_commit_interactions(file)
@@ -543,7 +515,7 @@ class PrepDataTimes:
         )
 
         for file in issues_files_repolist:
-            file = Path(read_location, file)
+            file = Path(self.data_read_location, file)
             if file.exists():
                 self.logger.debug(
                     f"Running get_issues_PRs_interactions on file {file}."
@@ -588,7 +560,7 @@ class PrepDataTimes:
                 all_interactions_data.groupby("repo_name").ngroups
             )
             filestr = f"merged-interactions-data-per-dev_x{n_repos_all_interactions_data}-repos_{self.current_date_info}.csv"
-            writeout_path = Path(write_location, filestr)
+            writeout_path = Path(self.data_write_location, filestr)
 
             try:
                 # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
@@ -635,9 +607,11 @@ if __name__ == "__main__":
         "Running data timestamps pre-analysis preparation methods on processed- commits and issues files."
     )
 
-    prepdatatimes = PrepDataTimes(in_notebook=False, logger=logger)
-
-    times_data = prepdatatimes.interactions_data_workflow(
-        read_location="data/",
-        write_location="data/",
+    prepdatatimes = PrepDataTimes(
+        dataset_name="all-interactions-times",
+        in_notebook=False,
+        logger=logger,
+        exists_ok=True,
     )
+
+    times_data = prepdatatimes.interactions_data_workflow()

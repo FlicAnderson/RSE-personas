@@ -5,47 +5,18 @@ import datetime
 import os
 import re
 import pandas as pd
-import logging
 import numpy as np
 from ast import literal_eval
-
+from githubanalysis.setup_classes import DatasetSetup
 import utilities.get_default_logger as loggit
 
 
-class PrepDataIssues:
-    logger: logging.Logger
-    in_notebook: bool
-    current_date_info: str
-    write_location: Path
-    read_location: Path
-
-    def __init__(
-        self,
-        in_notebook: bool,
-        logger: None | logging.Logger = None,
-    ) -> None:
-        if logger is None:
-            self.logger = loggit.get_default_logger(
-                console=False,
-                set_level_to="DEBUG",
-                log_name="logs/pre-analysis_data_issues_prep.txt",
-                in_notebook=in_notebook,
-            )
-        else:
-            self.logger = logger
-
-        self.in_notebook = in_notebook
-        # write-out file setup
-        self.current_date_info = datetime.datetime.now().strftime(
-            "%Y-%m-%d"
-        )  # at start of script to avoid midnight/long-run issues
-        self.read_location = Path("data/" if not in_notebook else "../../data/")
-        self.write_location = Path("data/" if not in_notebook else "../../data/")
+class PrepDataIssues(DatasetSetup):
+    def _log_name(self) -> str:
+        return "pre-analysis_data_issues_prep"
 
     def process_issues(
         self,
-        read_location: str | Path,
-        write_location: str | Path,
     ) -> pd.DataFrame | None:
         """
         (Follows format of pre-analysis_data_commits_prep.py)
@@ -76,7 +47,7 @@ class PrepDataIssues:
 
         repolist = [
             f
-            for f in os.listdir(read_location)
+            for f in os.listdir(self.data_read_location)
             if re.match(r"(processed-issues_).*(.csv)", f)
         ]
 
@@ -94,7 +65,7 @@ class PrepDataIssues:
         for repofile in repolist:
             logger.debug(f"Working on file: {repofile}")
             # self.logger.debug(file)
-            tmplocat = Path(read_location, repofile)
+            tmplocat = Path(self.data_read_location, repofile)
             # self.logger.debug(tmplocat)
             repo = pd.read_csv(tmplocat)
             self.logger.debug(f"repo issues data shape: {repo.shape}")
@@ -250,7 +221,7 @@ class PrepDataIssues:
         )
 
         # write out issues data with informative filename
-        filestr = f"{write_location}issues-data-per-dev_x{devs_issues_data['repo_name'].nunique()}-repos_x{len(devs_issues_data)}-repo-individuals_{self.current_date_info}.csv"
+        filestr = f"{self.data_write_location}issues-data-per-dev_x{devs_issues_data['repo_name'].nunique()}-repos_x{len(devs_issues_data)}-repo-individuals_{self.current_date_info}.csv"
         devs_issues_data.to_csv(path_or_buf=filestr, header=True, index=False)
 
         end_time = datetime.datetime.now()
@@ -273,6 +244,8 @@ if __name__ == "__main__":
         in_notebook=False,
     )
 
-    prepdataissues = PrepDataIssues(in_notebook=False, logger=logger)
+    prepdataissues = PrepDataIssues(
+        dataset_name="issues", in_notebook=False, logger=logger, exists_ok=True
+    )
 
-    prepdataissues.process_issues(read_location="data/", write_location="data/")
+    prepdataissues.process_issues()
