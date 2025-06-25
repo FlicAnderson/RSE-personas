@@ -1,0 +1,14 @@
+KislakCenter/VisColl
+LABSN/expyfun
+SyneRBI/SIRF-SuperBuild
+avaframe/AvaFrame
+cookiejar/cookietemple
+genomeannotation/GAG
+gher-uliege/DIVAnd.jl
+gwdetchar/gwdetchar
+qbic-pipelines/rnadeseq
+ubermag/mag2exp
+ubermag/micromagneticmodel
+ubermag/ubermagtable
+FlicAnderson/thisrepodoesnotexist
+FlicAnderson/peramagroon 
