@@ -122,15 +122,13 @@ class GetCodeReviews(RESTRequestSetup):
         # return PRs_list
 
         # assemble query url
-        pulls_qry = get_code_reviews.make_pulls_query_url(
+        pulls_qry = self.make_pulls_query_url(
             repos_api_url="https://api.github.com/repos/",
             repo_name=repo_name,
             per_pg=100,
             page=1,
         )
-        return get_code_reviews.check_PRs_exist(
-            repo_name=repo_name, pulls_qry=pulls_qry
-        )
+        return self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
 
     def loop_over_repo_PRs(self, PRs_list: list[int]):
         # for each PR_number in PRs_list:
