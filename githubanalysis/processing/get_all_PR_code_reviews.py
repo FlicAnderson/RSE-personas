@@ -8,7 +8,7 @@ import argparse
 from pathlib import Path
 
 # from run_commits_workflow import read_repos_from_file
-from githubanalysis.setup_classes import RESTRequestSetup, DatasetSetup
+from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
@@ -64,14 +64,14 @@ class GetCodeReviews(RESTRequestSetup):
             i += 1
             print(f"processing repo {i} of {len(repo_list)}")
             print(f"processing repo: {repo}.")
-            pulls_qry = get_code_reviews.make_pulls_query_url(
+            pulls_qry = self.make_pulls_query_url(
                 repos_api_url="https://api.github.com/repos/",
                 repo_name=repo,
                 per_pg=100,
                 page=1,
             )
             print(f"pulls query is: {pulls_qry}")
-            print(f"api response is: {get_code_reviews.get_PR_numbers(repo_name=repo)}")
+            print(f"api response is: {self.get_PR_numbers(repo_name=repo)}")
 
             # check for API response
             # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
     assert (
         filepath is not None
-    ), "You must provide a filepath for the repo names list file, e.g. 'data/code_review_subset_2025-05-30_x14.txt'. "
+    ), "You must provide a filepath for the repo names list file, e.g. 'data/code_review_subset_2025-05-30_x16.txt'. "
 
     filepath = Path(filepath)
     get_code_reviews.logger.info(f"reading repo names from file: {filepath}")
