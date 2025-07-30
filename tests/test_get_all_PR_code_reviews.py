@@ -30,6 +30,8 @@ expected_file_repos = [
     "ubermag/ubermagtable",
     "FlicAnderson/thisrepodoesnotexist",  # repo which does not exist (not last, testing continuation at error)
     "FlicAnderson/peramagroon",  # repo without PRs
+    "FlicAnderson/PR_test",  # repo created to test PR reviews and PR review comments
+    "riboviz/riboviz",  # repo known to have PRs and PR reviews
 ]
 expected_sorted_file_repos = list(sorted(expected_file_repos))
 
@@ -51,7 +53,7 @@ def get_code_reviews():
 
 def test_getting_repo_names_from_file(get_code_reviews):
     repos = get_code_reviews.get_repos(
-        repo_list_file_name=Path("code_review_subset_2025-05-30_x12.txt")
+        repo_list_file_name=Path("code_review_subset_2025-05-30_x16.txt")
     )
     repos.sort()  # sorts in-place.
 

@@ -11,4 +11,6 @@ ubermag/mag2exp
 ubermag/micromagneticmodel
 ubermag/ubermagtable
 FlicAnderson/thisrepodoesnotexist
-FlicAnderson/peramagroon 
+FlicAnderson/peramagroon
+FlicAnderson/PR_test 
+riboviz/riboviz
