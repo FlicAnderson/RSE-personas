@@ -53,7 +53,7 @@ def get_code_reviews():
 
 def test_getting_repo_names_from_file(get_code_reviews):
     repos = get_code_reviews.get_repos(
-        repo_list_file_name=Path("code_review_subset_2025-05-30_x16.txt")
+        repo_list_file_name=Path("code_review_subset_2025-05-30_x14.txt")
     )
     repos.sort()  # sorts in-place.
 
