@@ -72,7 +72,13 @@ class GetCodeReviews(RESTRequestSetup):
                 page=1,
             )
             print(f"pulls query is: {pulls_qry}")
-            print(f"api response is: {self.get_PR_numbers(repo_name=repo)}")
+
+            repo_PRs = self.get_PR_numbers(repo_name=repo)
+            if repo_PRs is not None:
+                print(f"repo {repo} contains PRs: {repo_PRs}")
+            else:
+                print(f"No PRs for repo {repo}; skipping to next repo.")
+                continue
 
             # check for API response
             # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO. (done by RepoNotFound Error in check_PRs_exist() )
