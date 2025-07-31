@@ -260,30 +260,29 @@ class GetCodeReviews(RESTRequestSetup):
             page=1,
         )
         api_response = self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
-        if api_response is not None and api_response.status_code == 200:
-            json_pg = api_response.json()
-            count_pulls = len(json_pg)
-            self.logger.info(f"Initial query for {repo_name} shows {count_pulls} PRs.")
+        assert (
+            api_response is not None and api_response.status_code == 200
+        ), "api response isn't ok somehow"
+        json_pg = api_response.json()
+        count_pulls = len(json_pg)
+        self.logger.info(f"Initial query for {repo_name} shows {count_pulls} PRs.")
 
-            page_PRs = [item.get("number") for item in json_pg]
-            # print(page_PRs)
+        page_PRs = [item.get("number") for item in json_pg]
+        # print(page_PRs)
 
-            repo_PRs = []
-            repo_PRs = page_PRs  # save first page PR numbers to repo list
+        repo_PRs = []
+        repo_PRs = page_PRs  # save first page PR numbers to repo list
 
-            if is_this_single_page(api_response.links):
-                self.logger.info(f"single page of PRs only for repo {repo_name}; <=100")
+        if is_this_single_page(api_response.links):
+            self.logger.info(f"single page of PRs only for repo {repo_name}; <=100")
 
-            elif not is_this_single_page(
-                api_response.links
-            ):  # use bool result from get_all_pages_issues.py function
-                # print(len(repo_PRs))
+        else:
+            # use pagination to get 'next page' url for query
+            next_pg = api_response.links["next"]["url"]
+            while next_pg is not None:
                 self.logger.info(
                     f"more than one pages of PRs for repo {repo_name}; >100"
                 )
-                next_pg = api_response.links["next"][
-                    "url"
-                ]  # use pagination to get 'next page' url for query
 
                 self.logger.info(f"getting json via request url {next_pg}.")
                 try:
@@ -298,9 +297,8 @@ class GetCodeReviews(RESTRequestSetup):
                     print(api_response)
                 except RepoNotFoundError:
                     print(f"Repo {repo_name} not found; skipping this repo.")
-                    return (
-                        None  # this is intentionally skipping repos which don't exist.
-                    )
+                    # this is intentionally skipping repos which don't exist
+                    return None
                     # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
                 else:
                     self.logger.info(
@@ -318,13 +316,10 @@ class GetCodeReviews(RESTRequestSetup):
                 )  # add these PRs to the existing list (extend), not add this list within another list (append)
                 # print(len(repo_PRs))
 
-            self.logger.info(
-                f"Number of total PRs in repo {repo_name} is: {len(repo_PRs)}"
-            )
-            return repo_PRs  # list of PR numbers
-        else:
-            self.logger.warning(f"API response for query wasn't OK: {api_response}")
-            return None  # api response wasn't ok
+                next_pg = api_response.links.get("next", {}).get("url")
+
+        self.logger.info(f"Number of total PRs in repo {repo_name} is: {len(repo_PRs)}")
+        return repo_PRs  # list of PR numbers
 
     def loop_over_repo_PRs(
         self, repo_name: str, repo_PRs: list[int]
