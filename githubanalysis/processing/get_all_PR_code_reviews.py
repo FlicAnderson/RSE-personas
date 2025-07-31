@@ -76,7 +76,7 @@ class GetCodeReviews(RESTRequestSetup):
         # do:
         # ...
         i = 0
-        reviews_results = []
+        all_repos_reviews_results = []
 
         for repo in repo_list:
             i += 1
@@ -108,9 +108,19 @@ class GetCodeReviews(RESTRequestSetup):
 
             repo_reviews = self.loop_over_repo_PRs(repo_name=repo, repo_PRs=repo_PRs)
 
-            reviews_results.append(
-                repo_reviews
-            )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
+            repo_results = {
+                "repo_name": repo,
+                "number_PRs": len(repo_PRs),
+                "total_PR_reviews": sum(
+                    sum(reviews) for reviews in repo_reviews.values()
+                ),
+            }
+
+            all_repos_reviews_results.append(repo_results)
+
+            # reviews_results.append(
+            #    repo_reviews
+            # )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
 
             # (in loop_over_repo_PRs(PRs_list):)
             # for PR in PRs_list, run get_review_comments_for_PR(PR_number=PR)
@@ -121,7 +131,7 @@ class GetCodeReviews(RESTRequestSetup):
             # (collate and log per-repo stats: e.g. N of PRs, N of PRs with reviews, N of reviews per PR, N of GH_usernames etc )
 
             # shift to next repo in repo_list.
-        return reviews_results
+        return all_repos_reviews_results
 
     def check_PRs_exist(
         self, repo_name: str, pulls_qry: str
@@ -147,12 +157,15 @@ class GetCodeReviews(RESTRequestSetup):
             return api_response
 
     def check_PR_reviews_exist(
-        self, repo_name: str, PR_num: int, reviews_qry: str | None
-    ):  # returns None or requests.models.Response api_response
+        self,
+        repo_name: str,
+        PR_num: int,
+        reviews_qry: str | None,
+    ) -> list[int]:
         # for given PR number in given repo, check for PR Reviews
         # if a query is supplied (e.g. from api_response.links), use that, otherwise construct the 'first page' query
 
-        PR_review_nums = []
+        PR_review_nums: list[int] = []
         if reviews_qry is None:
             reviews_qry = self.make_reviews_query_url(
                 repos_api_url="https://api.github.com/repos/",
@@ -313,27 +326,30 @@ class GetCodeReviews(RESTRequestSetup):
             self.logger.warning(f"API response for query wasn't OK: {api_response}")
             return None  # api response wasn't ok
 
-    def loop_over_repo_PRs(self, repo_name: str, repo_PRs: list[int]) -> dict:
+    def loop_over_repo_PRs(
+        self, repo_name: str, repo_PRs: list[int]
+    ) -> dict[int, list[int]]:
         # for each PR_number in PRs_list:
         # do:
 
         # Count number of 'reviews' for each PR for single repo.
-        repo_reviews = {"repo_name": repo_name, "PR_num": int, "reviews": [int]}
-        PR_review_nums = []
+        PR_reviews: dict[int, list[int]] = {}
 
         for PR in repo_PRs:
             print(f"Pull Request ID: {PR}")
 
-            repo_reviews.update({"PR_num": PR})
             PR_review_nums = self.check_PR_reviews_exist(
-                repo_name=repo_name, PR_num=PR, reviews_qry=None
+                repo_name=repo_name,
+                PR_num=PR,
+                reviews_qry=None,
             )
             self.logger.info(
                 f"{sum(PR_review_nums)} found for PR {PR} in repo {repo_name}."
             )
-            repo_reviews.update({"reviews": PR_review_nums})
 
-        return repo_reviews
+            PR_reviews[PR] = PR_review_nums
+
+        return PR_reviews
 
     def get_review_comments_for_PR(self, PR_number: int):
         pass
