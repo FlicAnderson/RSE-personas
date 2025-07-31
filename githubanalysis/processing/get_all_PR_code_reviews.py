@@ -44,6 +44,21 @@ class GetCodeReviews(RESTRequestSetup):
         else:
             return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}&page={page}"
 
+    def make_reviews_query_url(
+        self,
+        repos_api_url: str,
+        repo_name: str,
+        PR_num: int,
+        per_pg: int | str,
+        page: int | None,
+    ):
+        if page is None:
+            return (
+                f"{repos_api_url}{repo_name}/pulls/{PR_num}/reviews?per_page={per_pg}"
+            )
+        else:
+            return f"{repos_api_url}{repo_name}/pulls/{PR_num}/reviews?per_page={per_pg}&page={page}"
+
     def get_repos(
         self,
         repo_list_file_name: Path,
@@ -61,6 +76,8 @@ class GetCodeReviews(RESTRequestSetup):
         # do:
         # ...
         i = 0
+        reviews_results = {}
+
         for repo in repo_list:
             i += 1
             print(f"processing repo {i} of {len(repo_list)}")
@@ -73,19 +90,27 @@ class GetCodeReviews(RESTRequestSetup):
             )
             print(f"pulls query is: {pulls_qry}")
 
+            # for repo, run get_PR_numbers(repo_name = repo)
+            # checks for API response
+            # if I get RepoNotFoundError, SKIP TO NEXT REPO. (done by RepoNotFound Error in check_PRs_exist() )
+            # get PRs_list of ints from json response
+            # store in useful format for using to query separately using loop_over_repo_PRs(PRs_list)
+
             repo_PRs = self.get_PR_numbers(repo_name=repo)
+
             if repo_PRs is not None:
                 print(f"repo {repo} contains PRs: {repo_PRs}")
             else:
                 print(f"No PRs for repo {repo}; skipping to next repo.")
                 continue
 
-            # check for API response
-            # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO. (done by RepoNotFound Error in check_PRs_exist() )
+            assert repo_PRs is not None
 
-            # for repo, run get_PR_numbers(repo_name = repo)
-            # get PRs_list of ints from json response
-            # store in useful format for using to query separately using loop_over_repo_PRs(PRs_list)
+            repo_reviews = self.loop_over_repo_PRs(repo_name=repo, repo_PRs=repo_PRs)
+
+            reviews_results.update(
+                repo_reviews
+            )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
 
             # (in loop_over_repo_PRs(PRs_list):)
             # for PR in PRs_list, run get_review_comments_for_PR(PR_number=PR)
@@ -99,7 +124,9 @@ class GetCodeReviews(RESTRequestSetup):
 
         pass
 
-    def check_PRs_exist(self, repo_name: str, pulls_qry: str):
+    def check_PRs_exist(
+        self, repo_name: str, pulls_qry: str
+    ):  # returns None or requests.models.Response api_response
         # for given pull requests query, check that there are PRs to check for reviews in.
         # if none exist, skip to next repo.
         self.logger.info(f"getting json via request url {pulls_qry}.")
@@ -119,6 +146,90 @@ class GetCodeReviews(RESTRequestSetup):
             # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
         else:
             return api_response
+
+    def check_PR_reviews_exist(
+        self, repo_name: str, PR_num: int, reviews_qry: str | None
+    ):  # returns None or requests.models.Response api_response
+        # for given PR number in given repo, check for PR Reviews
+        # if a query is supplied (e.g. from api_response.links), use that, otherwise construct the 'first page' query
+
+        PR_review_nums = []
+        if reviews_qry is None:
+            reviews_qry = self.make_reviews_query_url(
+                repos_api_url="https://api.github.com/repos/",
+                repo_name=repo_name,
+                PR_num=PR_num,
+                per_pg=100,
+                page=1,
+            )
+        else:
+            reviews_qry = reviews_qry
+
+        print(f"pull request reviews query for PR {PR_num} is: {reviews_qry}")
+        self.logger.info(f"getting json via request url {reviews_qry}.")
+        try:
+            api_response = run_with_retries(
+                fn=lambda: raise_if_response_error(
+                    api_response=self.s.get(url=reviews_qry, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
+                logger=self.logger,
+            )
+            print(api_response)
+        except Exception as e:
+            self.logger.error(
+                f"Error in getting PR reviews for PR {PR_num} for repo name {repo_name} with query {reviews_qry}: {e}."
+            )
+            raise
+
+        json_pg = api_response.json()
+        count_PR_reviews = len(json_pg)
+
+        if is_this_single_page(api_response.links):
+            self.logger.debug("single page of reviews only; <=100")
+            self.logger.debug(f"Contains {count_PR_reviews} PR reviews")
+            PR_review_nums.append(count_PR_reviews)
+
+        elif not is_this_single_page(
+            api_response.links
+        ):  # use bool result from get_all_pages_issues.py function
+            #     #print(len(repo_PRs))
+            self.logger.debug("more than one pages of reviews; >100")
+            #         PR_review_nums.append(count_PR_reviews)
+            #         print(sum(PR_review_nums))
+
+            next_pg = api_response.links["next"][
+                "url"
+            ]  # use pagination to get 'next page' url for query
+            try:
+                api_response = run_with_retries(
+                    fn=lambda: raise_if_response_error(
+                        api_response=self.s.get(url=next_pg, headers=self.headers),
+                        repo_name=repo_name,
+                        logger=self.logger,
+                    ),
+                    logger=self.logger,
+                )
+                print(api_response)
+            except Exception as e:
+                self.logger.error(
+                    f"Error in getting PR reviews for PR {PR_num} for repo name {repo_name} with query {next_pg}: {e}."
+                )
+                raise
+
+            json_pg = api_response.json()
+            count_PR_reviews += len(json_pg)  # add N of next_pg of reviews to previous
+            self.logger.debug(f"Contains {count_PR_reviews} PR reviews")
+            PR_review_nums.append(
+                count_PR_reviews
+            )  # collate N of reviews to var out of the loop
+
+        self.logger.info(PR_review_nums)
+        self.logger.info(
+            f"{sum(PR_review_nums)} found across {len(PR_review_nums)} PRs"
+        )
+        return PR_review_nums
 
     def get_PR_numbers(self, repo_name: str) -> list[int] | None:
         """should get pull request numbers to loop through to check for code reviews."""
@@ -203,11 +314,27 @@ class GetCodeReviews(RESTRequestSetup):
             self.logger.warning(f"API response for query wasn't OK: {api_response}")
             return None  # api response wasn't ok
 
-    def loop_over_repo_PRs(self, PRs_list: list[int]):
+    def loop_over_repo_PRs(self, repo_name: str, repo_PRs: list[int]) -> dict:
         # for each PR_number in PRs_list:
         # do:
-        # ...
-        pass
+
+        # Count number of 'reviews' for each PR for single repo.
+        repo_reviews = {"repo_name": repo_name, "PR_num": int, "reviews": [int]}
+        PR_review_nums = []
+
+        for PR in repo_PRs:
+            print(f"Pull Request ID: {PR}")
+
+            repo_reviews.update({"PR_num": PR})
+            PR_review_nums = self.check_PR_reviews_exist(
+                repo_name=repo_name, PR_num=PR, reviews_qry=None
+            )
+            self.logger.info(
+                f"{sum(PR_review_nums)} found for PR {PR} in repo {repo_name}."
+            )
+            repo_reviews.update({"reviews": PR_review_nums})
+
+        return repo_reviews
 
     def get_review_comments_for_PR(self, PR_number: int):
         pass
