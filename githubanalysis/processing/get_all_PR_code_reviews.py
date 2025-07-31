@@ -121,8 +121,7 @@ class GetCodeReviews(RESTRequestSetup):
             # (collate and log per-repo stats: e.g. N of PRs, N of PRs with reviews, N of reviews per PR, N of GH_usernames etc )
 
             # shift to next repo in repo_list.
-
-        pass
+        return reviews_results
 
     def check_PRs_exist(
         self, repo_name: str, pulls_qry: str
