@@ -76,7 +76,7 @@ class GetCodeReviews(RESTRequestSetup):
         # do:
         # ...
         i = 0
-        reviews_results = {}
+        reviews_results = []
 
         for repo in repo_list:
             i += 1
@@ -108,7 +108,7 @@ class GetCodeReviews(RESTRequestSetup):
 
             repo_reviews = self.loop_over_repo_PRs(repo_name=repo, repo_PRs=repo_PRs)
 
-            reviews_results.update(
+            reviews_results.append(
                 repo_reviews
             )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
 
