@@ -8,6 +8,7 @@ import argparse
 from pathlib import Path
 
 # from run_commits_workflow import read_repos_from_file
+from githubanalysis.processing.get_all_pages_issues import is_this_single_page
 from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import (
     raise_if_response_error,
@@ -39,9 +40,9 @@ class GetCodeReviews(RESTRequestSetup):
         page: int | None,
     ):
         if page is None:
-            return f"{repos_api_url}{repo_name}/pulls?per_page={per_pg}"
+            return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}"
         else:
-            return f"{repos_api_url}{repo_name}/pulls?per_page={per_pg}&page={page}"
+            return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}&page={page}"
 
     def get_repos(
         self,
@@ -74,7 +75,7 @@ class GetCodeReviews(RESTRequestSetup):
             print(f"api response is: {self.get_PR_numbers(repo_name=repo)}")
 
             # check for API response
-            # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
+            # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO. (done by RepoNotFound Error in check_PRs_exist() )
 
             # for repo, run get_PR_numbers(repo_name = repo)
             # get PRs_list of ints from json response
@@ -107,12 +108,13 @@ class GetCodeReviews(RESTRequestSetup):
             )
             print(api_response)
         except RepoNotFoundError:
+            print(f"Repo {repo_name} not found; skipping this repo.")
             return None  # this is intentionally skipping repos which don't exist.
             # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
         else:
             return api_response
 
-    def get_PR_numbers(self, repo_name: str):  # -> list[int]:
+    def get_PR_numbers(self, repo_name: str) -> list[int] | None:
         """should get pull request numbers to loop through to check for code reviews."""
         # create API request to use repo_name, and get PR numbers
         # PRs_api_url = f"https://api.github.com/repos/{repo_name}/pulls"
@@ -128,7 +130,72 @@ class GetCodeReviews(RESTRequestSetup):
             per_pg=100,
             page=1,
         )
-        return self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
+        api_response = self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
+        if api_response is not None and api_response.status_code == 200:
+            json_pg = api_response.json()
+            count_pulls = len(json_pg)
+            self.logger.info(f"Initial query for {repo_name} shows {count_pulls} PRs.")
+
+            page_PRs = [item.get("number") for item in json_pg]
+            # print(page_PRs)
+
+            repo_PRs = []
+            repo_PRs = page_PRs  # save first page PR numbers to repo list
+
+            if is_this_single_page(api_response.links):
+                self.logger.info(f"single page of PRs only for repo {repo_name}; <=100")
+
+            elif not is_this_single_page(
+                api_response.links
+            ):  # use bool result from get_all_pages_issues.py function
+                # print(len(repo_PRs))
+                self.logger.info(
+                    f"more than one pages of PRs for repo {repo_name}; >100"
+                )
+                next_pg = api_response.links["next"][
+                    "url"
+                ]  # use pagination to get 'next page' url for query
+
+                self.logger.info(f"getting json via request url {next_pg}.")
+                try:
+                    api_response = run_with_retries(
+                        fn=lambda: raise_if_response_error(
+                            api_response=self.s.get(url=next_pg, headers=self.headers),
+                            repo_name=repo_name,
+                            logger=self.logger,
+                        ),
+                        logger=self.logger,
+                    )
+                    print(api_response)
+                except RepoNotFoundError:
+                    print(f"Repo {repo_name} not found; skipping this repo.")
+                    return (
+                        None  # this is intentionally skipping repos which don't exist.
+                    )
+                    # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
+                else:
+                    self.logger.info(
+                        f"API response to next page query {next_pg} was {api_response}."
+                    )
+
+                json_pg = api_response.json()
+                count_pulls = len(json_pg)
+                # print(count_pulls)
+
+                page_PRs = [item.get("number") for item in json_pg]
+                # print(page_PRs)
+                repo_PRs.extend(
+                    page_PRs
+                )  # add these PRs to the existing list (extend), not add this list within another list (append)
+                # print(len(repo_PRs))
+
+            self.logger.info(
+                f"Number of total PRs in repo {repo_name} is: {len(repo_PRs)}"
+            )
+            return repo_PRs  # list of PR numbers
+        else:
+            self.logger.warning(f"API response for query wasn't OK: {api_response}")
+            return None  # api response wasn't ok
 
     def loop_over_repo_PRs(self, PRs_list: list[int]):
         # for each PR_number in PRs_list:
