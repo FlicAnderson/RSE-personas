@@ -273,6 +273,9 @@ class GetCodeReviews(RESTRequestSetup):
             page=1,
         )
         api_response = self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
+        if api_response is None:
+            self.logger.info(f"No PRs for repo {repo_name}; skipping to next repo.")
+            return None
         assert (
             api_response is not None and api_response.status_code == 200
         ), f"api response isn't ok somehow, {api_response}"
