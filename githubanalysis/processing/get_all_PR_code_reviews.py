@@ -275,7 +275,7 @@ class GetCodeReviews(RESTRequestSetup):
         api_response = self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
         assert (
             api_response is not None and api_response.status_code == 200
-        ), "api response isn't ok somehow"
+        ), f"api response isn't ok somehow, {api_response}"
         json_pg = api_response.json()
         count_pulls = len(json_pg)
         self.logger.info(f"Initial query for {repo_name} shows {count_pulls} PRs.")
