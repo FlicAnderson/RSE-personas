@@ -2,7 +2,8 @@
 
 import logging
 
-# import pandas as pd
+import pandas as pd
+
 # import numpy as np
 import argparse
 from pathlib import Path
@@ -118,19 +119,33 @@ class GetCodeReviews(RESTRequestSetup):
 
             all_repos_reviews_results.append(repo_results)
 
-            # reviews_results.append(
-            #    repo_reviews
-            # )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
+        write_out_location = Path(
+            self.data_location,
+            "repos_PR_reviews_results_",
+            self.current_date_info,
+            ".csv",
+        )
+        all_repos_reviews_results_df = pd.DataFrame(all_repos_reviews_results)
 
-            # (in loop_over_repo_PRs(PRs_list):)
-            # for PR in PRs_list, run get_review_comments_for_PR(PR_number=PR)
-            # get review comments, get GH_username and other similar info required, timestamps etc.
-            # save out raw data to json file
-            # combine into per-repo_name df or other structure, labelled appropriately
+        self.logger.info(
+            f"saving results of repo PR reviews gathering out to file {write_out_location}"
+        )
+        all_repos_reviews_results_df.to_csv(
+            path_or_buf=write_out_location, header=True, index=False
+        )
+        # reviews_results.append(
+        #    repo_reviews
+        # )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
 
-            # (collate and log per-repo stats: e.g. N of PRs, N of PRs with reviews, N of reviews per PR, N of GH_usernames etc )
+        # (in loop_over_repo_PRs(PRs_list):)
+        # for PR in PRs_list, run get_review_comments_for_PR(PR_number=PR)
+        # get review comments, get GH_username and other similar info required, timestamps etc.
+        # save out raw data to json file
+        # combine into per-repo_name df or other structure, labelled appropriately
 
-            # shift to next repo in repo_list.
+        # (collate and log per-repo stats: e.g. N of PRs, N of PRs with reviews, N of reviews per PR, N of GH_usernames etc )
+
+        # shift to next repo in repo_list.
         return all_repos_reviews_results
 
     def check_PRs_exist(
@@ -380,4 +395,7 @@ if __name__ == "__main__":
     print(f"{repo_list = }")
 
     # for each repo in repo_list, do:
-    get_code_reviews.loop_over_repos(repo_list=repo_list)
+    results = get_code_reviews.loop_over_repos(repo_list=repo_list)
+
+    print(results)
+    print("Get code reviews info complete")
