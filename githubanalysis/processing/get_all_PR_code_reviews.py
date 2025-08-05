@@ -1,7 +1,7 @@
 """Get code review data if present for repos; save out to files."""
 
 import logging
-
+import json
 import pandas as pd
 
 # import numpy as np
@@ -174,6 +174,7 @@ class GetCodeReviews(RESTRequestSetup):
         repo_name: str,
         PR_num: int,
         reviews_qry: str | None,
+        out_json_file: str = "all-PR_reviews_json",
     ) -> list[int]:
         # for given PR number in given repo, check for PR Reviews
         # if a query is supplied (e.g. from api_response.links), use that, otherwise construct the 'first page' query
@@ -209,6 +210,14 @@ class GetCodeReviews(RESTRequestSetup):
             raise
 
         json_pg = api_response.json()
+
+        sanitised_repo_name = repo_name.replace("/", "-")
+        out_filename = out_json_file
+        write_out = f"{self.data_location/out_filename}_{sanitised_repo_name}"
+        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
+        PR_reviews_json = []
+        PR_reviews_json.extend(json_pg)
+
         count_PR_reviews = len(json_pg)
 
         if is_this_single_page(api_response.links):
@@ -244,6 +253,7 @@ class GetCodeReviews(RESTRequestSetup):
                 raise
 
             json_pg = api_response.json()
+            PR_reviews_json.extend(json_pg)
             count_PR_reviews += len(json_pg)  # add N of next_pg of reviews to previous
             self.logger.debug(f"Contains {count_PR_reviews} PR reviews")
             PR_review_nums.append(
@@ -254,9 +264,15 @@ class GetCodeReviews(RESTRequestSetup):
         self.logger.info(
             f"{sum(PR_review_nums)} found across {len(PR_review_nums)} PRs"
         )
+
+        with open(write_out_extra_info_json, "w") as json_file:
+            json.dump(PR_reviews_json, json_file)
+
         return PR_review_nums
 
-    def get_PR_numbers(self, repo_name: str) -> list[int] | None:
+    def get_PR_numbers(
+        self, repo_name: str, out_json_file="all-PR-numbers_json"
+    ) -> list[int] | None:
         """should get pull request numbers to loop through to check for code reviews."""
         # create API request to use repo_name, and get PR numbers
         # PRs_api_url = f"https://api.github.com/repos/{repo_name}/pulls"
@@ -288,6 +304,13 @@ class GetCodeReviews(RESTRequestSetup):
 
         repo_PRs = []
         repo_PRs = page_PRs  # save first page PR numbers to repo list
+
+        sanitised_repo_name = repo_name.replace("/", "-")
+        out_filename = out_json_file
+        write_out = f"{self.data_location/out_filename}_{sanitised_repo_name}"
+        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
+        PR_nums_json = []
+        PR_nums_json.extend(json_pg)
 
         if is_this_single_page(api_response.links):
             self.logger.info(f"single page of PRs only for repo {repo_name}; <=100")
@@ -322,6 +345,10 @@ class GetCodeReviews(RESTRequestSetup):
                     )
 
                 json_pg = api_response.json()
+
+                # JSON HANDLING
+                PR_nums_json.extend(json_pg)
+
                 count_pulls = len(json_pg)
                 # print(count_pulls)
 
@@ -335,6 +362,10 @@ class GetCodeReviews(RESTRequestSetup):
                 next_pg = api_response.links.get("next", {}).get("url")
 
         self.logger.info(f"Number of total PRs in repo {repo_name} is: {len(repo_PRs)}")
+
+        with open(write_out_extra_info_json, "w") as json_file:
+            json.dump(PR_nums_json, json_file)
+
         return repo_PRs  # list of PR numbers
 
     def loop_over_repo_PRs(
@@ -353,6 +384,7 @@ class GetCodeReviews(RESTRequestSetup):
                 repo_name=repo_name,
                 PR_num=PR,
                 reviews_qry=None,
+                out_json_file="all-PR-reviews_json",
             )
             self.logger.info(
                 f"{sum(PR_review_nums)} found for PR {PR} in repo {repo_name}."
