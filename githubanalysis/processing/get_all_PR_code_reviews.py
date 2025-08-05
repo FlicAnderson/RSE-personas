@@ -121,9 +121,7 @@ class GetCodeReviews(RESTRequestSetup):
 
         write_out_location = Path(
             self.data_location,
-            "repos_PR_reviews_results_",
-            self.current_date_info,
-            ".csv",
+            f"repos_PR_reviews_results_{self.current_date_info}.csv",
         )
         all_repos_reviews_results_df = pd.DataFrame(all_repos_reviews_results)
 
