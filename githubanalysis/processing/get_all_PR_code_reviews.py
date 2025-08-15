@@ -3,6 +3,7 @@
 import logging
 import json
 import pandas as pd
+from typing import Any
 
 # import numpy as np
 import argparse
@@ -169,17 +170,17 @@ class GetCodeReviews(RESTRequestSetup):
         else:
             return api_response
 
-    def check_PR_reviews_exist(
+    def count_PR_reviews(
         self,
         repo_name: str,
         PR_num: int,
         reviews_qry: str | None,
-        out_json_file: str = "all-PR_reviews_json",
-    ) -> list[int]:
+    ) -> tuple[list[int], list[dict[str, Any]]]:
         # for given PR number in given repo, check for PR Reviews
         # if a query is supplied (e.g. from api_response.links), use that, otherwise construct the 'first page' query
 
         PR_review_nums: list[int] = []
+        PR_reviews_json = []
         if reviews_qry is None:
             reviews_qry = self.make_reviews_query_url(
                 repos_api_url="https://api.github.com/repos/",
@@ -211,11 +212,6 @@ class GetCodeReviews(RESTRequestSetup):
 
         json_pg = api_response.json()
 
-        sanitised_repo_name = repo_name.replace("/", "-")
-        out_filename = out_json_file
-        write_out = f"{self.data_location/out_filename}_{sanitised_repo_name}"
-        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
-        PR_reviews_json = []
         PR_reviews_json.extend(json_pg)
 
         count_PR_reviews = len(json_pg)
@@ -265,10 +261,7 @@ class GetCodeReviews(RESTRequestSetup):
             f"{sum(PR_review_nums)} found across {len(PR_review_nums)} PRs"
         )
 
-        with open(write_out_extra_info_json, "w") as json_file:
-            json.dump(PR_reviews_json, json_file)
-
-        return PR_review_nums
+        return PR_review_nums, PR_reviews_json
 
     def get_PR_numbers(
         self, repo_name: str, out_json_file="all-PR-numbers_json"
@@ -369,28 +362,42 @@ class GetCodeReviews(RESTRequestSetup):
         return repo_PRs  # list of PR numbers
 
     def loop_over_repo_PRs(
-        self, repo_name: str, repo_PRs: list[int]
+        self,
+        repo_name: str,
+        repo_PRs: list[int],
+        out_json_file: str = "all-PR-reviews_json",
     ) -> dict[int, list[int]]:
         # for each PR_number in PRs_list:
         # do:
 
+        sanitised_repo_name = repo_name.replace("/", "-")
+        out_filename = out_json_file
+        write_out = f"{self.data_location/out_filename}_{sanitised_repo_name}"
+        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
+
         # Count number of 'reviews' for each PR for single repo.
         PR_reviews: dict[int, list[int]] = {}
+        PR_reviews_json_all = []
 
         for PR in repo_PRs:
             print(f"Pull Request ID: {PR}")
 
-            PR_review_nums = self.check_PR_reviews_exist(
+            PR_review_nums, PR_reviews_json = self.count_PR_reviews(
                 repo_name=repo_name,
                 PR_num=PR,
                 reviews_qry=None,
-                out_json_file="all-PR-reviews_json",
             )
             self.logger.info(
                 f"{sum(PR_review_nums)} found for PR {PR} in repo {repo_name}."
             )
-
+            PR_reviews_json_all.extend(PR_reviews_json)
             PR_reviews[PR] = PR_review_nums
+
+        self.logger.info(
+            f"writing out json content for {len(PR_reviews_json_all)} reviews to file {write_out_extra_info_json}"
+        )
+        with open(write_out_extra_info_json, "w") as json_file:
+            json.dump(PR_reviews_json_all, json_file)
 
         return PR_reviews
 
