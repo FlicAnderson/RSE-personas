@@ -171,6 +171,7 @@ coding-smart.code-workspace
 
 # Datasets
 data/
+repo_names_chunk.*
 
 # Plots 
 images/
