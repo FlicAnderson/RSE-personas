@@ -108,7 +108,7 @@ class ReviewsFormatter(LocationSetup):
 
         if self.reformatted_PR_reviews is not None:
             self.reformatted_PR_reviews.to_csv(
-                path_or_buf=write_out, mode="w", index=True, header=True
+                path_or_buf=write_out, mode="w", index=False, header=True
             )
             self.logger.info(
                 f"wrote out dataframe of PR reviews to file {write_out} for repo {self.repo_name}"
