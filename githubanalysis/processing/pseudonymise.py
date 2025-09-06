@@ -20,10 +20,11 @@ import pandas as pd
 from pathlib import Path
 import gc
 
-from utilities.repo_names_write_out import RepoNamesListCreator
-
 orig_data_file = "merged-data-per-dev_x2868-repos_2025-05-10.csv"
-analysis_dataset_file = "analysis_run_sample_45pc_2025-05-12/clustered_sample_data_with_labels__2025-05-12.csv"
+analysis_dataset_initial_clusters_file = "analysis_run_sample_45pc_2025-05-12/clustered_sample_data_with_labels__2025-05-12.csv"
+analysis_dataset_cluster0_file = "analysis_run_sample_45pc_cluster0_2025-05-13/clustered_sample_data_with_labels__2025-05-13.csv"
+analysis_dataset_cluster1_file = "analysis_run_sample_45pc_cluster1_2025-05-13/clustered_sample_data_with_labels__2025-05-13.csv"
+analysis_dataset_cluster2_file = "analysis_run_sample_45pc_cluster2_2025-05-13/clustered_sample_data_with_labels__2025-05-13.csv"
 merged_interactions = "merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv"
 repo_stats_file = "summarised_SAMPLE_repos_stats_2025-05-09.csv"
 
@@ -34,13 +35,19 @@ file_locat = "data/"
 
 read_files = [
     orig_data_file,
-    analysis_dataset_file,
+    analysis_dataset_initial_clusters_file,
+    analysis_dataset_cluster0_file,
+    analysis_dataset_cluster1_file,
+    analysis_dataset_cluster2_file,
     merged_interactions,
     repo_stats_file,
 ]
 write_names = [
     "hashed_merged_data",
-    "hashed_clustered_analysis_data",
+    "hashed_clustered_analysis_initial_clusters_data",
+    "hashed_clustered_analysis_cluster0_data",
+    "hashed_clustered_analysis_cluster1_data",
+    "hashed_clustered_analysis_cluster2_data",
     "hashed_merged_interactions_data",
     "hashed_summarised_repo_stats_data",
 ]
