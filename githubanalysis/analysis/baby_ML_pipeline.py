@@ -170,7 +170,7 @@ class ML_pipeline_decision_tree(DatasetSetup):
             format="pdf",
             bbox_inches="tight",
         )
-        dataset_size = len(classified_df)
+        dataset_size = len(X_test)
 
         # Plot non-normalized confusion matrix
         titles_options = [
