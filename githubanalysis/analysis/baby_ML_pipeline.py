@@ -54,34 +54,34 @@ class ML_pipeline_decision_tree(DatasetSetup):
                 n=n_per_persona, weights="MRC"
             )
 
-        RSE_persona_ranges = makeRSE_persona_ranges(
-            file=Path(
-                self.data_read_location,
-                "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
-            )
-        )
+        # RSE_persona_ranges = makeRSE_persona_ranges(
+        #     file=Path(
+        #         self.data_read_location,
+        #         "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
+        #     )
+        # )
 
-        classification_results_MRC = dataset_df[
-            "MRC"
-        ].apply(
-            lambda x: persona_tester(
-                x, RSE_persona_ranges, "median"
-            )  # classify repo-individual (row) based on MRC value against inter-quartile range match.
-        )
-
-        MRCclass = list(zip(*classification_results_MRC))
-        dataset_df["MRC_classification"] = MRCclass[0]
-        # dataset_df["MRC_classification_pickone"] = dataset_df[
-        #     "MRC_classification"
+        # classification_results_MRC = dataset_df[
+        #     "MRC"
         # ].apply(
-        #     lambda x: x[0]  # take items out of list
-        # )  # TAKE FIRST IN LIST (THIS IS VERY BROKEN BUT MRC IS NOT ESPECIALLY USEFUL METRIC)
-        dataset_df["MRC_distances_to_median"] = MRCclass[1]
-        dataset_df["MRC_classification_nearest_one"] = dataset_df[
-            "MRC_distances_to_median"
-        ].apply(
-            lambda x: x[min(x)]
-        )  # select the item in the sorted dictionary with smallest 'key' aka nearest distance
+        #     lambda x: persona_tester(
+        #         x, RSE_persona_ranges, "median"
+        #     )  # classify repo-individual (row) based on MRC value against inter-quartile range match.
+        # )
+
+        # MRCclass = list(zip(*classification_results_MRC))
+        # dataset_df["MRC_classification"] = MRCclass[0]
+        # # dataset_df["MRC_classification_pickone"] = dataset_df[
+        # #     "MRC_classification"
+        # # ].apply(
+        # #     lambda x: x[0]  # take items out of list
+        # # )  # TAKE FIRST IN LIST (THIS IS VERY BROKEN BUT MRC IS NOT ESPECIALLY USEFUL METRIC)
+        # dataset_df["MRC_distances_to_median"] = MRCclass[1]
+        # dataset_df["MRC_classification_nearest_one"] = dataset_df[
+        #     "MRC_distances_to_median"
+        # ].apply(
+        #     lambda x: x[min(x)]
+        # )  # select the item in the sorted dictionary with smallest 'key' aka nearest distance
 
         classified_df = dataset_df
 
@@ -121,8 +121,10 @@ class ML_pipeline_decision_tree(DatasetSetup):
         #  X_train, X_test, y_train, y_test
         return train_test_split(X, y, random_state=42)
 
-    def do_decision_tree(self, RSE_info):
-        X_train, X_test, y_train, y_test = self.test_train_data(RSE_info)
+    def do_decision_tree(
+        self,
+    ):
+        X_train, X_test, y_train, y_test = self.test_train_data()
 
         clf = (
             tree.DecisionTreeClassifier()
@@ -131,6 +133,12 @@ class ML_pipeline_decision_tree(DatasetSetup):
         return clf, X_train, X_test, y_train, y_test
 
     def plot_decision_tree(self, clf):
+        saveout_args = dict(
+            dpi=400,
+            format="pdf",
+            bbox_inches="tight",
+        )
+
         plot_tree(
             clf,
             filled=True,
@@ -138,14 +146,13 @@ class ML_pipeline_decision_tree(DatasetSetup):
             class_names=self.RSE_info["target_names"],
         )
         plt.title("Decision tree trained on all RSE Persona clustering features")
-        plt.savefig(
-            Path(DatasetSetup.image_write_location, "decision_tree_initial.pdf")
-        )
+        saveout_name = Path(self.image_write_location, "decision_tree_initial.pdf")
+        plt.savefig(saveout_name, **saveout_args)
 
         print(
-            f'attempted to save out to : {Path(DatasetSetup.image_write_location, "decision_tree_initial.pdf")}'
+            f'attempted to save out to : {Path(self.image_write_location, "decision_tree_initial.pdf")}'
         )
-        # plt.show()
+        plt.show()
 
     def run_predictor(
         self,
@@ -183,7 +190,7 @@ class ML_pipeline_decision_tree(DatasetSetup):
                 self.le.inverse_transform(y_pred),  # y_pred
                 labels=self.le.inverse_transform(clf.classes_),
                 sample_weight=None,
-                normalize=None,  # 'all': total N samples; 'pred': over predictions; 'true': over true; None: default
+                normalize=normalize,  # 'all': total N samples; 'pred': over predictions; 'true': over true; None: default
                 display_labels=None,
                 include_values=True,
                 xticks_rotation="vertical",
@@ -195,11 +202,38 @@ class ML_pipeline_decision_tree(DatasetSetup):
                 text_kw=None,
             )
             disp.ax_.set_title(title)
-
-            plt.savefig(
-                Path(
-                    self.image_write_location,
-                    f"confusion_matrix_MRC_tinytestset_normalise{normalize}_{self.current_date_info}.pdf",
-                )
-                ** saveout_args,
+            saveout_name = Path(
+                self.image_write_location,
+                f"confusion_matrix_MRC_tinytestset_normalise{normalize}_{self.current_date_info}.pdf",
             )
+            plt.savefig(
+                saveout_name,
+                **saveout_args,
+            )
+            plt.show()
+
+
+if __name__ == "__main__":
+    # initialise class
+    ml_pipeline_dt = ML_pipeline_decision_tree(
+        dataset_name="ML", in_notebook=False, exists_ok=True, logger=None
+    )
+
+    # read in dataset
+    datafile = Path(
+        ml_pipeline_dt.data_location,
+        "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
+    )
+    labelled_df = ml_pipeline_dt.get_data(data_file=datafile)
+
+    # format data to sklearn shapes/types/terminology
+    ml_pipeline_dt.create_sklearn_format_data(classified_df=labelled_df)
+
+    # run decision tree and apply to test/training datasets (splitting happens within do_decision_tree())
+    clf, X_train, X_test, y_train, y_test = ml_pipeline_dt.do_decision_tree()
+
+    # plot decision tree for training dataset and save to image file
+    ml_pipeline_dt.plot_decision_tree(clf)
+
+    # predict classifications for test dataset, plot confusion matrices
+    ml_pipeline_dt.run_predictor(clf, X_test, y_test, labelled_df)
