@@ -33,7 +33,7 @@ class ML_pipeline_decision_tree(DatasetSetup):
         self.le = LabelEncoder()
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
 
-    def get_data(self, data_file, small_vers=True, small_N_appx: int | None = 20):
+    def get_data(self, data_file, small_vers=True, small_N_appx: int | None = 50):
         dataset_df = pd.read_csv(
             Path(
                 self.data_read_location,
@@ -114,17 +114,47 @@ class ML_pipeline_decision_tree(DatasetSetup):
 
         return self.RSE_info
 
-    def test_train_data(self):
+    def test_train_data(
+        self,
+        train_pc=0.75,
+        test_pc=0.25,
+        shuffle_state=True,
+        stratify_state=True,
+    ):
         X, y = self.RSE_info["data"], self.RSE_info["target"]
 
+        assert (
+            (1 - train_pc) == test_pc
+        ), f"Values for train_pc and test_pc must total 1; test_pc is currently set to {test_pc}"
         # returning the function which creates a tuple of 4x:
         #  X_train, X_test, y_train, y_test
-        return train_test_split(X, y, random_state=42)
+        if stratify_state:
+            return train_test_split(
+                X,
+                y,
+                test_size=test_pc,  # by default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 25%
+                train_size=train_pc,  # by default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
+                random_state=42,
+                shuffle=shuffle_state,
+                stratify=self.RSE_info["target"],  # same as y
+            )
+        else:
+            return train_test_split(
+                X,
+                y,
+                test_size=test_pc,  # by default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 25%
+                train_size=train_pc,  # by default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
+                random_state=42,
+                shuffle=shuffle_state,
+            )
 
-    def do_decision_tree(
-        self,
-    ):
-        X_train, X_test, y_train, y_test = self.test_train_data()
+    def do_decision_tree(self, train_pc, test_pc, shuffle_state, stratify_state):
+        X_train, X_test, y_train, y_test = self.test_train_data(
+            train_pc=train_pc,
+            test_pc=test_pc,
+            shuffle_state=shuffle_state,
+            stratify_state=stratify_state,
+        )
 
         clf = (
             tree.DecisionTreeClassifier()
@@ -159,7 +189,6 @@ class ML_pipeline_decision_tree(DatasetSetup):
         clf,
         X_test,
         y_test,
-        classified_df,
     ):
         y_pred = clf.predict(X_test)
         y_true = y_test
@@ -213,27 +242,57 @@ class ML_pipeline_decision_tree(DatasetSetup):
             plt.show()
 
 
-if __name__ == "__main__":
+def main(
+    dataset_name="ML",
+    in_notebook=False,
+    exists_ok=True,
+    logger=None,
+    datafile="sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
+    small_vers=True,
+    small_N_appx=50,
+    train_pc=0.75,
+    test_pc=0.25,
+    shuffle_state=True,
+    stratify_state=True,
+):
     # initialise class
     ml_pipeline_dt = ML_pipeline_decision_tree(
-        dataset_name="ML", in_notebook=False, exists_ok=True, logger=None
+        dataset_name=dataset_name,
+        in_notebook=in_notebook,
+        exists_ok=exists_ok,
+        logger=logger,
     )
 
     # read in dataset
     datafile = Path(
         ml_pipeline_dt.data_location,
-        "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
+        datafile,
     )
-    labelled_df = ml_pipeline_dt.get_data(data_file=datafile)
+    labelled_df = ml_pipeline_dt.get_data(
+        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+    )
 
     # format data to sklearn shapes/types/terminology
     ml_pipeline_dt.create_sklearn_format_data(classified_df=labelled_df)
 
     # run decision tree and apply to test/training datasets (splitting happens within do_decision_tree())
-    clf, X_train, X_test, y_train, y_test = ml_pipeline_dt.do_decision_tree()
+    clf, X_train, X_test, y_train, y_test = ml_pipeline_dt.do_decision_tree(
+        train_pc=train_pc,
+        test_pc=test_pc,
+        stratify_state=stratify_state,
+        shuffle_state=shuffle_state,
+    )
 
     # plot decision tree for training dataset and save to image file
     ml_pipeline_dt.plot_decision_tree(clf)
 
     # predict classifications for test dataset, plot confusion matrices
-    ml_pipeline_dt.run_predictor(clf, X_test, y_test, labelled_df)
+    ml_pipeline_dt.run_predictor(
+        clf,
+        X_test,
+        y_test,
+    )
+
+
+if __name__ == "__main__":
+    main()
