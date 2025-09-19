@@ -56,6 +56,28 @@ class ML_pipeline_decision_tree(
                 columns={"pc_DC": "MRC", "breadth_interactions": "UIT"}
             )
 
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "ephemeral_contributor", "Ephemeral Contributor"
+        )
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "occasional_contributor", "Occasional Contributor"
+        )
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "project_organiser", "Project Organiser"
+        )
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "moderate_contributor", "Moderate Contributor"
+        )
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "low-process_closer", "Low-Process Closer"
+        )
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "low-coding_closer", "Low-Coding Closer"
+        )
+        classified_df["RSE_persona"] = classified_df["RSE_persona"].str.replace(
+            "active_contributor", "Active Contributor"
+        )
+
         if small_vers is True and small_N_appx is not None:
             n_per_persona = round(small_N_appx / 7)
             classified_df = classified_df.groupby(by="RSE_persona").sample(
@@ -187,11 +209,21 @@ class ML_pipeline_decision_tree(
             ),  # normalise on True value pcs
         ]
 
+        persona_order = [
+            "Ephemeral Contributor",
+            "Occasional Contributor",
+            "Project Organiser",
+            "Moderate Contributor",
+            "Low-Process Closer",
+            "Low-Coding Closer",
+            "Active Contributor",
+        ]
+
         for title, normalize in titles_options:
             disp = ConfusionMatrixDisplay.from_predictions(
                 self.le.inverse_transform(y_true),  # y_true
                 self.le.inverse_transform(y_pred),  # y_pred
-                # labels=self.pipe.named_steps["le"].inverse_transform(clf.classes_),
+                labels=persona_order,  # personas listed in increasing MRC order
                 sample_weight=None,
                 normalize=normalize,  # 'all': total N samples; 'pred': over predictions; 'true': over true; None: default
                 display_labels=None,
@@ -239,7 +271,6 @@ def main(
 
     # read in dataset
     # AND format data to sklearn shapes/types/terminology
-
     datafile = Path(
         ml_pipeline_dt.data_location,
         datafile,
