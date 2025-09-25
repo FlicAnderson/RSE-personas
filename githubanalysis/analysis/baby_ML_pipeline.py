@@ -354,7 +354,7 @@ def main(
         metrics.classification_report(
             ml_pipeline_dt.y_true,
             ml_pipeline_dt.y_pred,
-            #'labels=persona_order,
+            labels=ml_pipeline_dt.RSE_info["target"],
             target_names=ml_pipeline_dt.RSE_info["target"],
         ),
     )
