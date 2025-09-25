@@ -340,7 +340,7 @@ def main(
     print(
         "Accuracy:",
         metrics.accuracy_score(ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred),
-        "(percent of correctly classified samples)",
+        " (percent of correctly classified samples)",
     )
     print(
         "Non-Normalised Accuracy:",
