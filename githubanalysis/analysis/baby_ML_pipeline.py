@@ -189,7 +189,7 @@ class ML_pipeline_decision_tree(
             special_characters=True,
         )
         graph = graphviz.Source(dot_data)
-        graph.render("graphviz")
+        graph.render()
 
         plt.title("Decision tree trained on all RSE Persona clustering features")
         saveout_name = Path(self.image_write_location, "decision_tree_initial.pdf")
