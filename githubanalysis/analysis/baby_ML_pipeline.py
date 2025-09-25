@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 # from sklearn import tree
 from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics
 from sklearn.metrics import ConfusionMatrixDisplay
 
 from githubanalysis.setup_classes import DatasetSetup
@@ -42,7 +43,7 @@ class ML_pipeline_decision_tree(
                         criterion="gini",  # options: 'gini', 'entropy', 'log_loss' # measures split quality; gini for node purity, log_loss/entropy for Shannon info gain
                         splitter="best",  # 'best' for best split, or 'random' for best random split
                         max_depth=None,  # integer or None
-                        random_state=42,
+                        random_state=42,  # controls the randomness of the estimator during splitting
                         # min_samples_split=2,
                         # min_samples_leaf=1,
                         max_features=None,  #'int', 'float', 'sqrt', 'log2', 'None'
@@ -222,8 +223,8 @@ class ML_pipeline_decision_tree(
         X_test,
         y_test,
     ):
-        y_pred = self.pipe.predict(X_test)
-        y_true = y_test
+        self.y_pred = self.pipe.predict(X_test)
+        self.y_true = y_test
 
         # savefig kwargs
         saveout_args = dict(
@@ -257,8 +258,8 @@ class ML_pipeline_decision_tree(
 
         for title, normalize in titles_options:
             disp = ConfusionMatrixDisplay.from_predictions(
-                self.le.inverse_transform(y_true),  # y_true
-                self.le.inverse_transform(y_pred),  # y_pred
+                self.le.inverse_transform(self.y_true),  # y_true
+                self.le.inverse_transform(self.y_pred),  # y_pred
                 labels=persona_order,  # personas listed in increasing MRC order
                 sample_weight=None,
                 normalize=normalize,  # 'all': total N samples; 'pred': over predictions; 'true': over true; None: default
@@ -331,6 +332,12 @@ def main(
     ml_pipeline_dt.run_predictor(
         X_test,
         y_test,
+    )
+
+    # Model Accuracy, how often is the classifier correct?
+    print(
+        "Accuracy:",
+        metrics.accuracy_score(ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred),
     )
 
 
