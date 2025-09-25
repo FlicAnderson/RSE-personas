@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
+import graphviz
 
 from sklearn.pipeline import (
     Pipeline,
@@ -11,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
 # from sklearn import tree
-from sklearn.tree import plot_tree
+from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import ConfusionMatrixDisplay
 
@@ -155,7 +156,7 @@ class ML_pipeline_decision_tree(
         self.pipe.fit(X_train, y_train)
         return X_test, y_test
 
-    def plot_decision_tree(self):
+    def plot_decision_tree(self, depth):
         saveout_args = dict(
             dpi=400,
             format="pdf",
@@ -167,11 +168,29 @@ class ML_pipeline_decision_tree(
             self.pipe.named_steps[
                 "clf"
             ],  # use fitted pipe obj created by 'decision_tree step'
-            max_depth=5,
+            max_depth=depth,
             filled=True,
             feature_names=self.RSE_info["feature_names"],
             class_names=self.RSE_info["target_names"],
         )
+        # export to graphviz format
+        graphviz_out_file = Path(
+            self.image_write_location, "decision_tree_graphviz.pdf"
+        )
+        dot_data = export_graphviz(
+            self.pipe.named_steps[
+                "clf"
+            ],  # use fitted pipe obj created by 'decision_tree step'
+            out_file=graphviz_out_file,
+            feature_names=self.RSE_info["feature_names"],
+            class_names=self.RSE_info["target_names"],
+            filled=True,
+            rounded=True,
+            special_characters=True,
+        )
+        graph = graphviz.Source(dot_data)
+        graph.render(dot_data)
+
         plt.title("Decision tree trained on all RSE Persona clustering features")
         saveout_name = Path(self.image_write_location, "decision_tree_initial.pdf")
         plt.savefig(saveout_name, **saveout_args)
@@ -258,8 +277,9 @@ def main(
     small_N_appx=50,
     train_pc=0.75,
     test_pc=0.25,
-    shuffle_state=True,
-    stratify_state=True,
+    shuffle_state: bool = True,
+    stratify_state: bool = True,
+    depth: int = 5,
 ):
     # initialise class
     ml_pipeline_dt = ML_pipeline_decision_tree(
@@ -288,7 +308,7 @@ def main(
     )
 
     # plot decision tree for training dataset and save to image file
-    ml_pipeline_dt.plot_decision_tree()
+    ml_pipeline_dt.plot_decision_tree(depth)
 
     # predict classifications for test dataset, plot confusion matrices
     ml_pipeline_dt.run_predictor(
