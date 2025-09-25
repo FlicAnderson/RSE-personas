@@ -350,7 +350,7 @@ def main(
         " (N of correctly classified samples)",
     )
     print(
-        "Classification Report:",
+        "Classification Report: \n",
         metrics.classification_report(
             ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
             ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
