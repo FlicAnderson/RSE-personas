@@ -350,13 +350,13 @@ def main(
         " (N of correctly classified samples)",
     )
     print(
-        "Classification Report: \n",
-        metrics.classification_report(
-            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
-            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
-            # labels=ml_pipeline_dt.RSE_info["target"],
-            # target_names=ml_pipeline_dt.RSE_info["target"],
+        "Balanced Accuracy:",
+        metrics.balanced_accuracy_score(
+            ml_pipeline_dt.y_true,
+            ml_pipeline_dt.y_pred,
+            adjusted=False,
         ),
+        " (N of correctly classified samples)",
     )
     print(
         "F1 Scores: \n",
@@ -364,6 +364,35 @@ def main(
             ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
             ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
             average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+            # labels=ml_pipeline_dt.RSE_info["target"],
+            # target_names=ml_pipeline_dt.RSE_info["target"],
+        ),
+    )
+    print(
+        "Precision: \n",
+        metrics.precision_score(
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
+            average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+            # labels=ml_pipeline_dt.RSE_info["target"],
+            # target_names=ml_pipeline_dt.RSE_info["target"],
+        ),
+    )
+    print(
+        "Recall: \n",
+        metrics.recall_score(
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
+            average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+            # labels=ml_pipeline_dt.RSE_info["target"],
+            # target_names=ml_pipeline_dt.RSE_info["target"],
+        ),
+    )
+    print(
+        "Classification Report: \n",
+        metrics.classification_report(
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
             # labels=ml_pipeline_dt.RSE_info["target"],
             # target_names=ml_pipeline_dt.RSE_info["target"],
         ),
