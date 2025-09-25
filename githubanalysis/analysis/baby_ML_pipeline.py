@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
-from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import ConfusionMatrixDisplay, coverage_error
 
 from githubanalysis.setup_classes import DatasetSetup
 
@@ -358,6 +358,18 @@ def main(
             # target_names=ml_pipeline_dt.RSE_info["target"],
         ),
     )
+    print(
+        "F1 Scores: \n",
+        metrics.f1_score(
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
+            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
+            average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+            # labels=ml_pipeline_dt.RSE_info["target"],
+            # target_names=ml_pipeline_dt.RSE_info["target"],
+        ),
+    )
+    # multiclass means you can only be in one category only e.g. media format (film or tv-show)
+    # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
 
 
 if __name__ == "__main__":
