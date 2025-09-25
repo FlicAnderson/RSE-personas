@@ -36,8 +36,21 @@ class ML_pipeline_decision_tree(
         # create a pipeline object
         self.pipe = Pipeline(
             steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
-                # ("le", OneHotEncode()),
-                ("clf", DecisionTreeClassifier()),
+                (
+                    "clf",
+                    DecisionTreeClassifier(
+                        criterion="gini",  # options: 'gini', 'entropy', 'log_loss' # measures split quality; gini for node purity, log_loss/entropy for Shannon info gain
+                        splitter="best",  # 'best' for best split, or 'random' for best random split
+                        max_depth=None,  # integer or None
+                        random_state=42,
+                        # min_samples_split=2,
+                        # min_samples_leaf=1,
+                        max_features=None,  #'int', 'float', 'sqrt', 'log2', 'None'
+                        # bunch more args... #
+                        # max_leaf_nodes=None, #set max leaf nodes based on 'best' relative reduction in impurity; None: unlimited leaf nodes
+                        # ccp_alpha=0.0, # complexity parameter used for Minimal Cost-Complexity Pruning.
+                    ),
+                ),
             ],
             memory=None,
             # transform_input=None, # I maybe don't have the updated package version for this (1.6?)
