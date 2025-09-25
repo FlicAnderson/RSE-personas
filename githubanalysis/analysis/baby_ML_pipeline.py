@@ -335,9 +335,28 @@ def main(
     )
 
     # Model Accuracy, how often is the classifier correct?
+
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     print(
         "Accuracy:",
         metrics.accuracy_score(ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred),
+        "(percent of correctly classified samples)",
+    )
+    print(
+        "Non-Normalised Accuracy:",
+        metrics.accuracy_score(
+            ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred, normalize=False
+        ),
+        " (N of correctly classified samples)",
+    )
+    print(
+        "Classification Report:",
+        metrics.classification_report(
+            ml_pipeline_dt.y_true,
+            ml_pipeline_dt.y_pred,
+            #'labels=persona_order,
+            target_names=ml_pipeline_dt.RSE_info["target"],
+        ),
     )
 
 
