@@ -338,50 +338,50 @@ def main(
 
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     print(
-        "Accuracy: {:.2f} (percent of correctly classified samples) \n".format(
+        "Accuracy: {:.2f} (percent of correctly classified samples)".format(
             metrics.accuracy_score(ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred),
         )
     )
     print(
-        "Non-Normalised Accuracy: {:.2f} (number of correctly classified samples) \n".format(
+        "Non-Normalised Accuracy: {:.2f} (number of correctly classified samples)".format(
             metrics.accuracy_score(
                 ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred, normalize=False
             ),
         )
     )
     print(
-        "Balanced Accuracy: {:.2f} (the average of recall obtained on each class) \n".format(
+        "Balanced Accuracy: {:.2f} (the average of recall obtained on each class)".format(
             metrics.balanced_accuracy_score(
                 ml_pipeline_dt.y_true,
                 ml_pipeline_dt.y_pred,
                 adjusted=False,
-            ),
+            )
         )
     )
     print(
-        "F1 Score: {:.2f} (harmonic mean of the precision and recall, both equally weighted) \n".format(
+        "F1 Score: {:.2f} (harmonic mean of the precision and recall, both equally weighted)".format(
             metrics.f1_score(
                 ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
                 ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
                 average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
                 # labels=ml_pipeline_dt.RSE_info["target"],
                 # target_names=ml_pipeline_dt.RSE_info["target"],
-            ),
+            )
         )
     )
     print(
-        "Precision: {:.2f} (Ratio of correctly predicted positive classes to total of positive predictions) \n".format(
+        "Precision: {:.2f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
             metrics.precision_score(
                 ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
                 ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
                 average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
                 # labels=ml_pipeline_dt.RSE_info["target"],
                 # target_names=ml_pipeline_dt.RSE_info["target"],
-            ),
+            )
         )
     )
     print(
-        "Recall: {:.2f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes) \n".format(
+        "Recall: {:.2f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
             metrics.recall_score(
                 ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
                 ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
