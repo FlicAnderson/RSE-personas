@@ -10,12 +10,11 @@ from sklearn.pipeline import (
 )  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-
-# from sklearn import tree
+from sklearn.metrics import roc_auc_score
 from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
-from sklearn.metrics import ConfusionMatrixDisplay, coverage_error
+from sklearn.metrics import ConfusionMatrixDisplay
 
 from githubanalysis.setup_classes import DatasetSetup
 
@@ -402,6 +401,17 @@ def main(
     )
     # multiclass means you can only be in one category only e.g. media format (film or tv-show)
     # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
+    print(
+        "Area Under the Receiver Operating Characteristic Curve (ROC AUC): {:.2f}".format(
+            roc_auc_score(
+                y_true=y_test,
+                y_score=ml_pipeline_dt.pipe.named_steps["clf"].predict_proba(X_test),
+                average="macro",
+                multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+            )
+        )
+    )
 
 
 if __name__ == "__main__":
