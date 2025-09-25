@@ -181,7 +181,7 @@ class ML_pipeline_decision_tree(
             self.pipe.named_steps[
                 "clf"
             ],  # use fitted pipe obj created by 'decision_tree step'
-            out_file="graphviz_out_file",
+            out_file=None,  # "graphviz_out_file",
             feature_names=self.RSE_info["feature_names"],
             class_names=self.RSE_info["target_names"],
             filled=True,
