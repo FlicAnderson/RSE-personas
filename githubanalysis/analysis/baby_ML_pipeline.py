@@ -165,6 +165,11 @@ class ML_pipeline_decision_tree(
             shuffle_state=shuffle_state,
             stratify_state=stratify_state,
         )
+        # add size info from test and training datasets to self for future reporting.
+        self.X_train_size = X_train.shape
+        self.y_train_size = y_train.shape
+        self.X_test_size = X_test.shape
+        self.y_test_size = y_test.shape
 
         self.pipe.fit(X_train, y_train)
         return X_test, y_test
@@ -231,16 +236,15 @@ class ML_pipeline_decision_tree(
             format="pdf",
             bbox_inches="tight",
         )
-        dataset_size = len(X_test)
 
         # Plot non-normalized confusion matrix
         titles_options = [
             (
-                f"confusion matrix, no normalization (N={dataset_size})",
+                f"confusion matrix, no normalization (N={self.X_test_size[0]})",
                 None,
             ),
             (
-                f"normalized confusion matrix (N={dataset_size})",
+                f"normalized confusion matrix (N={self.X_test_size[0]})",
                 "true",
             ),  # normalise on True value pcs
         ]
@@ -275,7 +279,7 @@ class ML_pipeline_decision_tree(
             disp.ax_.set_title(title)
             saveout_name = Path(
                 self.image_write_location,
-                f"confusion_matrix_normalise{normalize}_N{dataset_size}_{self.current_date_info}.pdf",
+                f"confusion_matrix_normalise{normalize}_N={self.X_test_size[0]}_{self.current_date_info}.pdf",
             )
             plt.savefig(
                 saveout_name,
@@ -334,6 +338,15 @@ def main(
     )
 
     # Model Accuracy, how often is the classifier correct?
+    print(
+        f"""
+        For model trained on: \n
+          training-set size: N={ml_pipeline_dt.X_train_size[0]}... \n
+          and evaluated using test-set size: N={ml_pipeline_dt.X_test_size[0]} repo-individuals... \n
+          using N={ml_pipeline_dt.X_test_size[1]} features... \n 
+          at {ml_pipeline_dt.current_date_info}
+        """
+    )
 
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     print(
