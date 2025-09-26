@@ -275,7 +275,7 @@ class ML_pipeline_decision_tree(
             disp.ax_.set_title(title)
             saveout_name = Path(
                 self.image_write_location,
-                f"confusion_matrix_MRC_tinytestset_normalise{normalize}_{self.current_date_info}.pdf",
+                f"confusion_matrix_normalise{normalize}_N{dataset_size}_{self.current_date_info}.pdf",
             )
             plt.savefig(
                 saveout_name,
