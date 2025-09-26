@@ -37,6 +37,7 @@ expected_sorted_file_repos = list(sorted(expected_file_repos))
 
 
 @pytest.fixture
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def get_code_reviews():
     logger = loggit.get_default_logger(
         console=True,
@@ -51,6 +52,7 @@ def get_code_reviews():
     return getting_code_reviews
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_getting_repo_names_from_file(get_code_reviews):
     repos = get_code_reviews.get_repos(
         repo_list_file_name=Path("code_review_subset_2025-05-30_x14.txt")
@@ -62,6 +64,7 @@ def test_getting_repo_names_from_file(get_code_reviews):
     ), "Sorted list of repos does not match sorted expected list."
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_API_pulls_query_assembly(get_code_reviews):
     # test that for given repo_name, API query is correctly assembled...
     repo_name = expected_file_repos[0]  # KislakCenter/VisColl
@@ -80,21 +83,25 @@ def test_API_pulls_query_assembly(get_code_reviews):
     ), f"generated API query {pulls_qry} does not match expected result {expected_qry}."
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_no_PRs_repo(get_code_reviews):
     # test what happens if there's no PRs for that repo at all
     pass
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_get_all_code_reviews_no_reviews_exist(get_code_reviews):
     # PRs exist, but no reviews.
     pass
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_get_all_code_reviews_no_PRs_exist(get_code_reviews):
     # no PRs for this repo, therefore no code reviews on them.
     pass
 
 
+@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
 def test_get_all_code_reviews_happy_case_one(get_code_reviews):
     # happy case: PRs exist, 1 code review exists, treated correctly
     pass
