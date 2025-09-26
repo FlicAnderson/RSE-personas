@@ -214,7 +214,10 @@ class ML_pipeline_decision_tree(
         )
 
         plt.title("Decision tree trained on all RSE Persona clustering features")
-        saveout_name = Path(self.image_write_location, "decision_tree_initial.pdf")
+        saveout_name = Path(
+            self.image_write_location,
+            f"decision_tree_N{self.X_train_size[0]}_{self.current_date_info}.pdf",
+        )
         plt.savefig(saveout_name, **saveout_args)
 
         print(
@@ -279,7 +282,7 @@ class ML_pipeline_decision_tree(
             disp.ax_.set_title(title)
             saveout_name = Path(
                 self.image_write_location,
-                f"confusion_matrix_normalise{normalize}_N={self.X_test_size[0]}_{self.current_date_info}.pdf",
+                f"confusion_matrix_normalise{normalize}_N{self.X_test_size[0]}_{self.current_date_info}.pdf",
             )
             plt.savefig(
                 saveout_name,
@@ -341,6 +344,7 @@ def main(
     print(
         f"""
         For model trained on: \n
+          datafile: {datafile}... \n
           training-set size: N={ml_pipeline_dt.X_train_size[0]}... \n
           and evaluated using test-set size: N={ml_pipeline_dt.X_test_size[0]} repo-individuals... \n
           using N={ml_pipeline_dt.X_test_size[1]} features... \n 
