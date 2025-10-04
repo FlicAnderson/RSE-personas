@@ -308,7 +308,7 @@ class ML_Pipeline_Decision_Tree(
             disp.ax_.set_title(title)
             saveout_name = Path(
                 self.image_write_location,
-                f"confusion_matrix_normalise{normalize}_N{self.X_test_size[0]}_{self.current_date_info}.pdf",
+                f"{self.model_type}_confusion_matrix_normalise{normalize}_N{self.X_test_size[0]}_{self.current_date_info}.pdf",
             )
             plt.savefig(
                 saveout_name,
@@ -322,7 +322,6 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         self,
         dataset_name,
         in_notebook: bool,
-        # input_data: ML_Pipeline_Decision_Tree,
         exists_ok: bool = False,
         logger: None | Logger = None,
         forest_size: int = 100,
@@ -524,7 +523,8 @@ def main(
     test_pc=0.25,
     shuffle_state: bool = True,
     stratify_state: bool = True,
-    depth: int = 5,
+    plot_dt_depth: int = 5,
+    forest_size_rf=100,
 ):
     # initialise class
     ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -553,7 +553,7 @@ def main(
     )
 
     # plot decision tree for training dataset and save to image file
-    ml_pipeline_dt.plot_decision_tree(depth)
+    ml_pipeline_dt.plot_decision_tree(plot_dt_depth)
 
     # predict classifications for test dataset, plot confusion matrices
     ml_pipeline_dt.run_predictor(
@@ -575,7 +575,7 @@ def main(
         in_notebook=in_notebook,
         exists_ok=exists_ok,
         logger=logger,
-        forest_size=100,
+        forest_size=forest_size_rf,
         candidate_feats=ml_pipeline_dt.X_test_size[
             1
         ],  # number of features for RF and DT is same
