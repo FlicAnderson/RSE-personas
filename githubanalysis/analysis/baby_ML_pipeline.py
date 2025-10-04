@@ -1,5 +1,6 @@
 from logging import Logger
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import math
 import matplotlib.pyplot as plt
@@ -503,6 +504,8 @@ def run_scoring_printouts(
             pipeline_class_obj.le.inverse_transform(
                 pipeline_class_obj.y_pred
             ),  # y_pred
+            zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+            digits=3,
             # labels=ml_pipeline_dt.RSE_info["target"],
             # target_names=ml_pipeline_dt.RSE_info["target"],
         ),
@@ -556,18 +559,6 @@ def main(
     ml_pipeline_dt.run_predictor(
         X_test,
         y_test,
-    )
-
-    # Model Accuracy, how often is the classifier correct?
-    print(
-        f"""
-        For DECISION TREE model trained on: \n
-          datafile: {datafile} \n
-          training-set size: N={ml_pipeline_dt.X_train_size[0]} \n
-          and evaluated using test-set size: N={ml_pipeline_dt.X_test_size[0]} repo-individuals \n
-          using N={ml_pipeline_dt.X_test_size[1]} features \n 
-          at {ml_pipeline_dt.current_date_info}
-        """
     )
 
     run_scoring_printouts(
