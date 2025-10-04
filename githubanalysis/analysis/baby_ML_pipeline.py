@@ -131,9 +131,9 @@ class ML_pipeline_decision_tree(
     ):
         X, y = self.RSE_info["data"], self.RSE_info["target"]
 
-        assert (
-            (1 - train_pc) == test_pc
-        ), f"Values for train_pc and test_pc must total 1; test_pc is currently set to {test_pc}"
+        assert (1 - train_pc) == test_pc, (
+            f"Values for train_pc and test_pc must total 1; test_pc is currently set to {test_pc}"
+        )
         # returning the function which creates a tuple of 4x:
         #  X_train, X_test, y_train, y_test
         if stratify_state:
@@ -189,7 +189,7 @@ class ML_pipeline_decision_tree(
             max_depth=depth,
             filled=True,
             feature_names=self.RSE_info["feature_names"],
-            class_names=self.RSE_info["target_names"],
+            class_names=list(self.RSE_info["target_names"]),
         )
         # export to graphviz format
         # graphviz_out_file = Path(
@@ -201,7 +201,7 @@ class ML_pipeline_decision_tree(
             ],  # use fitted pipe obj created by 'decision_tree step'
             out_file=None,  # "graphviz_out_file",
             feature_names=self.RSE_info["feature_names"],
-            class_names=self.RSE_info["target_names"],
+            class_names=list(self.RSE_info["target_names"]),
             filled=True,
             rounded=True,
             special_characters=True,
@@ -221,7 +221,7 @@ class ML_pipeline_decision_tree(
         plt.savefig(saveout_name, **saveout_args)
 
         print(
-            f'attempted to save out to : {Path(self.image_write_location, "decision_tree_initial.pdf")}'
+            f"attempted to save out to : {Path(self.image_write_location, 'decision_tree_initial.pdf')}"
         )
         plt.show()
 
@@ -344,10 +344,10 @@ def main(
     print(
         f"""
         For model trained on: \n
-          datafile: {datafile}... \n
-          training-set size: N={ml_pipeline_dt.X_train_size[0]}... \n
-          and evaluated using test-set size: N={ml_pipeline_dt.X_test_size[0]} repo-individuals... \n
-          using N={ml_pipeline_dt.X_test_size[1]} features... \n 
+          datafile: {datafile} \n
+          training-set size: N={ml_pipeline_dt.X_train_size[0]} \n
+          and evaluated using test-set size: N={ml_pipeline_dt.X_test_size[0]} repo-individuals \n
+          using N={ml_pipeline_dt.X_test_size[1]} features \n 
           at {ml_pipeline_dt.current_date_info}
         """
     )
