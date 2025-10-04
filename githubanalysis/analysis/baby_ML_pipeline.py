@@ -435,25 +435,34 @@ def main(
 
     # decision trees:
 
-    ml_pipeline_RF = ML_Pipeline_Random_Forest(
+    ml_pipeline_rf = ML_Pipeline_Random_Forest(
         dataset_name=dataset_name,
         in_notebook=in_notebook,
         exists_ok=exists_ok,
         logger=logger,
         forest_size=100,
-        input_data=ml_pipeline_dt,
+        # input_data=ml_pipeline_dt,
     )
 
-    # run decision tree and apply to test/training datasets (splitting happens within do_decision_tree())
-    X_test, y_test = ml_pipeline_RF.do_model_fit(
+    # read in dataset
+    # AND format data to sklearn shapes/types/terminology
+    datafile = Path(
+        ml_pipeline_rf.data_location,
+        datafile,
+    )
+    ml_pipeline_rf.get_data(
+        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+    )
+
+    # run decision tree and apply to test/training datasets (splitting happens within do_model_fit())
+    X_test, y_test = ml_pipeline_rf.do_model_fit(
         train_pc=train_pc,
         test_pc=test_pc,
         stratify_state=stratify_state,
         shuffle_state=shuffle_state,
     )
-
     # predict classifications for test dataset, plot confusion matrices
-    ml_pipeline_RF.run_predictor(
+    ml_pipeline_rf.run_predictor(
         X_test,
         y_test,
     )
@@ -465,11 +474,11 @@ def main(
         f"""
         For RANDOM FOREST model trained on: \n
           datafile: {datafile} \n
-          training-set size: N={ml_pipeline_RF.X_train_size[0]} \n
-          and evaluated using test-set size: N={ml_pipeline_RF.X_test_size[0]} repo-individuals \n
-          using N={ml_pipeline_RF.X_test_size[1]} features \n 
-          with N={ml_pipeline_RF.forest_size} trees in forest  \n
-          at {ml_pipeline_RF.current_date_info}
+          training-set size: N={ml_pipeline_rf.X_train_size[0]} \n
+          and evaluated using test-set size: N={ml_pipeline_rf.X_test_size[0]} repo-individuals \n
+          using N={ml_pipeline_rf.X_test_size[1]} features \n 
+          with N={ml_pipeline_rf.forest_size} trees in forest  \n
+          at {ml_pipeline_rf.current_date_info}
         """
     )
 
@@ -479,17 +488,17 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         self,
         dataset_name,
         in_notebook: bool,
-        input_data: ML_Pipeline_Decision_Tree,
+        # input_data: ML_Pipeline_Decision_Tree,
         exists_ok: bool = False,
         logger: None | Logger = None,
         forest_size: int = 100,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
-        self.__dict__.update(  # THIS IS VERY BAD BUT WAS DONE TO PULL THE DATA OBJECTS THROUGH NICELY
-            input_data.__dict__
-        )  # pull in contents of input_data (RSE_info, X_test, Y_test, X_train, y_train, etc)
-        self.y_pred = None
-        self.y_true = None
+        # self.__dict__.update(  # THIS IS VERY BAD BUT WAS DONE TO PULL THE DATA OBJECTS THROUGH NICELY
+        #     input_data.__dict__
+        # )  # pull in contents of input_data (RSE_info, X_test, Y_test, X_train, y_train, etc)
+        # self.y_pred = None
+        # self.y_true = None
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = (int(forest_size),)
