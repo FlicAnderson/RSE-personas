@@ -467,10 +467,7 @@ def main(
 
     # read in dataset
     # AND format data to sklearn shapes/types/terminology
-    datafile = Path(
-        ml_pipeline_rf.data_location,
-        datafile,
-    )
+
     ml_pipeline_rf.get_data(
         data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
     )
