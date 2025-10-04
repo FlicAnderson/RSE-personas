@@ -69,6 +69,7 @@ class ML_Pipeline_Decision_Tree(
         exists_ok: bool = False,
         logger: None | Logger = None,
     ) -> None:
+        self.model_type = "decision_tree"
         self.le = LabelEncoder()
         # create a pipeline object
         self.pipe = Pipeline(
@@ -327,6 +328,7 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         candidate_feats: int | None = None,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.model_type = "random_forest"
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = int(forest_size)
@@ -369,11 +371,38 @@ def run_scoring_printouts(
     pipeline_class_obj: ML_Pipeline_Decision_Tree | ML_Pipeline_Random_Forest,
     X_test,
     y_test,
-    model_type: str = "decision_tree",
+    datafile: Path,
 ):
-    assert model_type == "decision_tree" or model_type == "random_forest", (
-        "model_type not recognised: must be one of 'decision_tree' or 'random_forest'."
-    )
+    assert (
+        pipeline_class_obj.model_type == "decision_tree"
+        or pipeline_class_obj.model_type == "random_forest"
+    ), "model_type not recognised: must be one of 'decision_tree' or 'random_forest'."
+
+    # Model Accuracy, how often is the classifier correct?
+    if pipeline_class_obj.model_type != "random_forest":
+        print(
+            f"""
+            For {pipeline_class_obj.model_type} model trained on: \n
+            datafile: {datafile} \n
+            training-set size: N={pipeline_class_obj.X_train_size[0]} \n
+            and evaluated using test-set size: N={pipeline_class_obj.X_test_size[0]} repo-individuals \n
+            using N={pipeline_class_obj.X_test_size[1]} features \n 
+            at {pipeline_class_obj.current_date_info}
+            """
+        )
+    else:
+        print(
+            f"""
+            For {pipeline_class_obj.model_type} model trained on: \n
+            datafile: {datafile} \n
+            training-set size: N={pipeline_class_obj.X_train_size[0]} \n
+            and evaluated using test-set size: N={pipeline_class_obj.X_test_size[0]} repo-individuals \n
+            using N={pipeline_class_obj.X_test_size[1]} features \n 
+            with N={pipeline_class_obj.forest_size} trees in forest  \n
+            at {pipeline_class_obj.current_date_info}
+        """
+        )
+
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     print(
         "Accuracy: {:.3f} (percent of correctly classified samples)".format(
@@ -458,7 +487,7 @@ def run_scoring_printouts(
             )
         )
     )
-    if model_type == "random_forest":
+    if pipeline_class_obj.model_type == "random_forest":
         print(
             "Out of Bag Error: {:.3f}".format(
                 # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
@@ -545,7 +574,7 @@ def main(
         pipeline_class_obj=ml_pipeline_dt,
         X_test=X_test,
         y_test=y_test,
-        model_type="decision_tree",
+        datafile=datafile,
     )
 
     # random forests:
@@ -556,7 +585,9 @@ def main(
         exists_ok=exists_ok,
         logger=logger,
         forest_size=100,
-        # input_data=ml_pipeline_dt,
+        candidate_feats=ml_pipeline_dt.X_test_size[
+            1
+        ],  # number of features for RF and DT is same
     )
 
     # read in dataset
@@ -581,24 +612,11 @@ def main(
 
     # RandomForestClassifier.decision_path(X_test)
 
-    # Model Accuracy, how often is the classifier correct?
-    print(
-        f"""
-        For RANDOM FOREST model trained on: \n
-          datafile: {datafile} \n
-          training-set size: N={ml_pipeline_rf.X_train_size[0]} \n
-          and evaluated using test-set size: N={ml_pipeline_rf.X_test_size[0]} repo-individuals \n
-          using N={ml_pipeline_rf.X_test_size[1]} features \n 
-          with N={ml_pipeline_rf.forest_size} trees in forest  \n
-          at {ml_pipeline_rf.current_date_info}
-        """
-    )
-
     run_scoring_printouts(
         pipeline_class_obj=ml_pipeline_rf,
         X_test=X_test,
         y_test=y_test,
-        model_type="random_forest",
+        datafile=datafile,
     )
 
 
