@@ -35,6 +35,27 @@ CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING
 ]  # read from file in future perhaps?
 
 
+def update_candidate_features(
+    n_features,
+):
+    """
+    calculate F: number of predictors used to select the best split
+    F = log2(M+1) # M is number total predictors; # F
+    Leo Breiman. 2001. Random Forests. Machine Learning 45, 1 (Oct. 2001), 5–32.
+    doi:10.1023/A:1010933404324
+    """
+    assert isinstance(n_features, int), "require integer n_features to calculate F"
+    candidate_feats_Nplusone = round(
+        math.log2(
+            n_features + 1  # F = log2(M+1) # M is number total predictors;
+        )
+    )
+    assert isinstance(candidate_feats_Nplusone, int), (
+        "somehow candidate_feats_Nplusone is not an integer; fix this as floats would lead to a fraction being used in Random Forest candidate feature splitting..."
+    )
+    return candidate_feats_Nplusone
+
+
 class ML_Pipeline_Decision_Tree(
     DatasetSetup
 ):  # wrapper around my ML pipeline, also holds additional helpful info.
@@ -492,6 +513,7 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         exists_ok: bool = False,
         logger: None | Logger = None,
         forest_size: int = 100,
+        candidate_feats: int | None = None,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         # self.__dict__.update(  # THIS IS VERY BAD BUT WAS DONE TO PULL THE DATA OBJECTS THROUGH NICELY
@@ -501,25 +523,11 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         # self.y_true = None
         self.le = LabelEncoder()
         # create a pipeline object
-        self.forest_size = (int(forest_size),)
-        if self.RSE_info:
-            # calculate F: number of predictors used to select the best split
-            # F = log2(M+1) # M is number total predictors; # F
-            # Leo Breiman. 2001. Random Forests. Machine Learning 45, 1 (Oct. 2001), 5–32.
-            # doi:10.1023/A:1010933404324
-            self.candidate_feats_Nplusone = round(
-                math.log2(
-                    len(self.RSE_info["feature_names"])
-                    + 1  # F = log2(M+1) # M is number total predictors;
-                )
-            )
-            assert isinstance(self.candidate_feats_Nplusone, int), (
-                "somehow candidate_feats_Nplusone is not an integer; fix this as floats would lead to a fraction being used in Random Forest candidate feature splitting..."
-            )
+        self.forest_size = int(forest_size)
+        if candidate_feats is not None:
+            self.max_feats = update_candidate_features(n_features=candidate_feats)
         else:
-            self.candidate_feats_Nplusone = (
-                "sqrt"  # default in RandomForestClassifier(max_features=) param
-            )
+            self.max_feats = "sqrt"
         self.pipe = Pipeline(
             steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
                 (
@@ -531,7 +539,7 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
                         # max_leaf_nodes=None, #set max leaf nodes based on 'best' relative reduction in impurity; None: unlimited leaf nodes
                         min_samples_split=2,  # min number samples for splitting if int; if float it's a fraction
                         min_samples_leaf=1,  # nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
-                        max_features=self.candidate_feats_Nplusone,  #'int', 'float', 'sqrt':sqrt(n_features), 'log2':log2(n_features), 'None':(max_features=n_features)
+                        max_features=self.max_feats,  #'int', 'float', 'sqrt':sqrt(n_features), 'log2':log2(n_features), 'None':(max_features=n_features)
                         bootstrap=True,
                         max_samples=None,  # controls sub-sampling for bootstrapping
                         oob_score=True,  # Whether to use out-of-bag samples to estimate the generalization score. By default, accuracy_score is used.# can use custom metric.
