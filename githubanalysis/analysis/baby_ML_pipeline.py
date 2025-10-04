@@ -544,6 +544,7 @@ def main(
         pipeline_class_obj=ml_pipeline_dt,
         X_test=X_test,
         y_test=y_test,
+        model_type="decision_tree",
     )
 
     # random forests:
@@ -596,6 +597,7 @@ def main(
         pipeline_class_obj=ml_pipeline_rf,
         X_test=X_test,
         y_test=y_test,
+        model_type="random_forest",
     )
 
 
