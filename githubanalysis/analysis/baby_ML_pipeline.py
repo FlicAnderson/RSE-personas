@@ -383,7 +383,7 @@ def run_scoring_printouts(
         )
     )
     print(
-        "Non-Normalised Accuracy: {:.3f} (number of correctly classified samples)".format(
+        "Non-Normalised Accuracy: {:.0f} (number of correctly classified samples)".format(
             metrics.accuracy_score(
                 pipeline_class_obj.y_true, pipeline_class_obj.y_pred, normalize=False
             ),
