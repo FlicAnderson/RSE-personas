@@ -1,6 +1,7 @@
 from logging import Logger
 import pandas as pd
 from pathlib import Path
+import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 import graphviz
@@ -13,10 +14,25 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
 from sklearn.metrics import ConfusionMatrixDisplay
 
 from githubanalysis.setup_classes import DatasetSetup
+
+RANDOM_STATE = 42
+CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
+    "pc_commit_created",
+    "pc_issue_created",
+    "pc_issue_closed",
+    "pc_issues_assigned_of_assigned",
+    "pc_pull_request_created",
+    "pc_pull_request_closed",
+    "MRC",
+    "pc_sum_n_interactions",
+    "pc_interaction_days",
+    "pc_created-closed_issues",
+]  # read from file in future perhaps?
 
 
 class ML_pipeline_decision_tree(
@@ -42,7 +58,7 @@ class ML_pipeline_decision_tree(
                         criterion="gini",  # options: 'gini', 'entropy', 'log_loss' # measures split quality; gini for node purity, log_loss/entropy for Shannon info gain
                         splitter="best",  # 'best' for best split, or 'random' for best random split
                         max_depth=None,  # integer or None
-                        random_state=42,  # controls the randomness of the estimator during splitting
+                        random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
                         # min_samples_split=2,
                         # min_samples_leaf=1,
                         max_features=None,  #'int', 'float', 'sqrt', 'log2', 'None'
@@ -98,27 +114,14 @@ class ML_pipeline_decision_tree(
                 n=n_per_persona, weights="MRC"
             )
 
-        clustering_variables = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
-            "pc_commit_created",
-            "pc_issue_created",
-            "pc_issue_closed",
-            "pc_issues_assigned_of_assigned",
-            "pc_pull_request_created",
-            "pc_pull_request_closed",
-            "MRC",
-            "pc_sum_n_interactions",
-            "pc_interaction_days",
-            "pc_created-closed_issues",
-        ]  # read from file in future perhaps?
-
         self.RSE_info = {
             "data": classified_df[
-                clustering_variables
+                CLUSTERING_VARIABLES
             ].to_numpy(),  # data w/o labels, list per row
             "target": self.le.fit_transform(
                 classified_df["RSE_persona"]
             ),  # numerical version of class assignment
-            "feature_names": clustering_variables,
+            "feature_names": CLUSTERING_VARIABLES,
             "target_names": classified_df["RSE_persona"].unique(),
         }
 
@@ -142,7 +145,7 @@ class ML_pipeline_decision_tree(
                 y,
                 test_size=test_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 25%
                 train_size=train_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
-                random_state=42,
+                random_state=RANDOM_STATE,
                 shuffle=shuffle_state,  # True by (sklearn) default
                 stratify=self.RSE_info[
                     "target"
@@ -154,11 +157,11 @@ class ML_pipeline_decision_tree(
                 y,
                 test_size=test_pc,  # by default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 25%
                 train_size=train_pc,  # by default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
-                random_state=42,
+                random_state=RANDOM_STATE,
                 shuffle=shuffle_state,
             )
 
-    def do_decision_tree(self, train_pc, test_pc, shuffle_state, stratify_state):
+    def do_model_fit(self, train_pc, test_pc, shuffle_state, stratify_state):
         X_train, X_test, y_train, y_test = self.test_train_data(
             train_pc=train_pc,
             test_pc=test_pc,
@@ -323,8 +326,8 @@ def main(
         data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
     )
 
-    # run decision tree and apply to test/training datasets (splitting happens within do_decision_tree())
-    X_test, y_test = ml_pipeline_dt.do_decision_tree(
+    # run decision tree and apply to test/training datasets (splitting happens within do_model_fit())
+    X_test, y_test = ml_pipeline_dt.do_model_fit(
         train_pc=train_pc,
         test_pc=test_pc,
         stratify_state=stratify_state,
@@ -343,7 +346,7 @@ def main(
     # Model Accuracy, how often is the classifier correct?
     print(
         f"""
-        For model trained on: \n
+        For DECISION TREE model trained on: \n
           datafile: {datafile} \n
           training-set size: N={ml_pipeline_dt.X_train_size[0]} \n
           and evaluated using test-set size: N={ml_pipeline_dt.X_test_size[0]} repo-individuals \n
@@ -429,6 +432,107 @@ def main(
             )
         )
     )
+
+    # decision trees:
+
+    ml_pipeline_RF = ML_pipeline_random_forest(
+        dataset_name=dataset_name,
+        in_notebook=in_notebook,
+        exists_ok=exists_ok,
+        logger=logger,
+        forest_size=100,
+    )
+
+    # run decision tree and apply to test/training datasets (splitting happens within do_decision_tree())
+    X_test, y_test = ml_pipeline_RF.do_model_fit(
+        train_pc=train_pc,
+        test_pc=test_pc,
+        stratify_state=stratify_state,
+        shuffle_state=shuffle_state,
+    )
+
+    # predict classifications for test dataset, plot confusion matrices
+    ml_pipeline_RF.run_predictor(
+        X_test,
+        y_test,
+    )
+
+    # RandomForestClassifier.decision_path(X_test)
+
+    # Model Accuracy, how often is the classifier correct?
+    print(
+        f"""
+        For RANDOM FOREST model trained on: \n
+          datafile: {datafile} \n
+          training-set size: N={ml_pipeline_RF.X_train_size[0]} \n
+          and evaluated using test-set size: N={ml_pipeline_RF.X_test_size[0]} repo-individuals \n
+          using N={ml_pipeline_RF.X_test_size[1]} features \n 
+          with N={ml_pipeline_RF.forest_size} trees in forest  \n
+          at {ml_pipeline_RF.current_date_info}
+        """
+    )
+
+
+class ML_pipeline_random_forest(ML_pipeline_decision_tree):
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+        forest_size: int = 100,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.le = LabelEncoder()
+        # create a pipeline object
+        self.forest_size = (int(forest_size),)
+        if self.RSE_info:
+            # calculate F: number of predictors used to select the best split
+            # F = log2(M+1) # M is number total predictors; # F
+            # Leo Breiman. 2001. Random Forests. Machine Learning 45, 1 (Oct. 2001), 5–32.
+            # doi:10.1023/A:1010933404324
+            self.candidate_feats_Nplusone = round(
+                math.log2(
+                    len(self.RSE_info["feature_names"])
+                    + 1  # F = log2(M+1) # M is number total predictors;
+                )
+            )
+            assert isinstance(self.candidate_feats_Nplusone, int), (
+                "somehow candidate_feats_Nplusone is not an integer; fix this as floats would lead to a fraction being used in Random Forest candidate feature splitting..."
+            )
+        else:
+            self.candidate_feats_Nplusone = (
+                "sqrt"  # default in RandomForestClassifier(max_features=) param
+            )
+        self.pipe = Pipeline(
+            steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
+                (
+                    "clf",
+                    RandomForestClassifier(
+                        n_estimators=forest_size,  # number of trees in forest
+                        criterion="gini",  # options: 'gini', 'entropy', 'log_loss' # measures split quality; gini for node purity, log_loss/entropy for Shannon info gain
+                        max_depth=None,  # integer or None # maximum dept of tree; if None, nodes expanded until all nodes pure or all leaves have less than min_samples_split samples.
+                        # max_leaf_nodes=None, #set max leaf nodes based on 'best' relative reduction in impurity; None: unlimited leaf nodes
+                        min_samples_split=2,  # min number samples for splitting if int; if float it's a fraction
+                        min_samples_leaf=1,  # nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
+                        max_features=self.candidate_feats_Nplusone,  #'int', 'float', 'sqrt':sqrt(n_features), 'log2':log2(n_features), 'None':(max_features=n_features)
+                        bootstrap=True,
+                        max_samples=None,  # controls sub-sampling for bootstrapping
+                        oob_score=True,  # Whether to use out-of-bag samples to estimate the generalization score. By default, accuracy_score is used.# can use custom metric.
+                        n_jobs=None,  # how many to run in paralell... None~=use 1.
+                        # verbose=0, # verbosity
+                        warm_start=False,
+                        class_weight=None,  # if not given, all classes have weight 1.
+                        # bunch more args... #
+                        ccp_alpha=0.0,  # complexity parameter used for Minimal Cost-Complexity Pruning
+                        random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
+                    ),
+                ),
+            ],
+            memory=None,
+            # transform_input=None, # I maybe don't have the updated package version for this (1.6?)
+            verbose=True,
+        )
 
 
 if __name__ == "__main__":
