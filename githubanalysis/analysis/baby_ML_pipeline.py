@@ -500,6 +500,84 @@ def main(
         """
     )
 
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
+    print(
+        "Accuracy: {:.2f} (percent of correctly classified samples)".format(
+            metrics.accuracy_score(ml_pipeline_rf.y_true, ml_pipeline_rf.y_pred),
+        )
+    )
+    print(
+        "Non-Normalised Accuracy: {:.2f} (number of correctly classified samples)".format(
+            metrics.accuracy_score(
+                ml_pipeline_rf.y_true, ml_pipeline_rf.y_pred, normalize=False
+            ),
+        )
+    )
+    print(
+        "Balanced Accuracy: {:.2f} (the average of recall obtained on each class)".format(
+            metrics.balanced_accuracy_score(
+                ml_pipeline_rf.y_true,
+                ml_pipeline_rf.y_pred,
+                adjusted=False,
+            )
+        )
+    )
+    print(
+        "F1 Score: {:.2f} (harmonic mean of the precision and recall, both equally weighted)".format(
+            metrics.f1_score(
+                ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_true),  # y_true
+                ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_pred),  # y_pred
+                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                # labels=ml_pipeline_rf.RSE_info["target"],
+                # target_names=ml_pipeline_rf.RSE_info["target"],
+            )
+        )
+    )
+    print(
+        "Precision: {:.2f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+            metrics.precision_score(
+                ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_true),  # y_true
+                ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_pred),  # y_pred
+                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                # labels=ml_pipeline_rf.RSE_info["target"],
+                # target_names=ml_pipeline_rf.RSE_info["target"],
+            )
+        )
+    )
+    print(
+        "Recall: {:.2f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+            metrics.recall_score(
+                ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_true),  # y_true
+                ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_pred),  # y_pred
+                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                # labels=ml_pipeline_rf.RSE_info["target"],
+                # target_names=ml_pipeline_rf.RSE_info["target"],
+            ),
+        )
+    )
+    print(
+        "Classification Report: \n",
+        metrics.classification_report(
+            ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_true),  # y_true
+            ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_pred),  # y_pred
+            # labels=ml_pipeline_rf.RSE_info["target"],
+            # target_names=ml_pipeline_rf.RSE_info["target"],
+        ),
+    )
+    # multiclass means you can only be in one category only e.g. media format (film or tv-show)
+    # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
+    print(
+        "Area Under the Receiver Operating Characteristic Curve (ROC AUC): {:.2f}".format(
+            roc_auc_score(
+                y_true=y_test,
+                y_score=ml_pipeline_rf.pipe.named_steps["clf"].predict_proba(X_test),
+                average="macro",
+                multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+            )
+        )
+    )
+
 
 class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
     def __init__(
