@@ -367,6 +367,7 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
 
 def run_scoring_printouts(
     pipeline_class_obj: ML_Pipeline_Decision_Tree | ML_Pipeline_Random_Forest,
+    X_test,
     y_test,
 ):
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
@@ -529,7 +530,11 @@ def main(
         """
     )
 
-    run_scoring_printouts(pipeline_class_obj=ml_pipeline_dt, y_test=y_test)
+    run_scoring_printouts(
+        pipeline_class_obj=ml_pipeline_dt,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
     # random forests:
 
