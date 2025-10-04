@@ -315,6 +315,159 @@ class ML_Pipeline_Decision_Tree(
             plt.show()
 
 
+class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        # input_data: ML_Pipeline_Decision_Tree,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+        forest_size: int = 100,
+        candidate_feats: int | None = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.le = LabelEncoder()
+        # create a pipeline object
+        self.forest_size = int(forest_size)
+        if candidate_feats is not None:
+            self.max_feats = update_candidate_features(n_features=candidate_feats)
+        else:
+            self.max_feats = "sqrt"
+        self.pipe = Pipeline(
+            steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
+                (
+                    "clf",
+                    RandomForestClassifier(
+                        n_estimators=forest_size,  # number of trees in forest
+                        criterion="gini",  # options: 'gini', 'entropy', 'log_loss' # measures split quality; gini for node purity, log_loss/entropy for Shannon info gain
+                        max_depth=None,  # integer or None # maximum dept of tree; if None, nodes expanded until all nodes pure or all leaves have less than min_samples_split samples.
+                        # max_leaf_nodes=None, #set max leaf nodes based on 'best' relative reduction in impurity; None: unlimited leaf nodes
+                        min_samples_split=2,  # min number samples for splitting if int; if float it's a fraction
+                        min_samples_leaf=1,  # nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
+                        max_features=self.max_feats,  #'int', 'float', 'sqrt':sqrt(n_features), 'log2':log2(n_features), 'None':(max_features=n_features)
+                        bootstrap=True,
+                        max_samples=None,  # controls sub-sampling for bootstrapping
+                        oob_score=True,  # Whether to use out-of-bag samples to estimate the generalization score. By default, accuracy_score is used.# can use custom metric.
+                        n_jobs=None,  # how many to run in paralell... None~=use 1.
+                        # verbose=0, # verbosity
+                        warm_start=False,
+                        class_weight=None,  # if not given, all classes have weight 1.
+                        # bunch more args... #
+                        ccp_alpha=0.0,  # complexity parameter used for Minimal Cost-Complexity Pruning
+                        random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
+                    ),
+                ),
+            ],
+            memory=None,
+            # transform_input=None, # I maybe don't have the updated package version for this (1.6?)
+            verbose=True,
+        )
+
+
+def run_scoring_printouts(
+    pipeline_class_obj: ML_Pipeline_Decision_Tree | ML_Pipeline_Random_Forest,
+    y_test,
+):
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
+    print(
+        "Accuracy: {:.2f} (percent of correctly classified samples)".format(
+            metrics.accuracy_score(
+                pipeline_class_obj.y_true, pipeline_class_obj.y_pred
+            ),
+        )
+    )
+    print(
+        "Non-Normalised Accuracy: {:.2f} (number of correctly classified samples)".format(
+            metrics.accuracy_score(
+                pipeline_class_obj.y_true, pipeline_class_obj.y_pred, normalize=False
+            ),
+        )
+    )
+    print(
+        "Balanced Accuracy: {:.2f} (the average of recall obtained on each class)".format(
+            metrics.balanced_accuracy_score(
+                pipeline_class_obj.y_true,
+                pipeline_class_obj.y_pred,
+                adjusted=False,
+            )
+        )
+    )
+    print(
+        "F1 Score: {:.2f} (harmonic mean of the precision and recall, both equally weighted)".format(
+            metrics.f1_score(
+                pipeline_class_obj.le.inverse_transform(
+                    pipeline_class_obj.y_true
+                ),  # y_true
+                pipeline_class_obj.le.inverse_transform(
+                    pipeline_class_obj.y_pred
+                ),  # y_pred
+                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                # labels=ml_pipeline_dt.RSE_info["target"],
+                # target_names=ml_pipeline_dt.RSE_info["target"],
+            )
+        )
+    )
+    print(
+        "Precision: {:.2f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+            metrics.precision_score(
+                pipeline_class_obj.le.inverse_transform(
+                    pipeline_class_obj.y_true
+                ),  # y_true
+                pipeline_class_obj.le.inverse_transform(
+                    pipeline_class_obj.y_pred
+                ),  # y_pred
+                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                # labels=ml_pipeline_dt.RSE_info["target"],
+                # target_names=ml_pipeline_dt.RSE_info["target"],
+            )
+        )
+    )
+    print(
+        "Recall: {:.2f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+            metrics.recall_score(
+                pipeline_class_obj.le.inverse_transform(
+                    pipeline_class_obj.y_true
+                ),  # y_true
+                pipeline_class_obj.le.inverse_transform(
+                    pipeline_class_obj.y_pred
+                ),  # y_pred
+                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                # labels=ml_pipeline_dt.RSE_info["target"],
+                # target_names=ml_pipeline_dt.RSE_info["target"],
+            ),
+        )
+    )
+    # multiclass means you can only be in one category only e.g. media format (film or tv-show)
+    # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
+    print(
+        "Area Under the Receiver Operating Characteristic Curve (ROC AUC): {:.2f}".format(
+            roc_auc_score(
+                y_true=y_test,
+                y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(
+                    X_test
+                ),
+                average="macro",
+                multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+            )
+        )
+    )
+    print(
+        "Classification Report: \n",
+        metrics.classification_report(
+            pipeline_class_obj.le.inverse_transform(
+                pipeline_class_obj.y_true
+            ),  # y_true
+            pipeline_class_obj.le.inverse_transform(
+                pipeline_class_obj.y_pred
+            ),  # y_pred
+            # labels=ml_pipeline_dt.RSE_info["target"],
+            # target_names=ml_pipeline_dt.RSE_info["target"],
+        ),
+    )
+
+
 def main(
     dataset_name="ML",
     in_notebook=False,
@@ -376,85 +529,9 @@ def main(
         """
     )
 
-    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
-    print(
-        "Accuracy: {:.2f} (percent of correctly classified samples)".format(
-            metrics.accuracy_score(ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred),
-        )
-    )
-    print(
-        "Non-Normalised Accuracy: {:.2f} (number of correctly classified samples)".format(
-            metrics.accuracy_score(
-                ml_pipeline_dt.y_true, ml_pipeline_dt.y_pred, normalize=False
-            ),
-        )
-    )
-    print(
-        "Balanced Accuracy: {:.2f} (the average of recall obtained on each class)".format(
-            metrics.balanced_accuracy_score(
-                ml_pipeline_dt.y_true,
-                ml_pipeline_dt.y_pred,
-                adjusted=False,
-            )
-        )
-    )
-    print(
-        "F1 Score: {:.2f} (harmonic mean of the precision and recall, both equally weighted)".format(
-            metrics.f1_score(
-                ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
-                ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
-                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
-                # labels=ml_pipeline_dt.RSE_info["target"],
-                # target_names=ml_pipeline_dt.RSE_info["target"],
-            )
-        )
-    )
-    print(
-        "Precision: {:.2f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
-            metrics.precision_score(
-                ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
-                ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
-                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
-                # labels=ml_pipeline_dt.RSE_info["target"],
-                # target_names=ml_pipeline_dt.RSE_info["target"],
-            )
-        )
-    )
-    print(
-        "Recall: {:.2f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
-            metrics.recall_score(
-                ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
-                ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
-                average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
-                # labels=ml_pipeline_dt.RSE_info["target"],
-                # target_names=ml_pipeline_dt.RSE_info["target"],
-            ),
-        )
-    )
-    print(
-        "Classification Report: \n",
-        metrics.classification_report(
-            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_true),  # y_true
-            ml_pipeline_dt.le.inverse_transform(ml_pipeline_dt.y_pred),  # y_pred
-            # labels=ml_pipeline_dt.RSE_info["target"],
-            # target_names=ml_pipeline_dt.RSE_info["target"],
-        ),
-    )
-    # multiclass means you can only be in one category only e.g. media format (film or tv-show)
-    # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
-    print(
-        "Area Under the Receiver Operating Characteristic Curve (ROC AUC): {:.2f}".format(
-            roc_auc_score(
-                y_true=y_test,
-                y_score=ml_pipeline_dt.pipe.named_steps["clf"].predict_proba(X_test),
-                average="macro",
-                multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
-                # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
-            )
-        )
-    )
+    run_scoring_printouts(pipeline_class_obj=ml_pipeline_dt, y_test=y_test)
 
-    # decision trees:
+    # random forests:
 
     ml_pipeline_rf = ML_Pipeline_Random_Forest(
         dataset_name=dataset_name,
@@ -472,7 +549,7 @@ def main(
         data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
     )
 
-    # run decision tree and apply to test/training datasets (splitting happens within do_model_fit())
+    # run random forest and apply to test/training datasets (splitting happens within do_model_fit())
     X_test, y_test = ml_pipeline_rf.do_model_fit(
         train_pc=train_pc,
         test_pc=test_pc,
@@ -555,15 +632,6 @@ def main(
             ),
         )
     )
-    print(
-        "Classification Report: \n",
-        metrics.classification_report(
-            ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_true),  # y_true
-            ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_pred),  # y_pred
-            # labels=ml_pipeline_rf.RSE_info["target"],
-            # target_names=ml_pipeline_rf.RSE_info["target"],
-        ),
-    )
     # multiclass means you can only be in one category only e.g. media format (film or tv-show)
     # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
     print(
@@ -577,61 +645,15 @@ def main(
             )
         )
     )
-
-
-class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
-    def __init__(
-        self,
-        dataset_name,
-        in_notebook: bool,
-        # input_data: ML_Pipeline_Decision_Tree,
-        exists_ok: bool = False,
-        logger: None | Logger = None,
-        forest_size: int = 100,
-        candidate_feats: int | None = None,
-    ) -> None:
-        super().__init__(dataset_name, in_notebook, exists_ok, logger)
-        # self.__dict__.update(  # THIS IS VERY BAD BUT WAS DONE TO PULL THE DATA OBJECTS THROUGH NICELY
-        #     input_data.__dict__
-        # )  # pull in contents of input_data (RSE_info, X_test, Y_test, X_train, y_train, etc)
-        # self.y_pred = None
-        # self.y_true = None
-        self.le = LabelEncoder()
-        # create a pipeline object
-        self.forest_size = int(forest_size)
-        if candidate_feats is not None:
-            self.max_feats = update_candidate_features(n_features=candidate_feats)
-        else:
-            self.max_feats = "sqrt"
-        self.pipe = Pipeline(
-            steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
-                (
-                    "clf",
-                    RandomForestClassifier(
-                        n_estimators=forest_size,  # number of trees in forest
-                        criterion="gini",  # options: 'gini', 'entropy', 'log_loss' # measures split quality; gini for node purity, log_loss/entropy for Shannon info gain
-                        max_depth=None,  # integer or None # maximum dept of tree; if None, nodes expanded until all nodes pure or all leaves have less than min_samples_split samples.
-                        # max_leaf_nodes=None, #set max leaf nodes based on 'best' relative reduction in impurity; None: unlimited leaf nodes
-                        min_samples_split=2,  # min number samples for splitting if int; if float it's a fraction
-                        min_samples_leaf=1,  # nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
-                        max_features=self.max_feats,  #'int', 'float', 'sqrt':sqrt(n_features), 'log2':log2(n_features), 'None':(max_features=n_features)
-                        bootstrap=True,
-                        max_samples=None,  # controls sub-sampling for bootstrapping
-                        oob_score=True,  # Whether to use out-of-bag samples to estimate the generalization score. By default, accuracy_score is used.# can use custom metric.
-                        n_jobs=None,  # how many to run in paralell... None~=use 1.
-                        # verbose=0, # verbosity
-                        warm_start=False,
-                        class_weight=None,  # if not given, all classes have weight 1.
-                        # bunch more args... #
-                        ccp_alpha=0.0,  # complexity parameter used for Minimal Cost-Complexity Pruning
-                        random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
-                    ),
-                ),
-            ],
-            memory=None,
-            # transform_input=None, # I maybe don't have the updated package version for this (1.6?)
-            verbose=True,
-        )
+    print(
+        "Classification Report: \n",
+        metrics.classification_report(
+            ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_true),  # y_true
+            ml_pipeline_rf.le.inverse_transform(ml_pipeline_rf.y_pred),  # y_pred
+            # labels=ml_pipeline_rf.RSE_info["target"],
+            # target_names=ml_pipeline_rf.RSE_info["target"],
+        ),
+    )
 
 
 if __name__ == "__main__":
