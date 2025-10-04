@@ -485,10 +485,11 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         forest_size: int = 100,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
-        self.__dict__.update(
+        self.__dict__.update(  # THIS IS VERY BAD BUT WAS DONE TO PULL THE DATA OBJECTS THROUGH NICELY
             input_data.__dict__
         )  # pull in contents of input_data (RSE_info, X_test, Y_test, X_train, y_train, etc)
-        # self.RSE_info = input_data.RSE_info
+        self.y_pred = None
+        self.y_true = None
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = (int(forest_size),)
