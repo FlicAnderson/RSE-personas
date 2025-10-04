@@ -35,7 +35,7 @@ CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING
 ]  # read from file in future perhaps?
 
 
-class ML_pipeline_decision_tree(
+class ML_Pipeline_Decision_Tree(
     DatasetSetup
 ):  # wrapper around my ML pipeline, also holds additional helpful info.
     def _log_name(self) -> str:
@@ -309,7 +309,7 @@ def main(
     depth: int = 5,
 ):
     # initialise class
-    ml_pipeline_dt = ML_pipeline_decision_tree(
+    ml_pipeline_dt = ML_Pipeline_Decision_Tree(
         dataset_name=dataset_name,
         in_notebook=in_notebook,
         exists_ok=exists_ok,
@@ -435,12 +435,13 @@ def main(
 
     # decision trees:
 
-    ml_pipeline_RF = ML_pipeline_random_forest(
+    ml_pipeline_RF = ML_Pipeline_Random_Forest(
         dataset_name=dataset_name,
         in_notebook=in_notebook,
         exists_ok=exists_ok,
         logger=logger,
         forest_size=100,
+        input_data=ml_pipeline_dt,
     )
 
     # run decision tree and apply to test/training datasets (splitting happens within do_decision_tree())
@@ -473,16 +474,21 @@ def main(
     )
 
 
-class ML_pipeline_random_forest(ML_pipeline_decision_tree):
+class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
     def __init__(
         self,
         dataset_name,
         in_notebook: bool,
+        input_data: ML_Pipeline_Decision_Tree,
         exists_ok: bool = False,
         logger: None | Logger = None,
         forest_size: int = 100,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.__dict__.update(
+            input_data.__dict__
+        )  # pull in contents of input_data (RSE_info, X_test, Y_test, X_train, y_train, etc)
+        # self.RSE_info = input_data.RSE_info
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = (int(forest_size),)
