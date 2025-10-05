@@ -610,6 +610,21 @@ def run_scoring_printouts(
                 1 - pipeline_class_obj.pipe.named_steps["clf"].oob_score_
             )
         )
+
+    if (
+        pipeline_class_obj.model_type == "gradient_boosting"
+        or "feature_importances_" in dir(pipeline_class_obj)
+    ):
+        print(
+            pd.DataFrame(
+                {
+                    "feat_name": pipeline_class_obj.RSE_info["feature_names"],
+                    "feat_importance": pipeline_class_obj.pipe.named_steps[
+                        "clf"
+                    ].feature_importances_,
+                }
+            ).sort_values(by="feat_importance", ascending=False)
+        )
     print(
         "Classification Report: \n",
         metrics.classification_report(
