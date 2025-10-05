@@ -11,6 +11,8 @@ from sklearn.pipeline import (
 )  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+
+# from sklearn.model_selection import cross_validate
 from sklearn.model_selection import LearningCurveDisplay, learning_curve
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import plot_tree, export_graphviz
@@ -495,22 +497,22 @@ class ML_Utils(DatasetSetup):
         model,
         X,
         y,
-        train_size,
+        # train_size,
     ):
-        # train_sizes, train_scores, test_scores = learning_curve(model, X, y)
-        # display = LearningCurveDisplay(
-        #     train_sizes=train_sizes,
-        #     train_scores=train_scores,
-        #     test_scores=test_scores,
-        #     score_name=None,
-        # )
-        # display.plot()
+        train_sizes, train_scores, test_scores = learning_curve(model, X, y)
+        display = LearningCurveDisplay(
+            train_sizes=train_sizes,
+            train_scores=train_scores,
+            test_scores=test_scores,
+            score_name=None,
+        )
+        display.plot()
         LearningCurveDisplay.from_estimator(
             estimator=model,
             X=X,
             y=y,
             groups=None,
-            train_sizes=train_size,
+            train_sizes=train_sizes,
             cv=None,
             scoring=None,
             exploit_incremental_learning=False,
@@ -520,7 +522,7 @@ class ML_Utils(DatasetSetup):
             random_state=RANDOM_STATE,
             error_score="raise",
             fit_params=None,  # dict of params to pass to the fit method of the estimator
-            ax=None,  # axes to plot on; if None, new figure and axes created
+            ax=display.ax_,  # axes to plot on; if None, new figure and axes created
             negate_score=False,  # negate the scores or not from learning_curve?
             score_name=None,
             score_type="both",  # 'test', 'train', or 'both
@@ -532,7 +534,7 @@ class ML_Utils(DatasetSetup):
         plt.show()
         saveout_name = Path(
             self.image_write_location,
-            f"{model}_{self.current_date_info}.pdf",
+            f"{model}_LearningCurve_{self.current_date_info}.pdf",
         )
         plt.savefig(
             saveout_name,
@@ -705,6 +707,10 @@ def run_scoring_printouts(
             # target_names=ml_pipeline_dt.RSE_info["target"],
         ),
     )
+
+    # def run_cross_validation(pipeline_class_obj, X_train, y_train):
+    #     cross_val_scores = cross_validate(pipeline_class_obj, X_train, y_train)
+    #     print(f"{pipeline_class_obj.model_type} Cross Validation values for: model; X\n {cross_val_scores = }")
 
 
 def main(
@@ -895,7 +901,7 @@ def main(
             model=model.pipe.named_steps["clf"],
             X=model.RSE_info["data"],
             y=model.RSE_info["target"],
-            train_size=train_pc,
+            # train_size=train_pc,
         )
 
 
