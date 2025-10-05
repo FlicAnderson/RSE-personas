@@ -276,11 +276,11 @@ class ML_Pipeline_Decision_Tree(
         # Plot non-normalized confusion matrix
         titles_options = [
             (
-                f"confusion matrix, no normalization (N={self.X_test_size[0]})",
+                f"{self.model_type} CM, no normalization (N={self.X_test_size[0]})",
                 None,
             ),
             (
-                f"normalized confusion matrix (N={self.X_test_size[0]})",
+                f"{self.model_type} normalized CM (N={self.X_test_size[0]})",
                 "true",
             ),  # normalise on True value pcs
         ]
