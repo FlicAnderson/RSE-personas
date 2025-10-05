@@ -452,7 +452,7 @@ class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
                     "clf",
                     GradientBoostingClassifier(
                         loss="log_loss",  # default
-                        learning_rate=0.01,  # can also use 0.01; # shrinkage param (lambda)
+                        learning_rate=0.01,  # can also use 0.1; # shrinkage param (lambda)
                         n_estimators=forest_size,  # number of boosting stages to perform
                         subsample=1.0,  # <1=Stochastic gradient boosting; bootstrapping if <1; <1 => >variance but <bias
                         criterion="friedman_mse",  # split quality measurement; ‘friedman_mse’ ~=best cf 'squared_error'
@@ -462,7 +462,7 @@ class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
                         max_depth=None,  # default=3 # TODO: tune for best performance. If none, expanded until leaves are pure
                         min_impurity_decrease=0.0,  # default. Node split if induces decrease of impurity >= this.
                         init=None,  # 'zero'(raw predictions set to 0) or None (default, preducts classes' priors) or estimator object
-                        max_features="sqrt",  # added in v1.4 # float in latest docs, interaction_cst can be used; max_features < n_features reduces variance and increases bias.
+                        max_features=self.max_feats,  # added in v1.4 # float in latest docs, interaction_cst can be used; max_features < n_features reduces variance and increases bias.
                         max_leaf_nodes=None,  # Grow trees with max_leaf_nodes in best-first fashion; best==relative reduction in impurity; None=unlimited
                         warm_start=False,  # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
                         validation_fraction=0.1,  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
