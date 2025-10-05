@@ -495,6 +495,7 @@ class ML_Utils(DatasetSetup):
         model,
         X,
         y,
+        train_size,
     ):
         # train_sizes, train_scores, test_scores = learning_curve(model, X, y)
         # display = LearningCurveDisplay(
@@ -509,7 +510,7 @@ class ML_Utils(DatasetSetup):
             X=X,
             y=y,
             groups=None,
-            train_sizes=X,
+            train_sizes=train_size,
             cv=None,
             scoring=None,
             exploit_incremental_learning=False,
@@ -894,6 +895,7 @@ def main(
             model=model.pipe.named_steps["clf"],
             X=model.RSE_info["data"],
             y=model.RSE_info["target"],
+            train_size=train_pc,
         )
 
 
