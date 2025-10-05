@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
 # from sklearn.model_selection import cross_validate
+from sklearn.utils import shuffle
 from sklearn.model_selection import LearningCurveDisplay, learning_curve
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import plot_tree, export_graphviz
@@ -492,54 +493,54 @@ class ML_Utils(DatasetSetup):
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
 
-    def plot_learning_curves(
-        self,
-        model,
-        X,
-        y,
-        # train_size,
-    ):
-        train_sizes, train_scores, test_scores = learning_curve(model, X, y)
-        display = LearningCurveDisplay(
-            train_sizes=train_sizes,
-            train_scores=train_scores,
-            test_scores=test_scores,
-            score_name=None,
-        )
-        display.plot()
-        LearningCurveDisplay.from_estimator(
-            estimator=model,
-            X=X,
-            y=y,
-            groups=None,
-            train_sizes=train_sizes,
-            cv=None,
-            scoring=None,
-            exploit_incremental_learning=False,
-            n_jobs=1,
-            pre_dispatch="all",
-            verbose=0,
-            random_state=RANDOM_STATE,
-            error_score="raise",
-            fit_params=None,  # dict of params to pass to the fit method of the estimator
-            ax=display.ax_,  # axes to plot on; if None, new figure and axes created
-            negate_score=False,  # negate the scores or not from learning_curve?
-            score_name=None,
-            score_type="both",  # 'test', 'train', or 'both
-            std_display_style="fill_between",  # how to display the std around the mean
-            line_kw=None,
-            fill_between_kw=None,
-            errorbar_kw=None,
-        )
-        plt.show()
-        saveout_name = Path(
-            self.image_write_location,
-            f"{model}_LearningCurve_{self.current_date_info}.pdf",
-        )
-        plt.savefig(
-            saveout_name,
-            # **saveout_args,
-        )
+    # def plot_learning_curves(
+    #     self,
+    #     model,
+    #     X,
+    #     y,
+    #     # train_size,
+    # ):
+    #     train_sizes, train_scores, test_scores = learning_curve(model, X, y)
+    #     display = LearningCurveDisplay(
+    #         train_sizes=train_sizes,
+    #         train_scores=train_scores,
+    #         test_scores=test_scores,
+    #         score_name=None,
+    #     )
+    #     display.plot()
+    #     LearningCurveDisplay.from_estimator(
+    #         estimator=model,
+    #         X=X,
+    #         y=y,
+    #         groups=None,
+    #         train_sizes=train_sizes,
+    #         cv=None,
+    #         scoring=None,
+    #         exploit_incremental_learning=False,
+    #         n_jobs=1,
+    #         pre_dispatch="all",
+    #         verbose=0,
+    #         random_state=RANDOM_STATE,
+    #         error_score="raise",
+    #         fit_params=None,  # dict of params to pass to the fit method of the estimator
+    #         ax=display.ax_,  # axes to plot on; if None, new figure and axes created
+    #         negate_score=False,  # negate the scores or not from learning_curve?
+    #         score_name=None,
+    #         score_type="both",  # 'test', 'train', or 'both
+    #         std_display_style="fill_between",  # how to display the std around the mean
+    #         line_kw=None,
+    #         fill_between_kw=None,
+    #         errorbar_kw=None,
+    #     )
+    #     plt.show()
+    #     saveout_name = Path(
+    #         self.image_write_location,
+    #         f"{model}_LearningCurve_{self.current_date_info}.pdf",
+    #     )
+    #     plt.savefig(
+    #         saveout_name,
+    #         # **saveout_args,
+    #     )
 
 
 def run_scoring_printouts(
@@ -888,21 +889,21 @@ def main(
         datafile=datafile,
     )
 
-    ml_utils = ML_Utils(
-        dataset_name=dataset_name,
-        in_notebook=in_notebook,
-        exists_ok=exists_ok,
-        logger=logger,
-    )
+    # ml_utils = ML_Utils(
+    #     dataset_name=dataset_name,
+    #     in_notebook=in_notebook,
+    #     exists_ok=exists_ok,
+    #     logger=logger,
+    # )
 
-    models = [ml_pipeline_dt, ml_pipeline_rf, ml_pipeline_hgbt, ml_pipeline_gbt]
-    for model in models:
-        ml_utils.plot_learning_curves(
-            model=model.pipe.named_steps["clf"],
-            X=model.RSE_info["data"],
-            y=model.RSE_info["target"],
-            # train_size=train_pc,
-        )
+    # models = [ml_pipeline_dt, ml_pipeline_rf, ml_pipeline_hgbt, ml_pipeline_gbt]
+    # for model in models:
+    #     ml_utils.plot_learning_curves(
+    #         model=model.pipe.named_steps["clf"],
+    #         X=model.RSE_info["data"],
+    #         y=model.RSE_info["target"],
+    #         # train_size=train_pc,
+    #     )  # attempting to plot this, but needs PLOT TITLES to be useful...
 
 
 if __name__ == "__main__":
