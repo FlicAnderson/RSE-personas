@@ -17,7 +17,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     RandomForestClassifier,
     HistGradientBoostingClassifier,
-    # GradientBoostingClassifier,
+    GradientBoostingClassifier,
 )
 from sklearn import metrics
 from sklearn.metrics import ConfusionMatrixDisplay
@@ -355,7 +355,7 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
                         max_samples=None,  # controls sub-sampling for bootstrapping
                         oob_score=True,  # Whether to use out-of-bag samples to estimate the generalization score. By default, accuracy_score is used.# can use custom metric.
                         n_jobs=None,  # how many to run in paralell... None~=use 1.
-                        # verbose=0, # verbosity
+                        verbose=1,  # verbosity
                         warm_start=False,
                         class_weight=None,  # if not given, all classes have weight 1.
                         # bunch more args... #
@@ -423,10 +423,64 @@ class ML_Pipeline_HistGradientBoosting(ML_Pipeline_Decision_Tree):
         )
 
 
+class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+        forest_size: int = 100,
+        candidate_feats: int | None = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.model_type = "gradient_boosting"
+        self.le = LabelEncoder()
+        # create a pipeline object
+        self.forest_size = int(forest_size)
+        if candidate_feats is not None:
+            self.max_feats = update_candidate_features(n_features=candidate_feats)
+        else:
+            self.max_feats = "sqrt"
+        self.pipe = Pipeline(
+            steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
+                (
+                    "clf",
+                    GradientBoostingClassifier(
+                        loss="log_loss",  # default
+                        learning_rate=0.01,  # can also use 0.01; # shrinkage param (lambda)
+                        n_estimators=forest_size,  # number of boosting stages to perform
+                        subsample=1.0,  # <1=Stochastic gradient boosting; bootstrapping if <1; <1 => >variance but <bias
+                        criterion="friedman_mse",  # split quality measurement; ‘friedman_mse’ ~=best cf 'squared_error'
+                        min_samples_split=2,  # min number samples for splitting if int; if float it's a fraction
+                        min_samples_leaf=1,  # nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
+                        min_weight_fraction_leaf=0.0,  # min weighted fraction of sum of total weights (input samples) req for a leaf node; equal when sample_weight not provided.
+                        max_depth=None,  # default=3 # TODO: tune for best performance. If none, expanded until leaves are pure
+                        min_impurity_decrease=0.0,  # default. Node split if induces decrease of impurity >= this.
+                        init=None,  # 'zero'(raw predictions set to 0) or None (default, preducts classes' priors) or estimator object
+                        max_features="sqrt",  # added in v1.4 # float in latest docs, interaction_cst can be used; max_features < n_features reduces variance and increases bias.
+                        max_leaf_nodes=None,  # Grow trees with max_leaf_nodes in best-first fashion; best==relative reduction in impurity; None=unlimited
+                        warm_start=False,  # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
+                        validation_fraction=0.1,  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
+                        n_iter_no_change=None,  # 10 for hgbt, # determines early stopping (if it's used)
+                        tol=1e-4,  # 1e-7 default for HistGradBoost, # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+                        verbose=0,  # verbosity: 1:summary info only; 2=per-iteration info;
+                        ccp_alpha=0.0,  # TODO FOR PRUNING # complexity parameter used for Minimal Cost-Complexity Pruning
+                        random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
+                    ),
+                ),
+            ],
+            memory=None,
+            # transform_input=None, # I maybe don't have the updated package version for this (1.6?)
+            verbose=True,
+        )
+
+
 def run_scoring_printouts(
     pipeline_class_obj: ML_Pipeline_Decision_Tree
     | ML_Pipeline_Random_Forest
-    | ML_Pipeline_HistGradientBoosting,
+    | ML_Pipeline_HistGradientBoosting
+    | ML_Pipeline_GradientBoosting,
     X_test,
     y_test,
     datafile: Path,
@@ -435,8 +489,9 @@ def run_scoring_printouts(
         pipeline_class_obj.model_type == "decision_tree"
         or pipeline_class_obj.model_type == "random_forest"
         or pipeline_class_obj.model_type == "hist_gradient_boosting"
+        or pipeline_class_obj.model_type == "gradient_boosting"
     ), (
-        "model_type not recognised: must be one of 'decision_tree' or 'random_forest' or 'hist_gradient_boosting'."
+        "model_type not recognised: must be one of 'decision_tree' or 'random_forest' or 'hist_gradient_boosting' or 'gradient_boosting'."
     )
 
     # Model Accuracy, how often is the classifier correct?
@@ -587,6 +642,7 @@ def main(
     plot_dt_depth: int = 5,
     forest_size_rf=100,
     forest_size_hgbt=100,
+    forest_size_gbt=100,
 ):
     # initialise class
     ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -702,6 +758,43 @@ def main(
 
     run_scoring_printouts(
         pipeline_class_obj=ml_pipeline_hgbt,
+        X_test=X_test,
+        y_test=y_test,
+        datafile=datafile,
+    )
+
+    # Gradient Boosting Classifier Tree:
+
+    ml_pipeline_gbt = ML_Pipeline_GradientBoosting(
+        dataset_name=dataset_name,
+        in_notebook=in_notebook,
+        exists_ok=exists_ok,
+        logger=logger,
+        forest_size=forest_size_gbt,
+        candidate_feats=ml_pipeline_dt.X_test_size[
+            1
+        ],  # number of features for GBT and DT is same
+    )
+
+    ml_pipeline_gbt.get_data(
+        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+    )
+
+    # run random forest and apply to test/training datasets (splitting happens within do_model_fit())
+    X_test, y_test = ml_pipeline_gbt.do_model_fit(
+        train_pc=train_pc,
+        test_pc=test_pc,
+        stratify_state=stratify_state,
+        shuffle_state=shuffle_state,
+    )
+    # predict classifications for test dataset, plot confusion matrices
+    ml_pipeline_gbt.run_predictor(
+        X_test,
+        y_test,
+    )
+
+    run_scoring_printouts(
+        pipeline_class_obj=ml_pipeline_gbt,
         X_test=X_test,
         y_test=y_test,
         datafile=datafile,
