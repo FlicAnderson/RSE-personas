@@ -570,7 +570,8 @@ def run_scoring_printouts(
             training-set size: N={pipeline_class_obj.X_train_size[0]} \n
             and evaluated using test-set size: N={pipeline_class_obj.X_test_size[0]} repo-individuals \n
             using N={pipeline_class_obj.X_test_size[1]} features \n 
-            at {pipeline_class_obj.current_date_info}
+            at {pipeline_class_obj.current_date_info} \n
+            with parameters: {pipeline_class_obj.pipe.get_params(deep=False)}
             """
         )
     else:
@@ -582,7 +583,8 @@ def run_scoring_printouts(
             and evaluated using test-set size: N={pipeline_class_obj.X_test_size[0]} repo-individuals \n
             using N={pipeline_class_obj.X_test_size[1]} features \n 
             with N={pipeline_class_obj.forest_size} trees in forest  \n
-            at {pipeline_class_obj.current_date_info}
+            at {pipeline_class_obj.current_date_info} \n 
+            with parameters: {pipeline_class_obj.pipe.get_params(deep=False)}
         """
         )
 
