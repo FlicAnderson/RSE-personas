@@ -1,6 +1,5 @@
 from logging import Logger
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import math
 import matplotlib.pyplot as plt
@@ -15,7 +14,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import (
+    RandomForestClassifier,
+    HistGradientBoostingClassifier,
+    # GradientBoostingClassifier,
+)
 from sklearn import metrics
 from sklearn.metrics import ConfusionMatrixDisplay
 
@@ -367,8 +370,63 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
         )
 
 
+class ML_Pipeline_HistGradientBoosting(ML_Pipeline_Decision_Tree):
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+        forest_size: int = 100,
+        candidate_feats: int | None = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.model_type = "hist_gradient_boosting"
+        self.le = LabelEncoder()
+        # create a pipeline object
+        self.forest_size = int(forest_size)
+        if candidate_feats is not None:
+            self.max_feats = update_candidate_features(n_features=candidate_feats)
+        else:
+            self.max_feats = "sqrt"
+        self.pipe = Pipeline(
+            steps=[  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
+                (
+                    "clf",
+                    HistGradientBoostingClassifier(
+                        loss="log_loss",  # default
+                        learning_rate=0.01,  # can also use 0.01; # shrinkage param (lambda)
+                        max_iter=forest_size,  # number of iterations/trees to generate
+                        max_leaf_nodes=None,  # None= no max; default=31 for some reason?
+                        max_depth=None,
+                        l2_regularization=0,  # L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
+                        # max_features = 1.0, # added in v1.4 # float in latest docs, interaction_cst can be used
+                        max_bins=255,  # N bins for non-missing values; more = better? max=255.
+                        categorical_features=None,  # None:no feats categorical; boolean array; integer array of indices of cat feats; str array: cat names of training data if it has them; "from_dtype": use columns with dtype 'category' (default)
+                        monotonic_cst=None,  # BINARY ONLY; constant to inforce on each feature; 1:monotonic incr; 0: no constraint; -1:monotonic decrease
+                        interaction_cst=None,  # specify sets of feats which can interact in child node splits # "pairwise" "no_interactions", None, or seq of lists/tuples/sets of ints for indices
+                        warm_start=False,  # if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
+                        early_stopping=False,  # if sample > 10k this is enabled w/ 'auto'
+                        scoring="loss",  # scoring to use w/ early stopping: 'str':*; a scorer callable; None:'accuracy' is used; 'loss'(default): checked with loss value; *=https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-string-names;
+                        validation_fraction=0.1,  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
+                        n_iter_no_change=10,  # determines early stopping (if it's used)
+                        tol=1e-7,  # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+                        verbose=1,  # verbosity: 1:summary info only; 2=per-iteration info;
+                        class_weight=None,  # dict / 'balanced' / None (where all classess weight=1) # TODO: consider this more...
+                        random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
+                    ),
+                ),
+            ],
+            memory=None,
+            # transform_input=None, # I maybe don't have the updated package version for this (1.6?)
+            verbose=True,
+        )
+
+
 def run_scoring_printouts(
-    pipeline_class_obj: ML_Pipeline_Decision_Tree | ML_Pipeline_Random_Forest,
+    pipeline_class_obj: ML_Pipeline_Decision_Tree
+    | ML_Pipeline_Random_Forest
+    | ML_Pipeline_HistGradientBoosting,
     X_test,
     y_test,
     datafile: Path,
@@ -376,7 +434,10 @@ def run_scoring_printouts(
     assert (
         pipeline_class_obj.model_type == "decision_tree"
         or pipeline_class_obj.model_type == "random_forest"
-    ), "model_type not recognised: must be one of 'decision_tree' or 'random_forest'."
+        or pipeline_class_obj.model_type == "hist_gradient_boosting"
+    ), (
+        "model_type not recognised: must be one of 'decision_tree' or 'random_forest' or 'hist_gradient_boosting'."
+    )
 
     # Model Accuracy, how often is the classifier correct?
     if pipeline_class_obj.model_type != "random_forest":
@@ -525,6 +586,7 @@ def main(
     stratify_state: bool = True,
     plot_dt_depth: int = 5,
     forest_size_rf=100,
+    forest_size_hgbt=100,
 ):
     # initialise class
     ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -601,10 +663,45 @@ def main(
         y_test,
     )
 
-    # RandomForestClassifier.decision_path(X_test)
-
     run_scoring_printouts(
         pipeline_class_obj=ml_pipeline_rf,
+        X_test=X_test,
+        y_test=y_test,
+        datafile=datafile,
+    )
+
+    # Histogram Gradient Boosting Classifier Tree:
+
+    ml_pipeline_hgbt = ML_Pipeline_HistGradientBoosting(
+        dataset_name=dataset_name,
+        in_notebook=in_notebook,
+        exists_ok=exists_ok,
+        logger=logger,
+        forest_size=forest_size_hgbt,
+        candidate_feats=ml_pipeline_dt.X_test_size[
+            1
+        ],  # number of features for HGBT and DT is same
+    )
+
+    ml_pipeline_hgbt.get_data(
+        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+    )
+
+    # run random forest and apply to test/training datasets (splitting happens within do_model_fit())
+    X_test, y_test = ml_pipeline_hgbt.do_model_fit(
+        train_pc=train_pc,
+        test_pc=test_pc,
+        stratify_state=stratify_state,
+        shuffle_state=shuffle_state,
+    )
+    # predict classifications for test dataset, plot confusion matrices
+    ml_pipeline_hgbt.run_predictor(
+        X_test,
+        y_test,
+    )
+
+    run_scoring_printouts(
+        pipeline_class_obj=ml_pipeline_hgbt,
         X_test=X_test,
         y_test=y_test,
         datafile=datafile,
