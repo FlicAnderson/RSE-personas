@@ -147,8 +147,8 @@ class TuningSetup(DatasetSetup):
         }
 
         print(self.RSE_info["data"].shape)
-        assert self.RSE_info["data"].shape == N_OBS, (
-            "Size of RSE_info data doesn't match N_OBS"
+        assert self.RSE_info["data"].shape[1] == N_OBS, (
+            f"Size of RSE_info data doesn't match N_OBS: {self.RSE_info['data'].shape[0]} vs {N_OBS}"
         )
         N_FEATURES = self.RSE_info["data"].shape[1]
         self.n_feats = N_FEATURES
