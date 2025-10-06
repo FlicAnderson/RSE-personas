@@ -312,13 +312,13 @@ class TuningSetup(DatasetSetup):
         str_headers = "|"
         str_underline = "|"
         str_row = "|"
-        for idx in range(len(self.n_feats)):
-            str_headers += " {} [%] | ".format(self.n_feats[idx])
-            str_underline += " {} | ".format("-" * (len(self.n_feats[idx]) + 4))
+        for idx in range(len(CLUSTERING_VARIABLES)):
+            str_headers += " {} [%] | ".format(CLUSTERING_VARIABLES[idx])
+            str_underline += " {} | ".format("-" * (len(CLUSTERING_VARIABLES[idx]) + 4))
             str_row += (
                 " "
                 + ("{:.2f}".format(100.0 * feature_importances[idx])).center(
-                    len(self.n_feats[idx]) + 4
+                    len(CLUSTERING_VARIABLES[idx]) + 4
                 )
                 + " | "
             )
