@@ -389,11 +389,8 @@ class TuningSetup(DatasetSetup):
         )
         return (
             f1_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
-            # f1_score(y_true=unseen_out, y_pred=unseen_pred, average="macro"),
             precision_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
-            # precision_score(y_true=unseen_out, y_pred=unseen_pred, average="macro"),
-            selected_rfc.score(self.y_test, y_pred),
-            # selected_rfc.score(select.transform(unseen_in), unseen_out),
+            selected_rfc.score(self.X_test, self.y_test),
             best_params,
             feature_imp,
         )
