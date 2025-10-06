@@ -104,7 +104,10 @@ class ML_Pipeline_Decision_Tree(
         )
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
 
-    def get_data(self, data_file, small_vers=True, small_N_appx: int | None = 50):
+    def get_data(
+        self,
+        data_file,
+    ):  # small_vers=True, small_N_appx: int | None = 50):
         classified_df = pd.read_csv(
             data_file,
             header=0,
@@ -138,11 +141,11 @@ class ML_Pipeline_Decision_Tree(
             "active_contributor", "Active Contributor"
         )
 
-        if small_vers is True and small_N_appx is not None:
-            n_per_persona = round(small_N_appx / 7)
-            classified_df = classified_df.groupby(by="RSE_persona").sample(
-                n=n_per_persona, weights="MRC"
-            )
+        # if small_vers is True and small_N_appx is not None:
+        #     n_per_persona = round(small_N_appx / 7)
+        #     classified_df = classified_df.groupby(by="RSE_persona").sample(
+        #         n=n_per_persona, weights="MRC"
+        #     )
 
         self.RSE_info = {
             "data": classified_df[
@@ -748,7 +751,7 @@ def main(
         datafile,
     )
     ml_pipeline_dt.get_data(
-        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+        data_file=datafile,  # small_vers=small_vers, small_N_appx=small_N_appx
     )
 
     # run decision tree and apply to test/training datasets (splitting happens within do_model_fit())
@@ -794,7 +797,7 @@ def main(
     # AND format data to sklearn shapes/types/terminology
 
     ml_pipeline_rf.get_data(
-        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+        data_file=datafile,  # small_vers=small_vers, small_N_appx=small_N_appx
     )
 
     # run random forest and apply to test/training datasets (splitting happens within do_model_fit())
@@ -831,7 +834,7 @@ def main(
     )
 
     ml_pipeline_hgbt.get_data(
-        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+        data_file=datafile,  # small_vers=small_vers, small_N_appx=small_N_appx
     )
 
     # run random forest and apply to test/training datasets (splitting happens within do_model_fit())
@@ -868,7 +871,7 @@ def main(
     )
 
     ml_pipeline_gbt.get_data(
-        data_file=datafile, small_vers=small_vers, small_N_appx=small_N_appx
+        data_file=datafile,  # small_vers=small_vers, small_N_appx=small_N_appx
     )
 
     # run random forest and apply to test/training datasets (splitting happens within do_model_fit())
