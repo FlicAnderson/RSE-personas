@@ -309,22 +309,6 @@ class TuningSetup(DatasetSetup):
         # features = selected_train_in.columns
         feature_importances = selected_rfc.feature_importances_
 
-        str_headers = "|"
-        str_underline = "|"
-        str_row = "|"
-        for idx in range(len(CLUSTERING_VARIABLES)):
-            str_headers += " {} [%] | ".format(CLUSTERING_VARIABLES[idx])
-            str_underline += " {} | ".format("-" * (len(CLUSTERING_VARIABLES[idx]) + 4))
-            str_row += (
-                " "
-                + ("{:.2f}".format(100.0 * feature_importances[idx])).center(
-                    len(CLUSTERING_VARIABLES[idx]) + 4
-                )
-                + " | "
-            )
-
-        feature_imp = str_headers + "\n" + str_underline + "\n" + str_row
-
         self.logger.info(
             f"""
             For Random Forest model trained on: \n
@@ -336,9 +320,14 @@ class TuningSetup(DatasetSetup):
             at {self.current_date_info} \n 
             with parameters: {selected_rfc.get_params(deep=False)} \n
             and feature importances: \n
-            {feature_imp}
         """
         )
+        for idx in range(len(CLUSTERING_VARIABLES)):
+            self.logger.info(
+                "{}: {:.3f}[%]".format(
+                    CLUSTERING_VARIABLES[idx], 100.0 * feature_importances[idx]
+                )
+            )
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
         self.logger.info(
@@ -392,7 +381,7 @@ class TuningSetup(DatasetSetup):
             precision_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
             selected_rfc.score(self.X_test, self.y_test),
             best_params,
-            feature_imp,
+            # feature_imp,
         )
 
 
