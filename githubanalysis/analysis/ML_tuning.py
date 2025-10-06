@@ -81,7 +81,6 @@ class TuningSetup(DatasetSetup):
         )
         self.model_type = "random_forest"
         self.le = LabelEncoder()
-        self.ml_pipeline_dt.le = LabelEncoder()
 
     def prep_data(
         self,
@@ -153,11 +152,9 @@ class TuningSetup(DatasetSetup):
         N_FEATURES = self.RSE_info["data"].shape[1]
         self.n_feats = N_FEATURES
         print(N_FEATURES)
-        # no return as saved RSE_info to self.ml_pipeline_dt
+        # no return as saved RSE_info to self
 
     def n_feats_around_optimal(self) -> list[int | None]:
-        # self.ml_pipeline_dt.RSE_info["data"].shape[1]
-
         lit_optimal_feats = update_candidate_features(self.n_feats)
         print(lit_optimal_feats)
 
@@ -175,8 +172,8 @@ class TuningSetup(DatasetSetup):
     def setup_test_train(self):
         # set X (data, no colnames, no personas), y (personas only)
         X, y = (
-            self.ml_pipeline_dt.RSE_info["data"],
-            self.ml_pipeline_dt.RSE_info["target"],
+            self.RSE_info["data"],
+            self.RSE_info["target"],
         )
 
         # create testing/training dataset
@@ -192,9 +189,7 @@ class TuningSetup(DatasetSetup):
             # train_size, #=train_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
             random_state=42,
             shuffle=True,  # shuffle_state,  # True by (sklearn) default
-            stratify=self.ml_pipeline_dt.RSE_info[
-                "target"
-            ],  # same as y; None by (sklearn) default
+            stratify=self.RSE_info["target"],  # same as y; None by (sklearn) default
         )
         self.X_train = X_train  # type: ignore
         self.X_test = X_test
@@ -371,8 +366,6 @@ class TuningSetup(DatasetSetup):
                     self.le.inverse_transform(self.y_true),  # y_true
                     self.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
-                    # labels=ml_pipeline_dt.RSE_info["target"],
-                    # target_names=ml_pipeline_dt.RSE_info["target"],
                 )
             )
         )
@@ -382,8 +375,6 @@ class TuningSetup(DatasetSetup):
                     self.le.inverse_transform(self.y_true),  # y_true
                     self.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
-                    # labels=ml_pipeline_dt.RSE_info["target"],
-                    # target_names=ml_pipeline_dt.RSE_info["target"],
                 )
             )
         )
@@ -393,8 +384,6 @@ class TuningSetup(DatasetSetup):
                     self.le.inverse_transform(self.y_true),  # y_true
                     self.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
-                    # labels=ml_pipeline_dt.RSE_info["target"],
-                    # target_names=ml_pipeline_dt.RSE_info["target"],
                 ),
             )
         )
