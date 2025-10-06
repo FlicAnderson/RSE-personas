@@ -1,27 +1,19 @@
 # from sklearn.datasets import fetch_openml
 from logging import Logger
-from sklearn.model_selection import train_test_split
-
+import argparse
 import joblib
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import scipy.stats as stats
 import warnings
-# from typing import Literal
 
-
-from sklearn.ensemble import (
-    #    AdaBoostClassifier,
-    #    GradientBoostingClassifier,
-    RandomForestClassifier,
-)
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.metrics import f1_score, precision_score
 from sklearn.preprocessing import LabelEncoder
-# from sklearn.model_selection import GridSearchCV
-
 from sklearn.model_selection import RandomizedSearchCV
 
 from githubanalysis.analysis.baby_ML_pipeline import (
@@ -71,6 +63,7 @@ class TuningSetup(DatasetSetup):
         in_notebook: bool,
         exists_ok: bool = False,
         logger: None | Logger = None,
+        N_OBS: int = 10000,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -81,10 +74,10 @@ class TuningSetup(DatasetSetup):
         )
         self.model_type = "random_forest"
         self.le = LabelEncoder()
+        self.N_OBS = N_OBS
 
     def prep_data(
         self,
-        N_OBS: int = 10000,
         filename="sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
     ):
         data_file = Path(
@@ -125,7 +118,7 @@ class TuningSetup(DatasetSetup):
         )
 
         classified_df = classified_df.sample(
-            n=N_OBS,
+            n=self.N_OBS,
             frac=None,
             replace=False,
             weights=None,
@@ -146,8 +139,8 @@ class TuningSetup(DatasetSetup):
         }
 
         self.logger.info(self.RSE_info["data"].shape)
-        assert self.RSE_info["data"].shape[0] == N_OBS, (
-            f"Size of RSE_info data doesn't match N_OBS: {self.RSE_info['data'].shape[0]} vs {N_OBS}"
+        assert self.RSE_info["data"].shape[0] == self.N_OBS, (
+            f"Size of RSE_info data doesn't match N_OBS: {self.RSE_info['data'].shape[0]} vs {self.N_OBS}"
         )
         N_FEATURES = self.RSE_info["data"].shape[1]
         self.n_feats = N_FEATURES
@@ -227,12 +220,13 @@ class TuningSetup(DatasetSetup):
     ):
         feat_range = self.n_feats_around_optimal()
         params = {
-            "n_estimators": [75, 100, 125, 150, 175],
+            "n_estimators": [75, 100, 125, 150, 175, 200],
             "criterion": ["gini", "entropy", "log_loss"],
             "min_samples_split": range(2, 50),
             "max_depth": [3, 4, 6, 8, 10, 35],
             "max_samples": stats.uniform(0, 1),
             "max_features": feat_range,
+            "ccp_alpha": stats.uniform(0, 0.25),
         }
 
         N_CORES = joblib.cpu_count(only_physical_cores=True)
@@ -254,7 +248,7 @@ class TuningSetup(DatasetSetup):
 
         search = RandomizedSearchCV(
             clf,
-            n_iter=25,  # controls 'combination of parameters'
+            n_iter=50,  # controls 'combination of parameters'
             param_distributions=params,
             scoring="accuracy",
             cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
@@ -267,7 +261,7 @@ class TuningSetup(DatasetSetup):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             search.fit(self.X_train, self.y_train)
-            self.report(search.cv_results_, 5)  # Report the top 10 results
+            self.report(search.cv_results_, n_top=10)  # Report the top 10 results
             best_params = HyperParams(
                 depth=search.best_params_["max_depth"],
                 trees=search.best_params_["n_estimators"],
@@ -304,15 +298,13 @@ class TuningSetup(DatasetSetup):
         save_out = Path(self.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
-        # features = train_in.iloc[:, select.get_support(indices=True)]  # Alt to using transform that preserves the name
-        # features = features.columns
-        # features = selected_train_in.columns
         feature_importances = selected_rfc.feature_importances_
 
         self.logger.info(
             f"""
             For Random Forest model trained on: \n
             datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            with N observations (repo-individuals): {self.N_OBS} \n
             training-set size: N={self.X_train_size[0]} \n
             and evaluated using test-set size: N={self.X_test_size[0]} repo-individuals \n
             using N={self.X_test_size[1]} features \n 
@@ -385,12 +377,27 @@ class TuningSetup(DatasetSetup):
         )
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-n",
+    "--n-observations",
+    metavar="SAMPLES",
+    help="number of samples to run on (e.g. 10000)",
+    type=int,
+    default=10000,
+)
+
+
 def main():
+    args = parser.parse_args()
+    nobs_arg: int = args.data_file
+
     tuning_setup = TuningSetup(
         dataset_name="ML_tune",
         in_notebook=False,
         exists_ok=True,
         logger=None,
+        N_OBS=nobs_arg,
     )
     print("prepping dataset")
     tuning_setup.prep_data()
