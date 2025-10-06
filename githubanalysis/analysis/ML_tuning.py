@@ -390,7 +390,7 @@ parser.add_argument(
 
 def main():
     args = parser.parse_args()
-    nobs_arg: int = args.data_file
+    nobs_arg: int = args.n_observations
 
     tuning_setup = TuningSetup(
         dataset_name="ML_tune",
