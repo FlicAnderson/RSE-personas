@@ -51,7 +51,7 @@ class HyperParams:  # Ananya's!
         ccp=0.0,
         min_smp_split=2,
         min_impurity_dec=0.0,
-        max_lvs=None,
+        max_lvs=250,
     ):
         self.depth = depth
         self.trees = trees
@@ -88,7 +88,7 @@ class TuningSetup(DatasetSetup):
         exists_ok: bool = False,
         logger: None | Logger = None,
         N_OBS: int = 10000,
-        N_ITER: int = 1000,
+        N_ITER: int = 50,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -148,7 +148,7 @@ class TuningSetup(DatasetSetup):
             frac=None,
             replace=False,
             weights=None,
-            random_state=42,
+            random_state=RANDOM_STATE,
             axis=None,
             ignore_index=False,
         )
@@ -206,7 +206,7 @@ class TuningSetup(DatasetSetup):
             y,
             # test_size, #=test_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 25%
             # train_size, #=train_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
-            random_state=42,
+            random_state=RANDOM_STATE,
             shuffle=True,  # shuffle_state,  # True by (sklearn) default
             stratify=self.RSE_info["target"],  # same as y; None by (sklearn) default
         )
@@ -267,12 +267,13 @@ class TuningSetup(DatasetSetup):
             n_jobs=(N_CORES - 1),
             verbose=2,
         )
+        self.logger.info("clf declared")
         rskf = RepeatedStratifiedKFold(
             n_splits=5,  # 5 is default
             n_repeats=10,  # 10 is default
             random_state=None,  # None is default
         )
-
+        self.logger.info("rskf declared")
         search = RandomizedSearchCV(
             clf,
             n_iter=self.N_ITER,  # controls 'combination of parameters'
@@ -283,13 +284,14 @@ class TuningSetup(DatasetSetup):
             verbose=2,
             random_state=None,  # default=None
         )
-
+        self.logger.info("search declared")
         start_hyper_param_search = time.time()
+        self.logger.info("param timer started")
         # To ignore the warning about the OOB
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            warnings.simplefilter("once")
             search.fit(self.X_train, self.y_train)
-            self.report(search.cv_results_, n_top=25)  # Report the top 10 results
+            self.report(search.cv_results_, n_top=5)  # Report the top 10 results
             best_params = HyperParams(
                 depth=search.best_params_["max_depth"],
                 trees=search.best_params_["n_estimators"],
@@ -310,6 +312,7 @@ class TuningSetup(DatasetSetup):
         )
 
         start_selected_rfc_fit = time.time()
+        self.logger.info("fit timer started")
         # run full model with the best params! :D
         selected_rfc = RandomForestClassifier(
             max_depth=best_params.depth,
@@ -454,7 +457,7 @@ parser.add_argument(
     metavar="ITERATIONS",
     help="number of iterations for RandomizedSearchCV (e.g. 1000)",
     type=int,
-    default=1000,
+    default=100,
 )
 
 
