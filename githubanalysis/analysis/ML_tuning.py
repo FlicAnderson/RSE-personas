@@ -145,18 +145,18 @@ class TuningSetup(DatasetSetup):
             "target_names": classified_df["RSE_persona"].unique(),
         }
 
-        print(self.RSE_info["data"].shape)
+        self.logger.info(self.RSE_info["data"].shape)
         assert self.RSE_info["data"].shape[0] == N_OBS, (
             f"Size of RSE_info data doesn't match N_OBS: {self.RSE_info['data'].shape[0]} vs {N_OBS}"
         )
         N_FEATURES = self.RSE_info["data"].shape[1]
         self.n_feats = N_FEATURES
-        print(N_FEATURES)
+        self.logger.info(N_FEATURES)
         # no return as saved RSE_info to self
 
     def n_feats_around_optimal(self) -> list[int | None]:
         lit_optimal_feats = update_candidate_features(self.n_feats)
-        print(lit_optimal_feats)
+        self.logger.info(lit_optimal_feats)
 
         min_feats = 2  # at least two required for choosing
 
@@ -164,9 +164,9 @@ class TuningSetup(DatasetSetup):
 
         assert max(i for i in feat_range if i is not None) <= self.n_feats
         # feat_range: list[int | None] = feat_range
-        print(feat_range)
+        self.logger.info(feat_range)
         feat_range.append(None)
-        print(feat_range)
+        self.logger.info(feat_range)
         return feat_range
 
     def setup_test_train(self):
@@ -202,8 +202,8 @@ class TuningSetup(DatasetSetup):
         self.X_test_size = self.X_test.shape
         self.y_test_size = self.y_test.shape
 
-        print(f"{self.X_train_size = }")
-        print(f"{self.X_test_size = }")
+        self.logger.info(f"{self.X_train_size = }")
+        self.logger.info(f"{self.X_test_size = }")
         # no return as all saved to self.
 
     # Ref: https://scikit-learn.org/stable/auto_examples/model_selection/plot_randomized_search.html
@@ -212,15 +212,15 @@ class TuningSetup(DatasetSetup):
         for i in range(1, n_top + 1):
             candidates = np.flatnonzero(results["rank_test_score"] == i)
             for candidate in candidates:
-                print("Model with rank: {0}".format(i))
-                print(
+                self.logger.info("Model with rank: {0}".format(i))
+                self.logger.info(
                     "Mean validation score: {0:.3f} (std: {1:.3f})".format(
                         results["mean_test_score"][candidate],
                         results["std_test_score"][candidate],
                     )
                 )
-                print("Parameters: {0}".format(results["params"][candidate]))
-                print("")
+                self.logger.info("Parameters: {0}".format(results["params"][candidate]))
+                self.logger.info("")
 
     def param_searching(
         self,
@@ -236,7 +236,7 @@ class TuningSetup(DatasetSetup):
         }
 
         N_CORES = joblib.cpu_count(only_physical_cores=True)
-        print(f"Number of physical cores: {N_CORES}")
+        self.logger.info(f"Number of physical cores: {N_CORES}")
 
         clf = RandomForestClassifier(
             bootstrap=True,
@@ -275,8 +275,8 @@ class TuningSetup(DatasetSetup):
                 samples=search.best_params_["max_samples"],
                 features=search.best_params_["max_features"],
             )
-            print("Best score {:.2f} with:".format(search.best_score_))
-            print(best_params)
+            self.logger.info("Best score {:.2f} with:".format(search.best_score_))
+            self.logger.info(best_params)
 
         # run full model with the best params! :D
         selected_rfc = RandomForestClassifier(
@@ -325,7 +325,7 @@ class TuningSetup(DatasetSetup):
 
         feature_imp = str_headers + "\n" + str_underline + "\n" + str_row
 
-        print(
+        self.logger.info(
             f"""
             For Random Forest model trained on: \n
             datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
@@ -341,17 +341,17 @@ class TuningSetup(DatasetSetup):
         )
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
-        print(
+        self.logger.info(
             "Accuracy: {:.3f} (percent of correctly classified samples)".format(
                 metrics.accuracy_score(self.y_true, y_pred),
             )
         )
-        print(
+        self.logger.info(
             "Non-Normalised Accuracy: {:.0f} (number of correctly classified samples)".format(
                 metrics.accuracy_score(self.y_true, y_pred, normalize=False),
             )
         )
-        print(
+        self.logger.info(
             "Balanced Accuracy: {:.3f} (the average of recall obtained on each class)".format(
                 metrics.balanced_accuracy_score(
                     self.y_true,
@@ -360,7 +360,7 @@ class TuningSetup(DatasetSetup):
                 )
             )
         )
-        print(
+        self.logger.info(
             "F1 Score: {:.3f} (harmonic mean of the precision and recall, both equally weighted)".format(
                 metrics.f1_score(
                     self.le.inverse_transform(self.y_true),  # y_true
@@ -369,7 +369,7 @@ class TuningSetup(DatasetSetup):
                 )
             )
         )
-        print(
+        self.logger.info(
             "Precision: {:.3f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
                 metrics.precision_score(
                     self.le.inverse_transform(self.y_true),  # y_true
@@ -378,7 +378,7 @@ class TuningSetup(DatasetSetup):
                 )
             )
         )
-        print(
+        self.logger.info(
             "Recall: {:.3f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
                 metrics.recall_score(
                     self.le.inverse_transform(self.y_true),  # y_true
