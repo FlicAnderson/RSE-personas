@@ -1,25 +1,16 @@
 # from sklearn.datasets import fetch_openml
 from logging import Logger
 from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
 
-import datetime
 import joblib
 import pandas as pd
 import numpy as np
 from pathlib import Path
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.cm as cmx
-import seaborn as sns
-import graphviz
-import sklearn
 import scipy.stats as stats
 import warnings
 # from typing import Literal
 
 
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     #    AdaBoostClassifier,
     #    GradientBoostingClassifier,
@@ -27,11 +18,7 @@ from sklearn.ensemble import (
 )
 
 from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score, r2_score, precision_score
-from sklearn.metrics import root_mean_squared_error as rmse
-from sklearn.metrics import mean_absolute_error as mae
+from sklearn.metrics import f1_score, precision_score
 from sklearn.preprocessing import LabelEncoder
 # from sklearn.model_selection import GridSearchCV
 
