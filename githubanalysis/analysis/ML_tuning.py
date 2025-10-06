@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import scipy.stats as stats
 import warnings
+import time
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -40,16 +41,39 @@ CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING
 
 
 class HyperParams:  # Ananya's!
-    def __init__(self, depth=10, trees=20, samples=20, criterion="gini", features=None):
+    def __init__(
+        self,
+        depth=10,
+        trees=20,
+        samples=20,
+        criterion="gini",
+        features=None,
+        ccp=0.0,
+        min_smp_split=2,
+        min_impurity_dec=0.0,
+        max_lvs=None,
+    ):
         self.depth = depth
         self.trees = trees
         self.samples = samples
         self.criterion = criterion
         self.features = features
+        self.ccp = ccp
+        self.min_smp_split = min_smp_split
+        self.min_impurity_dec = min_impurity_dec
+        self.max_lvs = max_lvs
 
     def __str__(self):
-        return "max_depth: {}; n_estimators: {}, n_samples: {}, criterion: {} features: {}".format(
-            self.depth, self.trees, self.samples, self.criterion, self.features
+        return "max_depth: {}; n_estimators: {}, n_samples: {}, criterion: {} features: {} ccp: {} min_samples_split: {} min_impurity_dec: {} max_lvs: {}".format(
+            self.depth,
+            self.trees,
+            self.samples,
+            self.criterion,
+            self.features,
+            self.ccp,
+            self.min_smp_split,
+            self.min_impurity_dec,
+            self.max_lvs,
         )
 
 
@@ -64,6 +88,7 @@ class TuningSetup(DatasetSetup):
         exists_ok: bool = False,
         logger: None | Logger = None,
         N_OBS: int = 10000,
+        N_ITER: int = 1000,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -75,6 +100,7 @@ class TuningSetup(DatasetSetup):
         self.model_type = "random_forest"
         self.le = LabelEncoder()
         self.N_OBS = N_OBS
+        self.N_ITER = N_ITER
 
     def prep_data(
         self,
@@ -153,7 +179,7 @@ class TuningSetup(DatasetSetup):
 
         min_feats = 2  # at least two required for choosing
 
-        feat_range = list[int | None](range(min_feats, lit_optimal_feats + 3))
+        feat_range = list[int | None](range(min_feats, lit_optimal_feats + 2))
 
         assert max(i for i in feat_range if i is not None) <= self.n_feats
         # feat_range: list[int | None] = feat_range
@@ -227,6 +253,8 @@ class TuningSetup(DatasetSetup):
             "max_samples": stats.uniform(0, 1),
             "max_features": feat_range,
             "ccp_alpha": stats.uniform(0, 0.25),
+            "min_impurity_decrease": stats.uniform(0, 0.1),
+            "max_leaf_nodes": stats.uniform(7, 250),
         }
 
         N_CORES = joblib.cpu_count(only_physical_cores=True)
@@ -235,10 +263,9 @@ class TuningSetup(DatasetSetup):
         clf = RandomForestClassifier(
             bootstrap=True,
             oob_score=True,
-            max_leaf_nodes=None,
-            ccp_alpha=0.0,
             class_weight=None,
             n_jobs=(N_CORES - 1),
+            verbose=2,
         )
         rskf = RepeatedStratifiedKFold(
             n_splits=5,  # 5 is default
@@ -248,7 +275,7 @@ class TuningSetup(DatasetSetup):
 
         search = RandomizedSearchCV(
             clf,
-            n_iter=50,  # controls 'combination of parameters'
+            n_iter=self.N_ITER,  # controls 'combination of parameters'
             param_distributions=params,
             scoring="accuracy",
             cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
@@ -257,21 +284,32 @@ class TuningSetup(DatasetSetup):
             random_state=None,  # default=None
         )
 
+        start_hyper_param_search = time.time()
         # To ignore the warning about the OOB
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             search.fit(self.X_train, self.y_train)
-            self.report(search.cv_results_, n_top=10)  # Report the top 10 results
+            self.report(search.cv_results_, n_top=25)  # Report the top 10 results
             best_params = HyperParams(
                 depth=search.best_params_["max_depth"],
                 trees=search.best_params_["n_estimators"],
                 criterion=search.best_params_["criterion"],
                 samples=search.best_params_["max_samples"],
                 features=search.best_params_["max_features"],
+                ccp=search.best_params_["ccp_alpha"],
+                min_smp_split=search.best_params_["min_samples_split"],
+                min_impurity_dec=search.best_params_["min_impurity_decrease"],
+                max_lvs=search.best_params_["max_leaf_nodes"],
             )
             self.logger.info("Best score {:.2f} with:".format(search.best_score_))
             self.logger.info(best_params)
+        end_hyper_param_search = time.time()
+        hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
+        self.logger.info(
+            f"Hyper-Parameter search for RF took {hyper_param_search_time} seconds for {self.N_ITER} across {len(params)} parameter categories."
+        )
 
+        start_selected_rfc_fit = time.time()
         # run full model with the best params! :D
         selected_rfc = RandomForestClassifier(
             max_depth=best_params.depth,
@@ -279,11 +317,28 @@ class TuningSetup(DatasetSetup):
             criterion=best_params.criterion,  # type: ignore
             max_samples=best_params.samples,
             max_features=best_params.features,  # type: ignore
+            ccp_alpha=best_params.ccp,
+            min_samples_split=best_params.min_smp_split,
+            min_impurity_decrease=best_params.min_impurity_dec,
+            max_leaf_nodes=best_params.max_lvs,
             oob_score=True,
         ).fit(self.X_train, self.y_train)
+        end_selected_rfc_fit = time.time()
+        selected_rfc_fit_time = end_selected_rfc_fit - start_selected_rfc_fit
+        self.logger.info(
+            f"Selected Parameters RF model took {selected_rfc_fit_time} seconds to fit"
+        )
 
+        start_selected_rfc_predict = time.time()
         y_pred = selected_rfc.predict(self.X_test)
+        end_selected_rfc_predict = time.time()
+        selected_rfc_predict_time = (
+            end_selected_rfc_predict - start_selected_rfc_predict
+        )
         self.y_true = self.y_test
+        self.logger.info(
+            f"Selected Parameters RF model took {selected_rfc_predict_time} seconds to predict"
+        )
 
         true_df = pd.DataFrame(
             {
@@ -305,6 +360,7 @@ class TuningSetup(DatasetSetup):
             For Random Forest model trained on: \n
             datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
             with N observations (repo-individuals): {self.N_OBS} \n
+            hyper-parameter-searched on {self.N_ITER} iterations \n
             training-set size: N={self.X_train_size[0]} \n
             and evaluated using test-set size: N={self.X_test_size[0]} repo-individuals \n
             using N={self.X_test_size[1]} features \n 
@@ -339,6 +395,12 @@ class TuningSetup(DatasetSetup):
                     y_pred,
                     adjusted=False,
                 )
+            )
+        )
+        self.logger.info(
+            "Out of Bag Error: {:.3f} (smaller better)".format(
+                # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
+                1 - selected_rfc.oob_score_
             )
         )
         self.logger.info(
@@ -386,11 +448,20 @@ parser.add_argument(
     type=int,
     default=10000,
 )
+parser.add_argument(
+    "-i",
+    "--n-iterations",
+    metavar="ITERATIONS",
+    help="number of iterations for RandomizedSearchCV (e.g. 1000)",
+    type=int,
+    default=1000,
+)
 
 
 def main():
     args = parser.parse_args()
     nobs_arg: int = args.n_observations
+    niter_arg: int = args.n_iterations
 
     tuning_setup = TuningSetup(
         dataset_name="ML_tune",
@@ -398,6 +469,7 @@ def main():
         exists_ok=True,
         logger=None,
         N_OBS=nobs_arg,
+        N_ITER=niter_arg,
     )
     print("prepping dataset")
     tuning_setup.prep_data()
