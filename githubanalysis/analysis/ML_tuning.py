@@ -16,7 +16,7 @@ from sklearn.ensemble import (
     #    GradientBoostingClassifier,
     RandomForestClassifier,
 )
-
+from sklearn import metrics
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.metrics import f1_score, precision_score
 from sklearn.preprocessing import LabelEncoder
@@ -74,8 +74,13 @@ class TuningSetup(DatasetSetup):
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
-            dataset_name="ML-param", in_notebook=True, exists_ok=True, logger=None
+            dataset_name=dataset_name,
+            in_notebook=in_notebook,
+            exists_ok=exists_ok,
+            logger=logger,
         )
+        self.model_type = "random_forest"
+        self.le = LabelEncoder()
         self.ml_pipeline_dt.le = LabelEncoder()
 
     def prep_data(
@@ -130,22 +135,22 @@ class TuningSetup(DatasetSetup):
             ignore_index=False,
         )
 
-        self.ml_pipeline_dt.RSE_info = {
+        self.RSE_info = {
             "data": classified_df[
                 CLUSTERING_VARIABLES
             ].to_numpy(),  # data w/o labels, list per row
-            "target": self.ml_pipeline_dt.le.fit_transform(
+            "target": self.le.fit_transform(
                 classified_df["RSE_persona"]
             ),  # numerical version of class assignment
             "feature_names": CLUSTERING_VARIABLES,
             "target_names": classified_df["RSE_persona"].unique(),
         }
 
-        print(self.ml_pipeline_dt.RSE_info["data"].shape)
-        assert self.ml_pipeline_dt.RSE_info["data"].shape == N_OBS, (
+        print(self.RSE_info["data"].shape)
+        assert self.RSE_info["data"].shape == N_OBS, (
             "Size of RSE_info data doesn't match N_OBS"
         )
-        N_FEATURES = self.ml_pipeline_dt.RSE_info["data"].shape[1]
+        N_FEATURES = self.RSE_info["data"].shape[1]
         self.n_feats = N_FEATURES
         print(N_FEATURES)
         # no return as saved RSE_info to self.ml_pipeline_dt
@@ -289,6 +294,7 @@ class TuningSetup(DatasetSetup):
         ).fit(self.X_train, self.y_train)
 
         y_pred = selected_rfc.predict(self.X_test)
+        self.y_true = self.y_test
 
         true_df = pd.DataFrame(
             {
@@ -324,6 +330,74 @@ class TuningSetup(DatasetSetup):
 
         feature_imp = str_headers + "\n" + str_underline + "\n" + str_row
 
+        print(
+            f"""
+            For Random Forest model trained on: \n
+            datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            training-set size: N={self.X_train_size[0]} \n
+            and evaluated using test-set size: N={self.X_test_size[0]} repo-individuals \n
+            using N={self.X_test_size[1]} features \n 
+            with N={best_params.trees} trees in forest  \n
+            at {self.current_date_info} \n 
+            with parameters: {selected_rfc.get_params(deep=False)} \n
+            and feature importances: \n
+            {feature_imp}
+        """
+        )
+
+        # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
+        print(
+            "Accuracy: {:.3f} (percent of correctly classified samples)".format(
+                metrics.accuracy_score(self.y_true, y_pred),
+            )
+        )
+        print(
+            "Non-Normalised Accuracy: {:.0f} (number of correctly classified samples)".format(
+                metrics.accuracy_score(self.y_true, y_pred, normalize=False),
+            )
+        )
+        print(
+            "Balanced Accuracy: {:.3f} (the average of recall obtained on each class)".format(
+                metrics.balanced_accuracy_score(
+                    self.y_true,
+                    y_pred,
+                    adjusted=False,
+                )
+            )
+        )
+        print(
+            "F1 Score: {:.3f} (harmonic mean of the precision and recall, both equally weighted)".format(
+                metrics.f1_score(
+                    self.le.inverse_transform(self.y_true),  # y_true
+                    self.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                    # labels=ml_pipeline_dt.RSE_info["target"],
+                    # target_names=ml_pipeline_dt.RSE_info["target"],
+                )
+            )
+        )
+        print(
+            "Precision: {:.3f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+                metrics.precision_score(
+                    self.le.inverse_transform(self.y_true),  # y_true
+                    self.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                    # labels=ml_pipeline_dt.RSE_info["target"],
+                    # target_names=ml_pipeline_dt.RSE_info["target"],
+                )
+            )
+        )
+        print(
+            "Recall: {:.3f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+                metrics.recall_score(
+                    self.le.inverse_transform(self.y_true),  # y_true
+                    self.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                    # labels=ml_pipeline_dt.RSE_info["target"],
+                    # target_names=ml_pipeline_dt.RSE_info["target"],
+                ),
+            )
+        )
         return (
             f1_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
             # f1_score(y_true=unseen_out, y_pred=unseen_pred, average="macro"),
