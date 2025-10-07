@@ -470,7 +470,7 @@ parser.add_argument(
 
 def main():
     """
-    $  time python githubanalysis/analysis/ML_tuning.py -n 10000 -n 50 -r 42
+    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -r 69
     """
     args = parser.parse_args()
     nobs_arg: int = args.n_observations
