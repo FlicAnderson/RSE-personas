@@ -23,9 +23,6 @@ from githubanalysis.analysis.baby_ML_pipeline import (
 )
 from githubanalysis.setup_classes import DatasetSetup
 
-
-TEST_SIZE = 0.2
-RANDOM_STATE = 42
 CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
     "pc_commit_created",
     "pc_issue_created",
@@ -89,6 +86,7 @@ class TuningSetup(DatasetSetup):
         logger: None | Logger = None,
         N_OBS: int = 10000,
         N_ITER: int = 50,
+        RANDOM_STATE: int = 42,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -101,6 +99,7 @@ class TuningSetup(DatasetSetup):
         self.le = LabelEncoder()
         self.N_OBS = N_OBS
         self.N_ITER = N_ITER
+        self.RANDOM_STATE = RANDOM_STATE
 
     def prep_data(
         self,
@@ -148,7 +147,7 @@ class TuningSetup(DatasetSetup):
             frac=None,
             replace=False,
             weights=None,
-            random_state=RANDOM_STATE,
+            random_state=self.RANDOM_STATE,
             axis=None,
             ignore_index=False,
         )
@@ -206,7 +205,7 @@ class TuningSetup(DatasetSetup):
             y,
             # test_size, #=test_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 25%
             # train_size, #=train_pc,  # by (sklearn) default if int: N of samples; if float: proportion of sample; if None and train_size=None also, it uses 75%
-            random_state=RANDOM_STATE,
+            random_state=self.RANDOM_STATE,
             shuffle=True,  # shuffle_state,  # True by (sklearn) default
             stratify=self.RSE_info["target"],  # same as y; None by (sklearn) default
         )
@@ -254,7 +253,7 @@ class TuningSetup(DatasetSetup):
             "max_features": feat_range,
             "ccp_alpha": stats.uniform(0, 0.25),
             "min_impurity_decrease": stats.uniform(0, 0.1),
-            "max_leaf_nodes": stats.uniform(7, 250),
+            "max_leaf_nodes": stats.randint(7, 250),
         }
 
         N_CORES = joblib.cpu_count(only_physical_cores=True)
@@ -459,12 +458,24 @@ parser.add_argument(
     type=int,
     default=100,
 )
+parser.add_argument(
+    "-r",
+    "--random-state",
+    metavar="RANDOM",
+    help="random seed to set (e.g. 42)",
+    type=int,
+    default=42,
+)
 
 
 def main():
+    """
+    $  time python githubanalysis/analysis/ML_tuning.py -n 10000 -n 50 -r 42
+    """
     args = parser.parse_args()
     nobs_arg: int = args.n_observations
     niter_arg: int = args.n_iterations
+    rand_arg: int = args.random_state
 
     tuning_setup = TuningSetup(
         dataset_name="ML_tune",
@@ -473,6 +484,7 @@ def main():
         logger=None,
         N_OBS=nobs_arg,
         N_ITER=niter_arg,
+        RANDOM_STATE=rand_arg,
     )
     print("prepping dataset")
     tuning_setup.prep_data()
