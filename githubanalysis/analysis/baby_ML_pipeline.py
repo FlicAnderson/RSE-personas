@@ -78,6 +78,7 @@ class ML_Pipeline_Decision_Tree(
         logger: None | Logger = None,
     ) -> None:
         self.model_type = "decision_tree"
+        self.model_abbrv = "DT"
         self.le = LabelEncoder()
         # create a pipeline object
         self.pipe = Pipeline(
@@ -279,11 +280,11 @@ class ML_Pipeline_Decision_Tree(
         # Plot non-normalized confusion matrix
         titles_options = [
             (
-                f"{self.model_type} CM, no normalization (N={self.X_test_size[0]})",
+                f"{self.model_abbrv}: no normalization (Ntest={self.X_test_size[0]})",
                 None,
             ),
             (
-                f"{self.model_type} normalized CM (N={self.X_test_size[0]})",
+                f"{self.model_abbrv}: normalized (Ntest={self.X_test_size[0]})",
                 "true",
             ),  # normalise on True value pcs
         ]
@@ -297,6 +298,15 @@ class ML_Pipeline_Decision_Tree(
             "Low-Coding Closer",
             "Active Contributor",
         ]
+        persona_labels = [
+            "Ephm",
+            "Occs",
+            "PrOg",
+            "Modr",
+            "LoPr",
+            "LoCo",
+            "Actv",
+        ]
 
         for title, normalize in titles_options:
             disp = ConfusionMatrixDisplay.from_predictions(
@@ -305,7 +315,7 @@ class ML_Pipeline_Decision_Tree(
                 labels=persona_order,  # personas listed in increasing MRC order
                 sample_weight=None,
                 normalize=normalize,  # 'all': total N samples; 'pred': over predictions; 'true': over true; None: default
-                display_labels=None,
+                display_labels=persona_labels,
                 include_values=True,
                 xticks_rotation="vertical",
                 values_format=None,
@@ -318,7 +328,7 @@ class ML_Pipeline_Decision_Tree(
             disp.ax_.set_title(title)
             saveout_name = Path(
                 self.image_write_location,
-                f"{self.model_type}_confusion_matrix_normalise{normalize}_N{self.X_test_size[0]}_{self.current_date_info}.pdf",
+                f"{self.model_abbrv}_confusion_matrix_normalise{normalize}_N{self.X_test_size[0]}_{self.current_date_info}.pdf",
             )
             plt.savefig(
                 saveout_name,
@@ -339,6 +349,7 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.model_type = "random_forest"
+        self.model_abbrv = "RF"
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = int(forest_size)
@@ -389,6 +400,7 @@ class ML_Pipeline_HistGradientBoosting(ML_Pipeline_Decision_Tree):
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.model_type = "hist_gradient_boosting"
+        self.model_abbrv = "HGBT"
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = int(forest_size)
@@ -442,6 +454,7 @@ class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.model_type = "gradient_boosting"
+        self.model_abbrv = "GBT"
         self.le = LabelEncoder()
         # create a pipeline object
         self.forest_size = int(forest_size)
