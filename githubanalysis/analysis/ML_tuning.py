@@ -277,11 +277,12 @@ class TuningSetup(DatasetSetup):
             clf,
             n_iter=self.N_ITER,  # controls 'combination of parameters'
             param_distributions=params,
-            scoring="accuracy",
+            scoring="f1_macro",  # "accuracy",
             cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
             n_jobs=(N_CORES - 1),
-            verbose=2,
+            verbose=4,
             random_state=None,  # default=None
+            return_train_score=True,
         )
         self.logger.info("search declared")
         start_hyper_param_search = time.time()
@@ -291,6 +292,8 @@ class TuningSetup(DatasetSetup):
             warnings.simplefilter("once")
             search.fit(self.X_train, self.y_train)
             self.report(search.cv_results_, n_top=5)  # Report the top 10 results
+
+            param_search_results = pd.DataFrame(search.cv_results_)
             best_params = HyperParams(
                 depth=search.best_params_["max_depth"],
                 trees=search.best_params_["n_estimators"],
@@ -310,6 +313,12 @@ class TuningSetup(DatasetSetup):
             f"Hyper-Parameter search for RF took {hyper_param_search_time} seconds for {self.N_ITER} across {len(params)} parameter categories."
         )
 
+        params_filename_out = (
+            f"RF_paramsearch_N{self.y_test_size[0]}_{self.current_date_info}.csv"
+        )
+        params_save_out = Path(self.data_location, params_filename_out)
+        param_search_results.to_csv(params_save_out, header=True, index=False)
+
         start_selected_rfc_fit = time.time()
         self.logger.info("fit timer started")
         # run full model with the best params! :D
@@ -324,6 +333,8 @@ class TuningSetup(DatasetSetup):
             min_impurity_decrease=best_params.min_impurity_dec,
             max_leaf_nodes=best_params.max_lvs,
             oob_score=True,
+            n_jobs=(N_CORES - 1),
+            verbose=4,
         ).fit(self.X_train, self.y_train)
         end_selected_rfc_fit = time.time()
         selected_rfc_fit_time = end_selected_rfc_fit - start_selected_rfc_fit
@@ -350,7 +361,7 @@ class TuningSetup(DatasetSetup):
         )
 
         filename_out = (
-            f"test_prediction_data_N{self.y_test_size}_{self.current_date_info}.csv"
+            f"test_prediction_data_N{self.y_test_size[0]}_{self.current_date_info}.csv"
         )
         save_out = Path(self.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
@@ -486,6 +497,10 @@ def main():
         N_ITER=niter_arg,
         RANDOM_STATE=rand_arg,
     )
+    tuning_setup.logger.info(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> new paramsearch running <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    )
+    tuning_setup.logger.info("\n")
     print("prepping dataset")
     tuning_setup.prep_data()
     print("splitting dataset")
