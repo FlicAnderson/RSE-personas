@@ -610,6 +610,8 @@ def run_scoring_printouts(
             using N={pipeline_class_obj.X_test_size[1]} features \n 
             with N={pipeline_class_obj.forest_size} trees in forest  \n
             at {pipeline_class_obj.current_date_info} \n 
+            TRAIN (fit) TIME: {pipeline_class_obj.fit_train_time} seconds \n
+            TEST (predict) TIME: {pipeline_class_obj.predict_test_time} seconds \n
             with parameters: {pipeline_class_obj.pipe.get_params(deep=False)}
         """
         )
