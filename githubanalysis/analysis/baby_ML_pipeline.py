@@ -630,7 +630,7 @@ def run_scoring_printouts(
         )
     )
     print(
-        "Balanced Accuracy: {:.f} (the average of recall obtained on each class)".format(
+        "Balanced Accuracy: {:.5f} (the average of recall obtained on each class)".format(
             metrics.balanced_accuracy_score(
                 pipeline_class_obj.y_true,
                 pipeline_class_obj.y_pred,
