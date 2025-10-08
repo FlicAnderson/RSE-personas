@@ -616,7 +616,7 @@ def run_scoring_printouts(
 
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     print(
-        "Accuracy: {:.3f} (percent of correctly classified samples)".format(
+        "Accuracy: {:.5f} (percent of correctly classified samples)".format(
             metrics.accuracy_score(
                 pipeline_class_obj.y_true, pipeline_class_obj.y_pred
             ),
@@ -630,7 +630,7 @@ def run_scoring_printouts(
         )
     )
     print(
-        "Balanced Accuracy: {:.3f} (the average of recall obtained on each class)".format(
+        "Balanced Accuracy: {:.f} (the average of recall obtained on each class)".format(
             metrics.balanced_accuracy_score(
                 pipeline_class_obj.y_true,
                 pipeline_class_obj.y_pred,
@@ -639,7 +639,7 @@ def run_scoring_printouts(
         )
     )
     print(
-        "F1 Score: {:.3f} (harmonic mean of the precision and recall, both equally weighted)".format(
+        "F1 Score: {:.5f} (harmonic mean of the precision and recall, both equally weighted)".format(
             metrics.f1_score(
                 pipeline_class_obj.le.inverse_transform(
                     pipeline_class_obj.y_true
@@ -654,7 +654,7 @@ def run_scoring_printouts(
         )
     )
     print(
-        "Precision: {:.3f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+        "Precision: {:.5f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
             metrics.precision_score(
                 pipeline_class_obj.le.inverse_transform(
                     pipeline_class_obj.y_true
@@ -669,7 +669,7 @@ def run_scoring_printouts(
         )
     )
     print(
-        "Recall: {:.3f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+        "Recall: {:.5f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
             metrics.recall_score(
                 pipeline_class_obj.le.inverse_transform(
                     pipeline_class_obj.y_true
@@ -686,7 +686,7 @@ def run_scoring_printouts(
     # multiclass means you can only be in one category only e.g. media format (film or tv-show)
     # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
     print(
-        "Area Under the Receiver Operating Characteristic Curve (ROC AUC): {:.3f}".format(
+        "Area Under the Receiver Operating Characteristic Curve (ROC AUC): {:.5f}".format(
             roc_auc_score(
                 y_true=y_test,
                 y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(
@@ -700,7 +700,7 @@ def run_scoring_printouts(
     )
     if pipeline_class_obj.model_type == "random_forest":
         print(
-            "Out of Bag Error: {:.3f}".format(
+            "Out of Bag Error: {:.5f}".format(
                 # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
                 1 - pipeline_class_obj.pipe.named_steps["clf"].oob_score_
             )
