@@ -5,6 +5,7 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 import graphviz
+import time
 
 from sklearn.pipeline import (
     Pipeline,
@@ -208,7 +209,11 @@ class ML_Pipeline_Decision_Tree(
         self.X_test_size = X_test.shape
         self.y_test_size = y_test.shape
 
+        start_fit_train_time = time.time()
         self.pipe.fit(X_train, y_train)
+        end_fit_train_time = time.time()
+        self.fit_train_time = end_fit_train_time - start_fit_train_time
+
         return X_test, y_test
 
     def plot_decision_tree(self, depth):
@@ -267,7 +272,10 @@ class ML_Pipeline_Decision_Tree(
         X_test,
         y_test,
     ):
+        start_predict_test_time = time.time()
         self.y_pred = self.pipe.predict(X_test)
+        end_predict_test_time = time.time()
+        self.predict_test_time = end_predict_test_time - start_predict_test_time
         self.y_true = y_test
 
         # savefig kwargs
@@ -587,6 +595,8 @@ def run_scoring_printouts(
             and evaluated using test-set size: N={pipeline_class_obj.X_test_size[0]} repo-individuals \n
             using N={pipeline_class_obj.X_test_size[1]} features \n 
             at {pipeline_class_obj.current_date_info} \n
+            TRAIN (fit) TIME: {pipeline_class_obj.fit_train_time} seconds \n
+            TEST (predict) TIME: {pipeline_class_obj.predict_test_time} seconds \n
             with parameters: {pipeline_class_obj.pipe.get_params(deep=False)}
             """
         )
