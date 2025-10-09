@@ -69,7 +69,7 @@ class ML_Pipeline_Decision_Tree(
     DatasetSetup
 ):  # wrapper around my ML pipeline, also holds additional helpful info.
     def _log_name(self) -> str:
-        return "baby_ML_pipeline"
+        return "ML_pipeline"
 
     def __init__(
         self,
@@ -506,7 +506,7 @@ class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
 
 class ML_Utils(DatasetSetup):
     def _log_name(self) -> str:
-        return "baby_ML_pipeline_utils"
+        return "ML_pipeline_utils"
 
     def __init__(
         self,
