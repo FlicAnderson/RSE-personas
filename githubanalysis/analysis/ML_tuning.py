@@ -17,7 +17,7 @@ from sklearn.metrics import f1_score, precision_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import RandomizedSearchCV
 
-from githubanalysis.analysis.baby_ML_pipeline import (
+from githubanalysis.analysis.ML_pipeline import (
     ML_Pipeline_Decision_Tree,
     update_candidate_features,
 )
