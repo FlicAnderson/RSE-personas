@@ -77,6 +77,10 @@ class GetCodeReviews(RESTRequestSetup):
         self,
         repo_list_file_name: Path,
     ) -> list[str]:
+        """
+        Read the list of repo names from input file (commandline argument.)
+        Returns list of strings (reponames)
+        """
         repo_list = simple_read_repos_from_file(
             filename=self.data_location / repo_list_file_name
         )
@@ -86,14 +90,13 @@ class GetCodeReviews(RESTRequestSetup):
         self,
         repo_list: list[str],
     ):
-        # for each repo_name in repo_list:
-        # do:
-        # ...
-        i = 0
-        all_repos_reviews_results = []
+        """
+        Run the main work.
+        """
 
-        for repo in repo_list:
-            i += 1
+        for i, repo in enumerate(
+            repo_list
+        ):  # enumerate: better than manually incrementing i like a pleb, I guess
             print(f"processing repo {i} of {len(repo_list)}")
             print(f"processing repo: {repo}.")
             pulls_qry = self.make_pulls_query_url(
@@ -104,13 +107,9 @@ class GetCodeReviews(RESTRequestSetup):
             )
             print(f"pulls query is: {pulls_qry}")
 
-            # for repo, run get_PR_numbers(repo_name = repo)
-            # checks for API response
-            # if I get RepoNotFoundError, SKIP TO NEXT REPO. (done by RepoNotFound Error in check_PRs_exist() )
-            # get PRs_list of ints from json response
-            # store in useful format for using to query separately using loop_over_repo_PRs(PRs_list)
-
-            repo_PRs = self.get_PR_numbers(repo_name=repo)
+            repo_PRs = self.get_PR_numbers(
+                repo_name=repo
+            )  # list of PR numbers for repo
 
             if repo_PRs is not None:
                 print(f"repo {repo} contains PRs: {repo_PRs}")
@@ -118,46 +117,10 @@ class GetCodeReviews(RESTRequestSetup):
                 print(f"No PRs for repo {repo}; skipping to next repo.")
                 continue
 
-            assert repo_PRs is not None
-
-            repo_reviews = self.loop_over_repo_PRs(repo_name=repo, repo_PRs=repo_PRs)
-
-            repo_results = {
-                "repo_name": repo,
-                "number_PRs": len(repo_PRs),
-                "total_PR_reviews": sum(
-                    sum(reviews) for reviews in repo_reviews.values()
-                ),
-            }
-
-            all_repos_reviews_results.append(repo_results)
-
-        write_out_location = Path(
-            self.data_location,
-            f"repos_PR_reviews_results_{self.current_date_info}.csv",
-        )
-        all_repos_reviews_results_df = pd.DataFrame(all_repos_reviews_results)
-
-        self.logger.info(
-            f"saving results of repo PR reviews gathering out to file {write_out_location}"
-        )
-        all_repos_reviews_results_df.to_csv(
-            path_or_buf=write_out_location, header=True, index=False
-        )
-        # reviews_results.append(
-        #    repo_reviews
-        # )  # will overwrite existing repo_names, so needs to contain the sum PR_reviews info
-
-        # (in loop_over_repo_PRs(PRs_list):)
-        # for PR in PRs_list, run get_review_comments_for_PR(PR_number=PR)
-        # get review comments, get GH_username and other similar info required, timestamps etc.
-        # save out raw data to json file
-        # combine into per-repo_name df or other structure, labelled appropriately
-
-        # (collate and log per-repo stats: e.g. N of PRs, N of PRs with reviews, N of reviews per PR, N of GH_usernames etc )
-
-        # shift to next repo in repo_list.
-        return all_repos_reviews_results
+            self.process_PR_reviews_one_repo(  # gather the main and sub reviews for one repo.
+                repo_name=repo, repo_PRs=repo_PRs
+            )
+        # No return.
 
     def check_PRs_exist(
         self, repo_name: str, pulls_qry: str
@@ -182,17 +145,16 @@ class GetCodeReviews(RESTRequestSetup):
         else:
             return api_response
 
-    def count_PR_reviews(
+    def fetch_main_reviews_json(
         self,
         repo_name: str,
         PR_num: int,
         reviews_qry: str | None,
-    ) -> tuple[list[int], list[dict[str, Any]]]:
+    ) -> list[dict[str, Any]]:
         # for given PR number in given repo, check for PR Reviews
         # if a query is supplied (e.g. from api_response.links), use that, otherwise construct the 'first page' query
 
-        PR_review_nums: list[int] = []
-        PR_reviews_json = []
+        main_reviews_json = []
         if reviews_qry is None:
             reviews_qry = self.make_reviews_query_url(
                 repos_api_url="https://api.github.com/repos/",
@@ -201,8 +163,6 @@ class GetCodeReviews(RESTRequestSetup):
                 per_pg=100,
                 page=1,
             )
-        else:
-            reviews_qry = reviews_qry
 
         print(f"pull request reviews query for PR {PR_num} is: {reviews_qry}")
         self.logger.info(f"getting json via request url {reviews_qry}.")
@@ -224,56 +184,17 @@ class GetCodeReviews(RESTRequestSetup):
 
         json_pg = api_response.json()
 
-        PR_reviews_json.extend(json_pg)
+        main_reviews_json.extend(json_pg)
 
-        count_PR_reviews = len(json_pg)
-
-        if is_this_single_page(api_response.links):
-            self.logger.debug("single page of reviews only; <=100")
-            self.logger.debug(f"Contains {count_PR_reviews} PR reviews")
-            PR_review_nums.append(count_PR_reviews)
-
-        elif not is_this_single_page(
-            api_response.links
-        ):  # use bool result from get_all_pages_issues.py function
-            #     #print(len(repo_PRs))
+        if not is_this_single_page(api_response.links):
+            main_reviews_json.extend(
+                self.get_remaining_pgs(
+                    next_pg=api_response.links["next"]["url"], repo_name=repo_name
+                )
+            )
             self.logger.debug("more than one pages of reviews; >100")
-            #         PR_review_nums.append(count_PR_reviews)
-            #         print(sum(PR_review_nums))
 
-            next_pg = api_response.links["next"][
-                "url"
-            ]  # use pagination to get 'next page' url for query
-            try:
-                api_response = run_with_retries(
-                    fn=lambda: raise_if_response_error(
-                        api_response=self.s.get(url=next_pg, headers=self.headers),
-                        repo_name=repo_name,
-                        logger=self.logger,
-                    ),
-                    logger=self.logger,
-                )
-                print(api_response)
-            except Exception as e:
-                self.logger.error(
-                    f"Error in getting PR reviews for PR {PR_num} for repo name {repo_name} with query {next_pg}: {e}."
-                )
-                raise
-
-            json_pg = api_response.json()
-            PR_reviews_json.extend(json_pg)
-            count_PR_reviews += len(json_pg)  # add N of next_pg of reviews to previous
-            self.logger.debug(f"Contains {count_PR_reviews} PR reviews")
-            PR_review_nums.append(
-                count_PR_reviews
-            )  # collate N of reviews to var out of the loop
-
-        self.logger.info(PR_review_nums)
-        self.logger.info(
-            f"{sum(PR_review_nums)} found across {len(PR_review_nums)} PRs"
-        )
-
-        return PR_review_nums, PR_reviews_json
+        return main_reviews_json
 
     def get_PR_numbers(
         self, repo_name: str, out_json_file="all-PR-numbers_json"
@@ -308,12 +229,6 @@ class GetCodeReviews(RESTRequestSetup):
         count_pulls = len(json_pg)
         self.logger.info(f"Initial query for {repo_name} shows {count_pulls} PRs.")
 
-        page_PRs = [item.get("number") for item in json_pg]
-        # print(page_PRs)
-
-        repo_PRs = []
-        repo_PRs = page_PRs  # save first page PR numbers to repo list
-
         sanitised_repo_name = repo_name.replace("/", "-")
         out_filename = out_json_file
         write_out = f"{self.data_location / out_filename}_{sanitised_repo_name}"
@@ -325,55 +240,14 @@ class GetCodeReviews(RESTRequestSetup):
             self.logger.info(f"single page of PRs only for repo {repo_name}; <=100")
 
         else:
-            # use pagination to get 'next page' url for query
-            next_pg = api_response.links["next"]["url"]
-            while next_pg is not None:
-                self.logger.info(
-                    f"more than one pages of PRs for repo {repo_name}; >100"
+            PR_nums_json.extend(
+                self.get_remaining_pgs(
+                    next_pg=api_response.links["next"]["url"],
+                    repo_name=repo_name,
                 )
-
-                self.logger.info(f"getting json via request url {next_pg}.")
-                try:
-                    api_response = run_with_retries(
-                        fn=lambda: raise_if_response_error(
-                            api_response=self.s.get(url=next_pg, headers=self.headers),
-                            repo_name=repo_name,
-                            logger=self.logger,
-                        ),
-                        logger=self.logger,
-                    )
-                    print(api_response)
-                except RepoNotFoundError:
-                    print(f"Repo {repo_name} not found; skipping this repo.")
-                    # this is intentionally skipping repos which don't exist
-                    return None
-                    # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
-                else:
-                    self.logger.info(
-                        f"API response to next page query {next_pg} was {api_response}."
-                    )
-
-                json_pg = api_response.json()
-
-                # JSON HANDLING
-                PR_nums_json.extend(json_pg)
-
-                count_pulls = len(json_pg)
-                # print(count_pulls)
-
-                page_PRs = [item.get("number") for item in json_pg]
-                # print(page_PRs)
-                repo_PRs.extend(
-                    page_PRs
-                )  # add these PRs to the existing list (extend), not add this list within another list (append)
-                # print(len(repo_PRs))
-
-                # next_pg is the iterator condition for the while loop handling pagination! Do not remove this unless refactoring completely!
-                next_pg = api_response.links.get(
-                    "next", {}
-                ).get(
-                    "url"
-                )  # THIS IS IMPORTANT! This is a while loop which runs until next_pg is NONE.
+            )
+            # use pagination to get 'next page' url for query
+        repo_PRs = [item.get("number") for item in PR_nums_json]
 
         self.logger.info(f"Number of total PRs in repo {repo_name} is: {len(repo_PRs)}")
 
@@ -384,26 +258,129 @@ class GetCodeReviews(RESTRequestSetup):
 
         return repo_PRs  # list of PR numbers
 
-    def get_review_comments_for_PR(self, PR_number: int, PR_review_number: int):
-        """
-        Function which pulls the pr_comments (ie review discussion/comments/subcomments)
-        """
-        pass
+    def get_remaining_pgs(
+        self,
+        next_pg: str | None,
+        repo_name,
+    ):
+        # use pagination to get 'next page' url for query
+        sub_reviews_json_responses = []
+        # sub_reviews_ids = []
+        while (
+            next_pg is not None
+        ):  # IMPORTANT: while loop runs until no next_pg url link.
+            self.logger.info(f"getting json via request url {next_pg}.")
+            # try:
+            api_response = run_with_retries(
+                fn=lambda: raise_if_response_error(
+                    api_response=self.s.get(url=next_pg, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
+                logger=self.logger,
+            )
+            print(api_response)
 
-    def loop_over_repo_PRs(
+            # get next page of json content for sub-reviews for this main review
+            sub_reviews_json_responses.extend(api_response.json())
+
+            # next_pg is the iterator condition for the while loop handling pagination! Do not remove this unless refactoring completely!
+            next_pg = api_response.links.get(
+                "next", {}
+            ).get(
+                "url"
+            )  # THIS IS IMPORTANT! This is a while loop which runs until next_pg is NONE.
+        return sub_reviews_json_responses
+
+    def get_sub_review_from_main_review(self, PR, review, repo_name, per_pg):
+        sub_reviews_ids_PR = []
+        sub_reviews_json_PR = []
+        sub_review_query = (
+            self.review_comments_query_url(  # construct sub-review query for this PR.
+                PR_number=PR,
+                PR_review_number=review,
+                repos_api_url="https://api.github.com/repos/",
+                repo_name=repo_name,
+                per_pg=per_pg,
+                page=None,
+            )
+        )
+        self.logger.debug(
+            f"Assembled sub review query: {sub_review_query} for PR {PR} and main review {review}"
+        )
+        self.logger.debug(
+            f"Running sub review query: {sub_review_query} for PR {PR} and main review {review}..."
+        )
+        # run the query
+        api_response = run_with_retries(
+            fn=lambda: raise_if_response_error(
+                api_response=self.s.get(url=sub_review_query, headers=self.headers),
+                repo_name=repo_name,
+                logger=self.logger,
+            ),
+            logger=self.logger,
+        )
+        self.logger.debug(
+            f"API response {api_response} for sub review query: {sub_review_query} for PR {PR} and main review {review}"
+        )
+        sub_reviews_json_PR.extend(
+            api_response.json()
+        )  # add sub-reviews JSON to the accumulator list for this MAIN review
+
+        if not is_this_single_page(api_response.links):
+            subreview_json = self.get_remaining_pgs(
+                next_pg=api_response.links["next"]["url"],
+                repo_name=repo_name,
+            )
+            sub_reviews_json_PR.extend(subreview_json)
+        else:
+            self.logger.debug(
+                f"single page of subreviews only for repo {repo_name} on PR {PR} for review ID {review}; <=100"
+            )
+
+        sub_reviews_ids = [item.get("id") for item in api_response.json()]
+        self.logger.debug(
+            f"{len(sub_reviews_ids)} sub_review IDs for review ID {review}: {sub_reviews_ids}"
+        )
+
+        self.logger.info(
+            f"There were {len(sub_reviews_ids_PR)} subreviews in main review {review} for PR {PR} at repo {repo_name}."
+        )
+        self.logger.info("Running next main review check...")
+        return sub_reviews_json_PR
+
+    def get_all_sub_reviews_from_ALL_main_reviews(
+        self,
+        PR: int,
+        main_reviews: list[int],
+        repo_name,
+        per_pg,
+    ):
+        all_sub_reviews = []
+        # loop through the main reviews to get sub-reviews
+        for review in main_reviews:
+            all_sub_reviews.extend(
+                self.get_sub_review_from_main_review(
+                    PR, review, repo_name=repo_name, per_pg=per_pg
+                )
+            )
+
+        self.logger.info(
+            f"Completed check for sub-reviews in {len(main_reviews)} main reviews for PR {PR} at repo {repo_name}, and found {len(all_sub_reviews)}."
+        )
+        return all_sub_reviews
+
+    def process_PR_reviews_one_repo(
         self,
         repo_name: str,
         repo_PRs: list[int],
         out_json_file: str = "all-PR-reviews_json",
         per_pg: int | str = 100,
-        # page:int | None =1,
-    ) -> dict[int, list[int]]:
+    ):
         """
-        Writes out JSON file of PR 'main' reviews across ALL repo_PRs given.
-        Returns SUMMARY DICT with: {PR_num : [total number of reviews for that PR]}
+        Writes out JSON file of PR 'main' reviews across ALL repo_PRs given
+        AND JSON file of SUB reviews as well.
         """
-        # for each PR_number in PRs_list:
-        # do:
 
         sanitised_repo_name = repo_name.replace("/", "-")
         out_filename_main = out_json_file + "_main-reviews_"
@@ -417,139 +394,36 @@ class GetCodeReviews(RESTRequestSetup):
         )
         write_out_extra_info_json_sub = f"{write_out_sub}_{self.current_date_info}.json"
 
-        # Count number of 'reviews' for each PR for single repo.
-        PR_reviews: dict[int, list[int]] = {}
         PR_reviews_json_all = []
 
         for PR in repo_PRs:
             print(f"Pull Request ID: {PR}")
 
-            PR_review_nums, PR_reviews_json = self.count_PR_reviews(
-                repo_name=repo_name,
-                PR_num=PR,
-                reviews_qry=None,
+            PR_reviews_json = (
+                self.fetch_main_reviews_json(  # THIS IS REALLY IMPORTANT :C
+                    repo_name=repo_name,
+                    PR_num=PR,
+                    reviews_qry=None,
+                )
             )
             self.logger.info(
-                f"{sum(PR_review_nums)} found for PR {PR} in repo {repo_name}."
+                f"{len(PR_reviews_json)} found for PR {PR} in repo {repo_name}."
             )
-            PR_reviews_json_all.extend(PR_reviews_json)
-            PR_reviews[PR] = PR_review_nums
+            PR_reviews_json_all.extend(PR_reviews_json)  # assemble all the PR entries
 
             main_reviews = [
-                item.get("id") for item in PR_reviews_json_all
+                item["id"]
+                for item in PR_reviews_json  # JUST FOR THIS PR
+                if "id" in item  # avoids Nones
             ]  # from the concatenated json output in this PR loop e.g. PR 1, get all the 'main' reviews as list of IDs to create further queries for
 
-            sub_reviews_json_all = []
-            sub_reviews_ids_all = []
+            sub_reviews_json_all = self.get_all_sub_reviews_from_ALL_main_reviews(
+                PR, main_reviews=main_reviews, repo_name=repo_name, per_pg=per_pg
+            )
 
-            if main_reviews is not None:
-                # loop through the main reviews to get sub-reviews
-                for review in main_reviews:
-                    sub_reviews_ids_PR = []
-                    sub_reviews_json_PR = []
-                    sub_review_query = self.review_comments_query_url(  # construct sub-review query for this PR.
-                        PR_number=PR,
-                        PR_review_number=review,
-                        repos_api_url="https://api.github.com/repos/",
-                        repo_name=repo_name,
-                        per_pg=per_pg,
-                        page=None,
-                    )
-                    self.logger.debug(
-                        f"Assembled sub review query: {sub_review_query} for PR {PR} and main review {review}"
-                    )
-                    self.logger.debug(
-                        f"Running sub review query: {sub_review_query} for PR {PR} and main review {review}..."
-                    )
-                    # run the query
-                    api_response = run_with_retries(
-                        fn=lambda: raise_if_response_error(
-                            api_response=self.s.get(
-                                url=sub_review_query, headers=self.headers
-                            ),
-                            repo_name=repo_name,
-                            logger=self.logger,
-                        ),
-                        logger=self.logger,
-                    )
-                    self.logger.debug(
-                        f"API response {api_response} for sub review query: {sub_review_query} for PR {PR} and main review {review}"
-                    )
-                    sub_reviews_ids = [item.get("id") for item in api_response.json()]
-                    self.logger.debug(
-                        f"{len(sub_reviews_ids)} sub_review IDs for review ID {review}: {sub_reviews_ids}"
-                    )
-                    sub_reviews_json_PR.extend(
-                        api_response.json()
-                    )  # add sub-reviews JSON to the accumulator list for this MAIN review
-                    sub_reviews_ids_PR.extend(sub_reviews_ids)
-
-                    if is_this_single_page(api_response.links):
-                        self.logger.debug(
-                            f"single page of subreviews only for repo {repo_name} on PR {PR} for review ID {review}; <=100"
-                        )
-                    else:
-                        # use pagination to get 'next page' url for query
-                        next_pg = api_response.links["next"]["url"]
-                        while (
-                            next_pg is not None
-                        ):  # IMPORTANT: while loop runs until no next_pg url link.
-                            self.logger.info(
-                                f"more than one page of subreviews for repo {repo_name} on PR {PR} for review ID {review}; >100"
-                            )
-
-                            self.logger.info(f"getting json via request url {next_pg}.")
-                            # try:
-                            api_response = run_with_retries(
-                                fn=lambda: raise_if_response_error(
-                                    api_response=self.s.get(
-                                        url=next_pg, headers=self.headers
-                                    ),
-                                    repo_name=repo_name,
-                                    logger=self.logger,
-                                ),
-                                logger=self.logger,
-                            )
-                            print(api_response)
-
-                            # get next page of json content for sub-reviews for this main review
-                            sub_reviews_json_PR.extend(api_response.json())
-                            # get next page of sub-review IDs for sub-reviews on this page
-                            sub_reviews_ids_PR.extend(
-                                [item.get("id") for item in api_response.json()]
-                            )
-
-                            # next_pg is the iterator condition for the while loop handling pagination! Do not remove this unless refactoring completely!
-                            next_pg = api_response.links.get(
-                                "next", {}
-                            ).get(
-                                "url"
-                            )  # THIS IS IMPORTANT! This is a while loop which runs until next_pg is NONE.
-
-                    self.logger.info(
-                        f"There were {len(sub_reviews_ids_PR)} subreviews in main review {review} for PR {PR} at repo {repo_name}."
-                    )
-                    self.logger.info("Running next main review check...")
-
-                    sub_reviews_ids_all.extend(
-                        sub_reviews_ids_PR
-                    )  # punt these IDs into the accumulator
-                    sub_reviews_json_all.extend(
-                        sub_reviews_json_PR
-                    )  # punt the json into the accumulator
-                    self.logger.debug(
-                        f"sub_reviews_ids_all length is {len(sub_reviews_ids_all)}"
-                    )
-                    self.logger.debug(
-                        f"sub_reviews_json_all length is {len(sub_reviews_json_all)}"
-                    )
-
-                self.logger.info(
-                    f"Completed check for sub-reviews in {len(main_reviews)} main reviews for PR {PR} at repo {repo_name}, and found {len(sub_reviews_ids_all)}."
-                )
-                # get json for sub reviews FOR THIS PR
+            # get json for sub reviews FOR THIS PR
             self.logger.info(
-                f"There were {len(sub_reviews_ids_all)} sub-reviews in total accross all {len(main_reviews)} main reviews over {len(repo_PRs)} PRs for repo {repo_name}."
+                f"There were {len(sub_reviews_json_all)} sub-reviews in total accross all {len(main_reviews)} main reviews over {len(repo_PRs)} PRs for repo {repo_name}."
             )
             # write out json for sub reviews FOR ALL PRs from this repo to separate file
             self.logger.info(
@@ -563,8 +437,7 @@ class GetCodeReviews(RESTRequestSetup):
         )
         with open(write_out_extra_info_json_main, "w") as json_file:
             json.dump(PR_reviews_json_all, json_file)
-
-        return PR_reviews
+        # no return, intentionally. We're making files here.
 
 
 parser = argparse.ArgumentParser()
@@ -596,8 +469,7 @@ if __name__ == "__main__":
     # loop through repo_list
     print(f"{repo_list = }")
 
-    # for each repo in repo_list, do:
-    results = get_code_reviews.loop_over_repos(repo_list=repo_list)
+    # for each repo in repo_list, do all the things:
+    get_code_reviews.loop_over_repos(repo_list=repo_list)
 
-    print(results)
     print("Get code reviews info complete")
