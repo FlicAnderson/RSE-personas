@@ -17,8 +17,8 @@ authors:
 identifiers:
   - type: url
     value: >-
-      https://github.com/FlicAnderson/coding-smart/tree/v0.6.0-deRSE2025-poster
-    description: DeRSE 2025 poster generation version of code
+      https://github.com/FlicAnderson/RSE-personas/releases/tag/v1.1.0-SERS-abstract
+    description: ML Ensemble Classification Tree Evaluation Code for SERS26 Extended Abstract 
 repository-code: 'https://github.com/FlicAnderson/coding-smart/'
 abstract: >-
   Coding-Smart repository is the basis for the RSE Personas
@@ -31,5 +31,5 @@ keywords:
   - RSE
   - Research Software Engineering
 license: BSD-3-Clause
-version: v0.6.0-deRSE2025-poster
-date-released: '2025-02-27'
+version: v1.1.0-SERS-abstract
+date-released: '2025-10-09'
