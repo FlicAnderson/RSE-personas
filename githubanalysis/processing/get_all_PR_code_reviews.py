@@ -2,7 +2,6 @@
 
 import logging
 import json
-import pandas as pd
 from typing import Any
 import argparse
 from pathlib import Path
@@ -120,6 +119,7 @@ class GetCodeReviews(RESTRequestSetup):
             self.process_PR_reviews_one_repo(  # gather the main and sub reviews for one repo.
                 repo_name=repo, repo_PRs=repo_PRs
             )
+        self.logger.info("The loop-over-repos for Code Review is complete.")
         # No return.
 
     def check_PRs_exist(
@@ -202,14 +202,7 @@ class GetCodeReviews(RESTRequestSetup):
         """
         should get pull request numbers to loop through to check for code reviews.
         Writes out JSON file of PR entries (no reviews)
-
         """
-        # create API request to use repo_name, and get PR numbers
-        # PRs_api_url = f"https://api.github.com/repos/{repo_name}/pulls"
-        # make query from PRs_api_url and other headers/info (SEPARATED INTO)
-        # and return PRs_list list of ints to query separately.
-        # PRs_list = # parsed list of ints from json response
-        # return PRs_list
 
         # assemble query url
         pulls_qry = self.make_pulls_query_url(
@@ -396,6 +389,7 @@ class GetCodeReviews(RESTRequestSetup):
         write_out_extra_info_json_sub = f"{write_out_sub}_{self.current_date_info}.json"
 
         PR_reviews_json_all = []
+        sub_reviews_json_all = []
 
         for PR in repo_PRs:
             print(f"Pull Request ID: {PR}")
@@ -418,20 +412,21 @@ class GetCodeReviews(RESTRequestSetup):
                 if "id" in item  # avoids Nones
             ]  # from the concatenated json output in this PR loop e.g. PR 1, get all the 'main' reviews as list of IDs to create further queries for
 
-            sub_reviews_json_all = self.get_all_sub_reviews_from_ALL_main_reviews(
+            sub_reviews_json = self.get_all_sub_reviews_from_ALL_main_reviews(
                 PR, main_reviews=main_reviews, repo_name=repo_name, per_pg=per_pg
             )
-
+            sub_reviews_json_all.extend(sub_reviews_json)  # EXTEND WITH SUBREVIEWS
             # get json for sub reviews FOR THIS PR
             self.logger.info(
-                f"There were {len(sub_reviews_json_all)} sub-reviews in total accross all {len(main_reviews)} main reviews over {len(repo_PRs)} PRs for repo {repo_name}."
+                f"There were {len(sub_reviews_json)} sub-reviews in total accross all {len(main_reviews)} main reviews over {len(repo_PRs)} PRs for repo {repo_name}."
             )
-            # write out json for sub reviews FOR ALL PRs from this repo to separate file
-            self.logger.info(
-                f"writing out json content for {len(sub_reviews_json_all)} SUB-reviews to file {write_out_extra_info_json_sub}"
-            )
-            with open(write_out_extra_info_json_sub, "w") as json_file:
-                json.dump(sub_reviews_json_all, json_file)
+
+        # write out json for sub reviews FOR ALL PRs from this repo to separate file
+        self.logger.info(
+            f"writing out json content for {len(sub_reviews_json_all)} SUB-reviews to file {write_out_extra_info_json_sub}"
+        )
+        with open(write_out_extra_info_json_sub, "w") as json_file:
+            json.dump(sub_reviews_json_all, json_file)
 
         self.logger.info(
             f"writing out json content for {len(PR_reviews_json_all)} MAIN-reviews to file {write_out_extra_info_json_main}"
