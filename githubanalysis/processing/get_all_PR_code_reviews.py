@@ -292,8 +292,9 @@ class GetCodeReviews(RESTRequestSetup):
             )  # THIS IS IMPORTANT! This is a while loop which runs until next_pg is NONE.
         return sub_reviews_json_responses
 
-    def get_sub_review_from_main_review(self, PR, review, repo_name, per_pg):
-        sub_reviews_ids_PR = []
+    def get_sub_review_from_main_review(
+        self, PR, review, repo_name, per_pg
+    ) -> list[dict[str, Any]]:
         sub_reviews_json_PR = []
         sub_review_query = (
             self.review_comments_query_url(  # construct sub-review query for this PR.
@@ -344,7 +345,7 @@ class GetCodeReviews(RESTRequestSetup):
         )
 
         self.logger.info(
-            f"There were {len(sub_reviews_ids_PR)} subreviews in main review {review} for PR {PR} at repo {repo_name}."
+            f"There were {len(sub_reviews_json_PR)} subreviews in main review {review} for PR {PR} at repo {repo_name}."
         )
         self.logger.info("Running next main review check...")
         return sub_reviews_json_PR
@@ -355,7 +356,7 @@ class GetCodeReviews(RESTRequestSetup):
         main_reviews: list[int],
         repo_name,
         per_pg,
-    ):
+    ) -> list[dict[str, Any]]:
         all_sub_reviews = []
         # loop through the main reviews to get sub-reviews
         for review in main_reviews:
