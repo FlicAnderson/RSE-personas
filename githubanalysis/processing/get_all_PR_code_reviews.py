@@ -8,40 +8,34 @@ from pathlib import Path
 
 # from run_commits_workflow import read_repos_from_file
 from githubanalysis.processing.get_all_pages_issues import is_this_single_page
-from githubanalysis.setup_classes import RESTRequestSetup
+
+# from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
     RepoNotFoundError,
 )
+from githubanalysis.processing.get_all_issue_ticket_discussions import Discussions
+from utilities.simple_read_repos_from_file import simple_read_repos_from_file
 
 
-def simple_read_repos_from_file(filename) -> list[str]:
-    with open(filename, "r") as f:
-        repos = [txtline.strip() for txtline in f.readlines()]
-        return repos
-
-
-class GetCodeReviews(RESTRequestSetup):
+class GetCodeReviews(Discussions):
     def _log_name(self) -> str:
         return "get_all_PR_code_reviews"
 
-    def __init__(
-        self, config_path: str, in_notebook: bool, logger: None | logging.Logger = None
-    ) -> None:
-        super().__init__(config_path, in_notebook, logger)
+    repo_name = ""
 
-    def make_pulls_query_url(
-        self,
-        repos_api_url: str,
-        repo_name: str,
-        per_pg: int | str,
-        page: int | None,
-    ):
-        if page is None:
-            return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}"
-        else:
-            return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}&page={page}"
+    # def make_pulls_query_url(
+    #     self,
+    #     repos_api_url: str,
+    #     repo_name: str,
+    #     per_pg: int | str,
+    #     page: int | None,
+    # ):
+    #     if page is None:
+    #         return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}"
+    #     else:
+    #         return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}&page={page}"
 
     def make_reviews_query_url(
         self,
@@ -98,17 +92,14 @@ class GetCodeReviews(RESTRequestSetup):
         ):  # enumerate: better than manually incrementing i like a pleb, I guess
             print(f"processing repo {i} of {len(repo_list)}")
             print(f"processing repo: {repo}.")
-            pulls_qry = self.make_pulls_query_url(
-                repos_api_url="https://api.github.com/repos/",
-                repo_name=repo,
-                per_pg=100,
-                page=1,
-            )
-            print(f"pulls query is: {pulls_qry}")
 
-            repo_PRs = self.get_PR_numbers(
-                repo_name=repo
-            )  # list of PR numbers for repo
+            # LOOK FOR ISSUES FILE
+            assert repo_list is not None
+            self.repo_name = repo
+            # get repo_PRs from processed_issues file for repo if it's got today's date
+            PR_issues, _ = self.split_issues_by_PR_status()
+
+            repo_PRs = list(PR_issues["issue_number"])
 
             if repo_PRs is not None:
                 print(f"repo {repo} contains PRs: {repo_PRs}")
@@ -121,29 +112,6 @@ class GetCodeReviews(RESTRequestSetup):
             )
         self.logger.info("The loop-over-repos for Code Review is complete.")
         # No return.
-
-    def check_PRs_exist(
-        self, repo_name: str, pulls_qry: str
-    ):  # returns None or requests.models.Response api_response
-        # for given pull requests query, check that there are PRs to check for reviews in.
-        # if none exist, skip to next repo.
-        self.logger.info(f"getting json via request url {pulls_qry}.")
-        try:
-            api_response = run_with_retries(
-                fn=lambda: raise_if_response_error(
-                    api_response=self.s.get(url=pulls_qry, headers=self.headers),
-                    repo_name=repo_name,
-                    logger=self.logger,
-                ),
-                logger=self.logger,
-            )
-            print(api_response)
-        except RepoNotFoundError:
-            print(f"Repo {repo_name} not found; skipping this repo.")
-            return None  # this is intentionally skipping repos which don't exist.
-            # if I get RepoNotFoundError, I want to SKIP TO NEXT REPO.
-        else:
-            return api_response
 
     def fetch_main_reviews_json(
         self,
@@ -167,123 +135,13 @@ class GetCodeReviews(RESTRequestSetup):
         print(f"pull request reviews query for PR {PR_num} is: {reviews_qry}")
         self.logger.info(f"getting json via request url {reviews_qry}.")
         try:
-            api_response = run_with_retries(
-                fn=lambda: raise_if_response_error(
-                    api_response=self.s.get(url=reviews_qry, headers=self.headers),
-                    repo_name=repo_name,
-                    logger=self.logger,
-                ),
-                logger=self.logger,
-            )
-            print(api_response)
+            main_reviews_json = self.get_all_pages(query=reviews_qry)
+            return main_reviews_json
         except Exception as e:
             self.logger.error(
                 f"Error in getting PR reviews for PR {PR_num} for repo name {repo_name} with query {reviews_qry}: {e}."
             )
             raise
-
-        json_pg = api_response.json()
-
-        main_reviews_json.extend(json_pg)
-
-        if not is_this_single_page(api_response.links):
-            main_reviews_json.extend(
-                self.get_remaining_pgs(
-                    next_pg=api_response.links["next"]["url"], repo_name=repo_name
-                )
-            )
-            self.logger.debug("more than one pages of reviews; >100")
-
-        return main_reviews_json
-
-    def get_PR_numbers(
-        self, repo_name: str, out_json_file="all-PR-numbers_json"
-    ) -> list[int] | None:
-        """
-        should get pull request numbers to loop through to check for code reviews.
-        Writes out JSON file of PR entries (no reviews)
-        """
-
-        # assemble query url
-        pulls_qry = self.make_pulls_query_url(
-            repos_api_url="https://api.github.com/repos/",
-            repo_name=repo_name,
-            per_pg=100,
-            page=1,
-        )
-        api_response = self.check_PRs_exist(repo_name=repo_name, pulls_qry=pulls_qry)
-        if api_response is None:
-            self.logger.info(f"No PRs for repo {repo_name}; skipping to next repo.")
-            return None
-        assert api_response is not None and api_response.status_code == 200, (
-            f"api response isn't ok somehow, {api_response}"
-        )
-        json_pg = api_response.json()
-        count_pulls = len(json_pg)
-        self.logger.info(f"Initial query for {repo_name} shows {count_pulls} PRs.")
-
-        sanitised_repo_name = repo_name.replace("/", "-")
-        out_filename = out_json_file
-        write_out = f"{self.data_location / out_filename}_{sanitised_repo_name}"
-        write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
-        PR_nums_json = []
-        PR_nums_json.extend(json_pg)
-
-        if is_this_single_page(api_response.links):
-            self.logger.info(f"single page of PRs only for repo {repo_name}; <=100")
-
-        else:
-            PR_nums_json.extend(
-                self.get_remaining_pgs(
-                    next_pg=api_response.links["next"]["url"],
-                    repo_name=repo_name,
-                )
-            )
-            # use pagination to get 'next page' url for query
-        repo_PRs = [item.get("number") for item in PR_nums_json]
-
-        self.logger.info(f"Number of total PRs in repo {repo_name} is: {len(repo_PRs)}")
-
-        with open(
-            write_out_extra_info_json, "w"
-        ) as json_file:  # writes out 1 entry per PR
-            json.dump(PR_nums_json, json_file)
-
-        return repo_PRs  # list of PR numbers
-
-    def get_remaining_pgs(
-        self,
-        next_pg: str | None,
-        repo_name,
-    ):
-        # use pagination to get 'next page' url for query
-        sub_reviews_json_responses = []
-        # sub_reviews_ids = []
-        while (
-            next_pg is not None
-        ):  # IMPORTANT: while loop runs until no next_pg url link.
-            self.logger.info(f"getting json via request url {next_pg}.")
-            # try:
-            api_response = run_with_retries(
-                fn=lambda: raise_if_response_error(
-                    api_response=self.s.get(url=next_pg, headers=self.headers),
-                    repo_name=repo_name,
-                    logger=self.logger,
-                ),
-                logger=self.logger,
-            )
-            print(api_response)
-
-            # get next page of json content for sub-reviews for this main review
-            sub_reviews_json_responses.extend(api_response.json())
-
-            # next_pg is the iterator condition for the while loop handling pagination! Do not remove this unless refactoring completely!
-            next_pg = api_response.links.get(
-                "next", {}
-            ).get(
-                "url"
-            )  # THIS IS IMPORTANT! This is a while loop which runs until next_pg is NONE.
-        return sub_reviews_json_responses
 
     def get_sub_review_from_main_review(
         self, PR, review, repo_name, per_pg
@@ -324,7 +182,6 @@ class GetCodeReviews(RESTRequestSetup):
         if not is_this_single_page(api_response.links):
             subreview_json = self.get_remaining_pgs(
                 next_pg=api_response.links["next"]["url"],
-                repo_name=repo_name,
             )
             sub_reviews_json_PR.extend(subreview_json)
         else:
@@ -376,13 +233,15 @@ class GetCodeReviews(RESTRequestSetup):
         AND JSON file of SUB reviews as well.
         """
 
-        sanitised_repo_name = repo_name.replace("/", "-")
+        # sanitised_repo_name = repo_name.replace("/", "-")
         out_filename_main = out_json_file + "_main-reviews_"
         out_filename_sub = out_json_file + "_sub-reviews_"
         write_out_main = (
-            f"{self.data_location / out_filename_main}_{sanitised_repo_name}"
+            f"{self.data_location / out_filename_main}_{self.sanitised_repo_name}"
         )
-        write_out_sub = f"{self.data_location / out_filename_sub}_{sanitised_repo_name}"
+        write_out_sub = (
+            f"{self.data_location / out_filename_sub}_{self.sanitised_repo_name}"
+        )
         write_out_extra_info_json_main = (
             f"{write_out_main}_{self.current_date_info}.json"
         )
@@ -451,7 +310,10 @@ if __name__ == "__main__":
     filepath: str | Path = args.filepath_for_repos_list
 
     get_code_reviews = GetCodeReviews(
-        config_path="githubanalysis/config.cfg", in_notebook=False, logger=None
+        repo_name="",  # empty string currently as we're providing a LIST of repos for get_code_reviews.get_repos() then iterating through!
+        config_path="githubanalysis/config.cfg",
+        in_notebook=False,
+        logger=None,
     )
 
     assert filepath is not None, (
