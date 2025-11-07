@@ -27,6 +27,9 @@ analysis_dataset_cluster1_file = "analysis_run_sample_45pc_cluster1_2025-05-13/c
 analysis_dataset_cluster2_file = "analysis_run_sample_45pc_cluster2_2025-05-13/clustered_sample_data_with_labels__2025-05-13.csv"
 merged_interactions = "merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv"
 repo_stats_file = "summarised_SAMPLE_repos_stats_2025-05-09.csv"
+analysis_dataset_all_named_personas = (
+    "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv"
+)
 
 study_repos_file = "study-sample-repo-names_2025-05-01_x2981.txt"
 
@@ -41,6 +44,7 @@ read_files = [
     analysis_dataset_cluster2_file,
     merged_interactions,
     repo_stats_file,
+    analysis_dataset_all_named_personas,
 ]
 write_names = [
     "hashed_merged_data",
@@ -50,6 +54,7 @@ write_names = [
     "hashed_clustered_analysis_cluster2_data",
     "hashed_merged_interactions_data",
     "hashed_summarised_repo_stats_data",
+    "hashed_analysis_dataset_all_named_personas",
 ]
 
 repo_name_hashes = []
