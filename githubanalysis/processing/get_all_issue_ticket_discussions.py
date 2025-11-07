@@ -18,6 +18,7 @@ from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
+    RepoNotFoundError,
 )
 
 """
@@ -96,20 +97,28 @@ class Discussions(
             )  # THIS IS IMPORTANT! This is a while loop which runs until next_pg is NONE.
         return all_subsequent_pages_response
 
-    def get_all_pages(self, query) -> list[dict[str, Any]]:
+    def get_all_pages(self, query) -> list[dict[str, Any]] | None:
         json_pgs = []  # create accumulator
         # run first request
         self.logger.debug(f"Running get_all_pages() FIRST PAGE for query: {query}")
         # run the query
-        api_response = run_with_retries(
-            fn=lambda: raise_if_response_error(
-                api_response=self.s.get(url=query, headers=self.headers),
-                repo_name=self.repo_name,
+        try:
+            api_response = run_with_retries(
+                fn=lambda: raise_if_response_error(
+                    api_response=self.s.get(url=query, headers=self.headers),
+                    repo_name=self.repo_name,
+                    logger=self.logger,
+                ),
                 logger=self.logger,
-            ),
-            logger=self.logger,
-        )
-        self.logger.debug(f"FIRST PAGE API response {api_response} for query: {query}")
+            )
+            self.logger.debug(
+                f"FIRST PAGE API response {api_response} for query: {query}"
+            )
+        except RepoNotFoundError:
+            self.logger.error(
+                f"Encountered repo-getting-workflow-borking error in repo {self.repo_name}; Repo DOES NOT EXIST or is private: {e}"
+            )
+            return None  # skip this repo.
 
         json_pgs.extend(api_response.json())  # add first page to accumulator
 
@@ -195,7 +204,10 @@ class Discussions(
         # make first page of query for discussions at repo
         discussions_qry = self.make_discussions_query_url(per_pg=100, page=None)
 
-        discussions_json = self.get_all_pages(query=discussions_qry)
+        if (
+            discussions_json := self.get_all_pages(query=discussions_qry)
+        ) is None:  # walrus operator: assigning things in an expression
+            return
 
         out_filename = out_json_file
         filestr = (
