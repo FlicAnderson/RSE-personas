@@ -114,7 +114,7 @@ class Discussions(
             self.logger.debug(
                 f"FIRST PAGE API response {api_response} for query: {query}"
             )
-        except RepoNotFoundError:
+        except RepoNotFoundError as e:
             self.logger.error(
                 f"Encountered repo-getting-workflow-borking error in repo {self.repo_name}; Repo DOES NOT EXIST or is private: {e}"
             )
