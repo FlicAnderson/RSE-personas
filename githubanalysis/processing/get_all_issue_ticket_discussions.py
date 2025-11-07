@@ -21,6 +21,7 @@ from utilities.check_gh_reponse import (
     RepoNotFoundError,
 )
 
+
 """
 Requires issue ticket numbers information, which may already have been gathered. 
 - Search for relevant issue ticket data file 
@@ -119,6 +120,11 @@ class Discussions(
                 f"Encountered repo-getting-workflow-borking error in repo {self.repo_name}; Repo DOES NOT EXIST or is private: {e}"
             )
             return None  # skip this repo.
+        except pd.errors.EmptyDataError as e_empty:
+            self.logger.error(
+                f"Repo {self.repo_name} has no issues to query. {e_empty}"
+            )
+            return None  # skip empty repos too
 
         json_pgs.extend(api_response.json())  # add first page to accumulator
 
