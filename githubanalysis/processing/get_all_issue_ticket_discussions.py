@@ -48,6 +48,7 @@ class Discussions(
     ) -> None:
         super().__init__(config_path, in_notebook, logger)
         self.sanitised_repo_name = repo_name.replace("/", "-")
+        self.repo_name = repo_name
 
     def make_discussions_query_url(
         self,
