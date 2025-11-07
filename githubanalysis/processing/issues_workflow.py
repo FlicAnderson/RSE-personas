@@ -45,7 +45,9 @@ class RunIssues(LocationSetup):
             repo_has_issues = issuesgetter.check_repo_has_issues(
                 repo_name=self.repo_name
             )
-            assert repo_has_issues, f"There are NO issues enabled for repo {self.repo_name}. Cannot obtain issues data for this repo."
+            assert repo_has_issues, (
+                f"There are NO issues enabled for repo {self.repo_name}. Cannot obtain issues data for this repo."
+            )
             return repo_has_issues
         except NoIssuesError as e:
             self.logger.error(
@@ -64,7 +66,7 @@ class RunIssues(LocationSetup):
             logger=self.logger,
         )
 
-        raw_issues_filename = f"{self.data_location}all-issues_{self.sanitised_repo_name}_{self.current_date_info}.json"
+        raw_issues_filename = f"{self.data_location}/all-issues_{self.sanitised_repo_name}_{self.current_date_info}.json"
         raw_issues_path = Path(raw_issues_filename)
         self.logger.info(
             f"Checking whether issue tickets data for repo {self.repo_name} for today's date already exists at path {raw_issues_path}."
@@ -164,7 +166,7 @@ class RunIssues(LocationSetup):
         """
         Save the reformatted commits data out to csv file.
         """
-        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        write_out = f"{self.data_location / out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
         if issues_df is not None:
             issues_df.to_csv(path_or_buf=write_out, mode="w", index=True, header=True)
@@ -202,9 +204,9 @@ class RunIssues(LocationSetup):
                     "Frame is None or pd.DataFrame is empty; perhaps no issues?"
                 )
 
-            assert isinstance(
-                processed_issues, pd.DataFrame
-            ), "WARNING: processed_issues is NOT in dataframe format after running format_issues_object(); check types for errors"
+            assert isinstance(processed_issues, pd.DataFrame), (
+                "WARNING: processed_issues is NOT in dataframe format after running format_issues_object(); check types for errors"
+            )
 
             # Write out to CSV
             self.__save_formatted_issues(issues_df=processed_issues)
