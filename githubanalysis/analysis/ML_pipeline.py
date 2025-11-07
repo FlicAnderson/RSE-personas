@@ -508,15 +508,6 @@ class ML_Utils(DatasetSetup):
     def _log_name(self) -> str:
         return "ML_pipeline_utils"
 
-    def __init__(
-        self,
-        dataset_name,
-        in_notebook: bool,
-        exists_ok: bool = False,
-        logger: None | Logger = None,
-    ) -> None:
-        super().__init__(dataset_name, in_notebook, exists_ok, logger)
-
     # def plot_learning_curves(
     #     self,
     #     model,
