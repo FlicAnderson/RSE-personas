@@ -286,38 +286,11 @@ Input: csv file of Zenodo software IDs
 Output: csv file of Github URLs and their Zenodo software record IDs: `data/gh_urls_YYYY-MM-DD.csv`
 Logging: `logs/get_gh_urls_logs.txt` 
 
-
-4) Create a 'todo' file of GitHub repo names from URLs and collate data gathering info 
-![create_todo_file.py](docs/coding-smart-create_todo_file.jpg) 
-```
-$ python githubanalysis/processing/create_todo_file.py data/gh_urls_2024-02-08.csv  
-```
-Input: csv file of Zenodo IDs and GitHub URLs   
-Output: csv 'todo' file with repo names, Github URLs, Zenodo IDs and various data gathering task statuses per repo: `data/todo_YYYY-MM-DD.csv`
-Logging: `logs/create_todo_file_logs.txt` 
-
-
-5) Process 'todo' file, get stats for each repo and writing out in blocks of 10  
-![gather_gh_stats.py](docs/coding-smart-gather_gh_stats.jpg)
-```
-$ python githubanalysis/processing/gather_gh_stats.py data/todo_2024-02-08.csv  
-```
-Input: csv 'todo' file of repo names  
-Output: csv file of stats per repo: `data/gh_stats_YYYY-MM-DD.csv`
-Logging: `logs/gather_gh_stats_logs.txt` 
-
-6) Filter repo stats to exclude repos  
-```
-$ TODO python githubanalysis/processing/generate_test_set.py data/gh_stats_YYYY-MM-DD.csv
-```
-Input: csv file of stats per repo  
-Output: : `data/test_set_repos_YYYY-MM-DD.csv`
-Logging: `logs/generate_test_set_logs.txt` 
-
+NOTE: this documentation requires further development!  See issue ticket [RSE-personas/#105](https://github.com/FlicAnderson/RSE-personas/issues/105) for further information
 
 #### Generating datasets (Analysis) 
 
-Still to be developed.  
+NOTE: this documentation requires further development!  See issue ticket [RSE-personas/#105](https://github.com/FlicAnderson/RSE-personas/issues/105) for further information
 
 
 #### Testing  
