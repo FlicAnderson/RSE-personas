@@ -120,11 +120,6 @@ class Discussions(
                 f"Encountered repo-getting-workflow-borking error in repo {self.repo_name}; Repo DOES NOT EXIST or is private: {e}"
             )
             return None  # skip this repo.
-        except pd.errors.EmptyDataError as e_empty:
-            self.logger.error(
-                f"Repo {self.repo_name} has no issues to query. {e_empty}"
-            )
-            return None  # skip empty repos too
 
         json_pgs.extend(api_response.json())  # add first page to accumulator
 
@@ -198,6 +193,9 @@ class Discussions(
     def get_all_discussions(
         self,
         out_json_file: str = "all-discussions",
+    ) -> (
+        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
+        | None
     ):
         """
         Create query to obtain `issues/comments` GH API endpoint DISCUSSIONS items; HOWEVER!!!
@@ -235,7 +233,13 @@ class Discussions(
         # but I may have misinterpreted?)
 
         # get issues info:
-        PR_issues, non_PR_issues = self.split_issues_by_PR_status()
+        try:
+            PR_issues, non_PR_issues = self.split_issues_by_PR_status()
+        except pd.errors.EmptyDataError as e_empty:
+            self.logger.error(
+                f"Repo {self.repo_name} has no issues to query. {e_empty}"
+            )
+            return None  # skip empty repos too
 
         discussions_df = pd.read_json(writeout_path)
         self.logger.info(
@@ -275,16 +279,11 @@ class Discussions(
             f"{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         )
         discussion_writeout_path = Path(self.data_location, discussion_filestr)
-        try:
-            discussions_df.to_csv(
-                path_or_buf=discussion_writeout_path,
-                header=True,
-                index=False,
-            )
-        except Exception as e:
-            self.logger.error(
-                f"Error in attempting to write output file for discussions_df for repo {self.repo_name}; {e}; error type: {type(e)}; writeout path attempted was: {discussion_writeout_path}"
-            )
+        discussions_df.to_csv(
+            path_or_buf=discussion_writeout_path,
+            header=True,
+            index=False,
+        )
 
         # write out non_PR_issue_discussions csv
         non_PR_discussions_filest = f"non-PR-issue-discussions_{self.sanitised_repo_name}_{self.current_date_info}.csv"
@@ -307,4 +306,10 @@ class Discussions(
         )
 
         # pass on (return) PR_issues to do other PR CR????
-        # return PR_issues, non_PR_issues, non_PR_issue_discussions, PR_issue_discussions #???
+        return (
+            discussions_df,
+            PR_issues,
+            non_PR_issues,
+            non_PR_issue_discussions,
+            PR_issue_discussions,
+        )  # ???
