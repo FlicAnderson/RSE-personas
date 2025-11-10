@@ -240,11 +240,12 @@ class Discussions(
                 f"Repo {self.repo_name} has no issues to query. {e_empty}"
             )
             return None  # skip empty repos too
-
+        self.logger.debug(f"writeout_path for discussions is: {writeout_path}")
         discussions_df = pd.read_json(writeout_path)
         self.logger.info(
             f"There are {len(discussions_df)} discussions for repo {self.repo_name}."
         )
+        assert discussions_df is not pd.DataFrame.empty
 
         discussions_df["issue_id_number"] = discussions_df["issue_url"].apply(
             lambda x: int(x.rsplit("/", 1)[1])
