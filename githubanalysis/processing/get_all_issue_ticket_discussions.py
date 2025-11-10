@@ -90,7 +90,7 @@ class Discussions(
             # get next page of json content for sub-reviews for this main review
             all_subsequent_pages_response.extend(api_response.json())
 
-            # next_pg is the iterator condition for the while loop handling pagination! Do not remove this unless refactoring completely!
+            # next_pg is the iterator condition for the while loop handling pagination! Do not remove this unless refactoring completely!2
             next_pg = api_response.links.get(
                 "next", {}
             ).get(
@@ -284,6 +284,9 @@ class Discussions(
             header=True,
             index=False,
         )
+        self.logger.info(
+            f"Saved out ALL discussions data for repo {self.repo_name} to {discussion_writeout_path}."
+        )
 
         # write out non_PR_issue_discussions csv
         non_PR_discussions_filest = f"non-PR-issue-discussions_{self.sanitised_repo_name}_{self.current_date_info}.csv"
@@ -297,12 +300,18 @@ class Discussions(
             header=True,
             index=False,
         )
+        self.logger.info(
+            f"Saved out non-pull-request discussions data for repo {self.repo_name} to {npr_path}."
+        )
 
         # write out PR_issue_discussions csv
         PR_issue_discussions.to_csv(
             path_or_buf=pr_path,
             header=True,
             index=False,
+        )
+        self.logger.info(
+            f"Saved out pull-request discussions data for repo {self.repo_name} to {pr_path}."
         )
 
         # pass on (return) PR_issues to do other PR CR????
