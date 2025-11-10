@@ -38,7 +38,7 @@ expected_sorted_file_repos = list(sorted(expected_file_repos))
 
 @pytest.fixture
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def get_code_reviews():
+def get_code_reviews(repo_name):
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="INFO",
@@ -46,7 +46,10 @@ def get_code_reviews():
         in_notebook=False,
     )
     getting_code_reviews = GetCodeReviews(
-        config_path="githubanalysis/config.cfg", in_notebook=False, logger=logger
+        repo_name=repo_name,
+        config_path="githubanalysis/config.cfg",
+        in_notebook=False,
+        logger=logger,
     )
     getting_code_reviews.data_location = Path("tests/testdata")
     return getting_code_reviews
@@ -59,9 +62,9 @@ def test_getting_repo_names_from_file(get_code_reviews):
     )
     repos.sort()  # sorts in-place.
 
-    assert (
-        repos == expected_sorted_file_repos
-    ), "Sorted list of repos does not match sorted expected list."
+    assert repos == expected_sorted_file_repos, (
+        "Sorted list of repos does not match sorted expected list."
+    )
 
 
 @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
@@ -78,41 +81,41 @@ def test_API_pulls_query_assembly(get_code_reviews):
     expected_qry = (
         "https://api.github.com/repos/KislakCenter/VisColl/pulls?per_page=100&page=1"
     )
-    assert (
-        pulls_qry == expected_qry
-    ), f"generated API query {pulls_qry} does not match expected result {expected_qry}."
+    assert pulls_qry == expected_qry, (
+        f"generated API query {pulls_qry} does not match expected result {expected_qry}."
+    )
 
 
-@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_no_PRs_repo(get_code_reviews):
-    # test what happens if there's no PRs for that repo at all
-    pass
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+# def test_no_PRs_repo(get_code_reviews):
+#     # test what happens if there's no PRs for that repo at all
+#     pass
 
 
-@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_get_all_code_reviews_no_reviews_exist(get_code_reviews):
-    # PRs exist, but no reviews.
-    pass
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+# def test_get_all_code_reviews_no_reviews_exist(get_code_reviews):
+#     # PRs exist, but no reviews.
+#     pass
 
 
-@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_get_all_code_reviews_no_PRs_exist(get_code_reviews):
-    # no PRs for this repo, therefore no code reviews on them.
-    pass
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+# def test_get_all_code_reviews_no_PRs_exist(get_code_reviews):
+#     # no PRs for this repo, therefore no code reviews on them.
+#     pass
 
 
-@pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
-def test_get_all_code_reviews_happy_case_one(get_code_reviews):
-    # happy case: PRs exist, 1 code review exists, treated correctly
-    pass
+# @pytest.mark.xfail(reason="Fails remotely: relies on GH config file")
+# def test_get_all_code_reviews_happy_case_one(get_code_reviews):
+#     # happy case: PRs exist, 1 code review exists, treated correctly
+#     pass
 
 
-def test_get_all_code_reviews_happy_case_multiple(get_code_reviews):
-    # happy case: PRs exist, several code reviews exist, treated correctly
-    pass
+# def test_get_all_code_reviews_happy_case_multiple(get_code_reviews):
+#     # happy case: PRs exist, several code reviews exist, treated correctly
+#     pass
 
 
-def test_get_all_code_reviews_integration_test(get_code_reviews):
-    # happy case: PRs exist, > 1 code reviews exist, treated correctly
-    # BUT then combined with commits, issues, timestamp data correctly for analysis.
-    pass
+# def test_get_all_code_reviews_integration_test(get_code_reviews):
+#     # happy case: PRs exist, > 1 code reviews exist, treated correctly
+#     # BUT then combined with commits, issues, timestamp data correctly for analysis.
+#     pass
