@@ -6,7 +6,11 @@ import json
 import pandas as pd
 from pathlib import Path
 from githubanalysis.setup_classes import LocationSetup
-from githubanalysis.processing.get_all_pages_issues import IssueGetter, NoIssuesError
+from githubanalysis.processing.get_all_pages_issues import (
+    IssueGetter,
+    NoIssuesError,
+    RepoNotFoundError,
+)
 
 
 class RunIssues(LocationSetup):
@@ -45,10 +49,12 @@ class RunIssues(LocationSetup):
             repo_has_issues = issuesgetter.check_repo_has_issues(
                 repo_name=self.repo_name
             )
-            assert repo_has_issues, (
-                f"There are NO issues enabled for repo {self.repo_name}. Cannot obtain issues data for this repo."
-            )
             return repo_has_issues
+        except RepoNotFoundError as e:
+            self.logger.error(
+                f"Error: Repo {self.repo_name} not found, repo may not exist: {e}"
+            )
+            return False
         except NoIssuesError as e:
             self.logger.error(
                 f"Error: Issues are not enabled for repo {self.repo_name}: {e}"
@@ -56,6 +62,7 @@ class RunIssues(LocationSetup):
             return False
 
     def check_existing_formatted_issues(self):
+        # TODO: this would be really important and reduce repeated API calls to 'update' files.
         pass
 
     def get_issues(self):
