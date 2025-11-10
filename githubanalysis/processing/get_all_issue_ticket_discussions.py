@@ -254,6 +254,9 @@ class Discussions(
             lambda x: x.get("login", None)
         )
 
+        print(discussions_df.columns)  # debug
+        self.logger.debug(discussions_df.columns)
+
         non_PR_issue_discussions = discussions_df[
             discussions_df["issue_id_number"].isin(non_PR_issues["issue_number"])
         ]
