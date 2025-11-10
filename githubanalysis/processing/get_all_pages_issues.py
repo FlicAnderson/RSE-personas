@@ -74,9 +74,10 @@ class IssueGetter(RESTRequestSetup):
             )
         except RepoNotFoundError as e:
             print(
-                f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
+                f"Encountered error for repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
             )
             return False  # skip this repo.
+
         assert api_response.ok, f"API response is: {api_response}"
 
         self.logger.debug(f"API shows repo {repo_name} has issues_enabled.")
