@@ -5,7 +5,11 @@ import json
 import traceback
 import logging
 from githubanalysis.setup_classes import RESTRequestSetup
-from utilities.check_gh_reponse import raise_if_response_error, run_with_retries
+from utilities.check_gh_reponse import (
+    raise_if_response_error,
+    run_with_retries,
+    RepoNotFoundError,
+)
 
 REPOS_API_URL = "https://api.github.com/repos/"
 
@@ -59,22 +63,28 @@ class IssueGetter(RESTRequestSetup):
     def check_repo_has_issues(self, repo_name: str) -> bool:
         repos_api_url = "https://api.github.com/repos/"
         check_issue_url = f"{repos_api_url}{repo_name}"
-        api_response = run_with_retries(
-            fn=lambda: raise_if_response_error(
-                api_response=self.s.get(url=check_issue_url, headers=self.headers),
-                repo_name=repo_name,
+        try:
+            api_response = run_with_retries(
+                fn=lambda: raise_if_response_error(
+                    api_response=self.s.get(url=check_issue_url, headers=self.headers),
+                    repo_name=repo_name,
+                    logger=self.logger,
+                ),
                 logger=self.logger,
-            ),
-            logger=self.logger,
-        )
+            )
+        except RepoNotFoundError as e:
+            print(
+                f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
+            )
+            return False  # skip this repo.
         assert api_response.ok, f"API response is: {api_response}"
 
         self.logger.debug(f"API shows repo {repo_name} has issues_enabled.")
 
         json_response = api_response.json()
-        assert isinstance(
-            json_response, dict
-        ), f"WARNING: result of api_response.json() in check_repo_has_issues() is NOT a dict as expected: type is {api_response.json()}."
+        assert isinstance(json_response, dict), (
+            f"WARNING: result of api_response.json() in check_repo_has_issues() is NOT a dict as expected: type is {api_response.json()}."
+        )
 
         if len(json_response) > 0:
             assert isinstance(json_response.get("has_issues"), bool)
@@ -179,7 +189,7 @@ class IssueGetter(RESTRequestSetup):
         # assert isinstance(repo_name, str), "Ensure repository name in string format (e.g. 'repo-owner/repo-name')"  # move this to outer function to ensure inputs to here are correct
 
         self.logger.info(f"Repo name is {repo_name}. Getting issues.")
-        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}"
+        write_out = f"{self.data_location / out_filename}_{self.sanitised_repo_name}"
 
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
