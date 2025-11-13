@@ -1,9 +1,7 @@
 """Get code review data if present for repos; save out to files."""
 
-import logging
 import json
 from typing import Any
-import argparse
 from pathlib import Path
 
 # from run_commits_workflow import read_repos_from_file
@@ -13,7 +11,6 @@ from githubanalysis.processing.get_all_pages_issues import is_this_single_page
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
-    RepoNotFoundError,
 )
 from githubanalysis.processing.get_all_issue_ticket_discussions import Discussions
 from utilities.simple_read_repos_from_file import simple_read_repos_from_file
@@ -24,18 +21,6 @@ class GetCodeReviews(Discussions):
         return "get_all_PR_code_reviews"
 
     repo_name = ""
-
-    # def make_pulls_query_url(
-    #     self,
-    #     repos_api_url: str,
-    #     repo_name: str,
-    #     per_pg: int | str,
-    #     page: int | None,
-    # ):
-    #     if page is None:
-    #         return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}"
-    #     else:
-    #         return f"{repos_api_url}{repo_name}/pulls?state=all&per_page={per_pg}&page={page}"
 
     def make_reviews_query_url(
         self,
@@ -78,40 +63,6 @@ class GetCodeReviews(Discussions):
             filename=self.data_location / repo_list_file_name
         )
         return repo_list
-
-    def loop_over_repos(
-        self,
-        repo_list: list[str],
-    ):
-        """
-        Run the main work.
-        """
-
-        for i, repo in enumerate(
-            repo_list
-        ):  # enumerate: better than manually incrementing i like a pleb, I guess
-            print(f"processing repo {i} of {len(repo_list)}")
-            print(f"processing repo: {repo}.")
-
-            # LOOK FOR ISSUES FILE
-            assert repo_list is not None
-            self.repo_name = repo
-            # get repo_PRs from processed_issues file for repo if it's got today's date
-            PR_issues, _ = self.split_issues_by_PR_status()
-
-            repo_PRs = list(PR_issues["issue_number"])
-
-            if repo_PRs is not None:
-                print(f"repo {repo} contains PRs: {repo_PRs}")
-            else:
-                print(f"No PRs for repo {repo}; skipping to next repo.")
-                continue
-
-            self.process_PR_reviews_one_repo(  # gather the main and sub reviews for one repo.
-                repo_name=repo, repo_PRs=repo_PRs
-            )
-        self.logger.info("The loop-over-repos for Code Review is complete.")
-        # No return.
 
     def fetch_main_reviews_json(
         self,
@@ -293,41 +244,3 @@ class GetCodeReviews(Discussions):
         with open(write_out_extra_info_json_main, "w") as json_file:
             json.dump(PR_reviews_json_all, json_file)
         # no return, intentionally. We're making files here.
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-f",
-    "--filepath-for-repos-list",
-    metavar="PATH",
-    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
-    type=str,
-)
-
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-    filepath: str | Path = args.filepath_for_repos_list
-
-    get_code_reviews = GetCodeReviews(
-        repo_name="",  # empty string currently as we're providing a LIST of repos for get_code_reviews.get_repos() then iterating through!
-        config_path="githubanalysis/config.cfg",
-        in_notebook=False,
-        logger=None,
-    )
-
-    assert filepath is not None, (
-        "You must provide a filepath for the repo names list file, e.g. 'data/code_review_subset_2025-05-30_x16.txt'. "
-    )
-
-    filepath = Path(filepath)
-    get_code_reviews.logger.info(f"reading repo names from file: {filepath}")
-    repo_list = get_code_reviews.get_repos(repo_list_file_name=filepath)
-
-    # loop through repo_list
-    print(f"{repo_list = }")
-
-    # for each repo in repo_list, do all the things:
-    get_code_reviews.loop_over_repos(repo_list=repo_list)
-
-    print("Get code reviews info complete")
