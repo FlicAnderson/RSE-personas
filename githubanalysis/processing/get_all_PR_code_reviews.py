@@ -3,6 +3,7 @@
 import json
 from typing import Any
 from pathlib import Path
+import pandas as pd
 
 # from run_commits_workflow import read_repos_from_file
 from githubanalysis.processing.get_all_pages_issues import is_this_single_page
@@ -11,6 +12,7 @@ from githubanalysis.processing.get_all_pages_issues import is_this_single_page
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
+    RepoNotFoundError,
 )
 from githubanalysis.processing.get_all_issue_ticket_discussions import Discussions
 from utilities.simple_read_repos_from_file import simple_read_repos_from_file
@@ -244,3 +246,75 @@ class GetCodeReviews(Discussions):
         with open(write_out_extra_info_json_main, "w") as json_file:
             json.dump(PR_reviews_json_all, json_file)
         # no return, intentionally. We're making files here.
+
+    def loop_over_repos(self, repo_list: list[str], get_type: str):
+        assert get_type in ["discussions", "code-reviews"], (
+            "'get_type' must be one of: 'discussions', 'code-reviews'."
+        )
+        assert repo_list is not None
+        print(get_type)
+
+        if get_type == "discussions":
+            print(get_type)
+            for i, repo in enumerate(
+                repo_list
+            ):  # enumerate: better than manually incrementing i like a pleb, I guess
+                print(f"processing repo {i} of {len(repo_list)}")
+                print(f"processing repo: {repo}.")
+                discussions = Discussions(
+                    repo_name=repo,
+                    config_path=self.config_path,
+                    in_notebook=self.in_notebook,
+                )
+                discussions.get_all_discussions()
+
+        elif get_type == "code-reviews":
+            print(get_type)
+            for i, repo in enumerate(
+                repo_list
+            ):  # enumerate: better than manually incrementing i like a pleb, I guess
+                print(f"processing repo {i} of {len(repo_list)}")
+                print(f"processing repo: {repo}.")
+                discussions = Discussions(
+                    repo_name=repo,
+                    config_path=self.config_path,
+                    in_notebook=self.in_notebook,
+                )
+                getcodereviews = GetCodeReviews(
+                    repo_name=repo,
+                    config_path=self.config_path,
+                    in_notebook=self.in_notebook,
+                )
+
+                # get PRs info:
+                try:
+                    PR_issues, _ = discussions.split_issues_by_PR_status()
+                except pd.errors.EmptyDataError as e_empty:
+                    print(f"Repo {repo} has no issues to query. {e_empty}")
+                    continue
+                    # return None  # skip empty repos too
+                except RepoNotFoundError as e:
+                    print(
+                        f"Encountered repo-getting-workflow-borking error in repo {repo}; Repo DOES NOT EXIST or is private: {e}"
+                    )
+                    # return None  # skip this repo.
+                    continue
+
+                repo_PRs = list(
+                    set(PR_issues["issue_number"])
+                )  # get unique PR numbers # error is currently here.
+
+                if repo_PRs is not None:
+                    print(f"repo {repo} contains PRs: {repo_PRs}")
+                else:
+                    print(f"No PRs for repo {repo}; skipping to next repo.")
+                    continue
+
+                getcodereviews.process_PR_reviews_one_repo(  # gather the main and sub reviews for one repo.
+                    repo_name=repo, repo_PRs=repo_PRs
+                )
+            print(
+                f"The loop-over-repos for {len(repo_list)} repos for Code Reviews is complete."
+            )
+        else:
+            assert False, "Bad get_type"
