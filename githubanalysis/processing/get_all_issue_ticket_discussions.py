@@ -284,10 +284,14 @@ class Discussions(
             f"{out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         )
         discussion_writeout_path = Path(self.data_location, discussion_filestr)
+        self.logger.debug(
+            f"Will attempt to write out discussions data to path: {discussion_writeout_path}"
+        )
         discussions_df.to_csv(
             path_or_buf=discussion_writeout_path,
             header=True,
             index=False,
+            escapechar="\\",  # added to avoid error: with .to_csv(): "Error: need to escape, but no escapechar set"
         )
         self.logger.info(
             f"Saved out ALL discussions data for repo {self.repo_name} to {discussion_writeout_path}."
@@ -304,6 +308,7 @@ class Discussions(
             path_or_buf=npr_path,
             header=True,
             index=False,
+            escapechar="\\",  # added to avoid error: with .to_csv(): "Error: need to escape, but no escapechar set"
         )
         self.logger.info(
             f"Saved out non-pull-request discussions data for repo {self.repo_name} to {npr_path}."
@@ -314,6 +319,7 @@ class Discussions(
             path_or_buf=pr_path,
             header=True,
             index=False,
+            escapechar="\\",  # added to avoid error: with .to_csv(): "Error: need to escape, but no escapechar set"
         )
         self.logger.info(
             f"Saved out pull-request discussions data for repo {self.repo_name} to {pr_path}."
