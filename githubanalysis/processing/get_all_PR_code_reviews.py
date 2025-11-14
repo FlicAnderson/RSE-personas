@@ -1,6 +1,7 @@
 """Get code review data if present for repos; save out to files."""
 
 import json
+import argparse
 from typing import Any
 from pathlib import Path
 import pandas as pd
@@ -318,3 +319,51 @@ class GetCodeReviews(Discussions):
             )
         else:
             assert False, "Bad get_type"
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-f",
+    "--filepath-for-repos-list",
+    metavar="PATH",
+    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
+    type=str,
+)
+
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+    filepath: str | Path = args.filepath_for_repos_list
+
+    get_code_reviews = GetCodeReviews(
+        repo_name="",  # empty string currently as we're providing a LIST of repos for get_code_reviews.get_repos() then iterating through!
+        config_path="githubanalysis/config.cfg",
+        in_notebook=False,
+        logger=None,
+    )
+
+    assert filepath is not None, (
+        "You must provide a filepath for the repo names list file, e.g. 'data/code_review_subset_2025-05-30_x16.txt'. "
+    )
+
+    filepath = Path(filepath)
+    get_code_reviews.logger.info(f"reading repo names from file: {filepath}")
+    repo_list = get_code_reviews.get_repos(repo_list_file_name=filepath)
+
+    # loop through repo_list
+    get_code_reviews.logger.info(
+        f"Attempting to run through {len(repo_list)} repositories."
+    )
+    get_code_reviews.logger.info(f"{repo_list = }")
+
+    get_code_reviews.logger.info("Getting DISCUSSION info for all repos:")
+    # for each repo in repo_list, do all the things to get DISCUSSIONS FIRST:
+    get_code_reviews.loop_over_repos(repo_list=repo_list, get_type="discussions")
+    get_code_reviews.logger.info("Completed getting DISCUSSION info for all repos.")
+
+    # then get CODE REVIEW content:
+    get_code_reviews.logger.info("Getting CODE REVIEW info for all repos:")
+    get_code_reviews.loop_over_repos(repo_list=repo_list, get_type="code-reviews")
+    get_code_reviews.logger.info("Completed getting CODE REVIEW info for all repos.")
+
+    print("Get discussions and code reviews info complete")
