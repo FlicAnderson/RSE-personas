@@ -176,7 +176,13 @@ class RunIssues(LocationSetup):
         write_out = f"{self.data_location / out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
         if issues_df is not None:
-            issues_df.to_csv(path_or_buf=write_out, mode="w", index=True, header=True)
+            issues_df.to_csv(
+                path_or_buf=write_out,
+                mode="w",
+                index=True,
+                header=True,
+                escapechar="\\",  # added to avoid error: with .to_csv(): "Error: need to escape, but no escapechar set"
+            )
             self.logger.info(f"Saved out issues data to {write_out}.")
         else:
             raise RuntimeError(
