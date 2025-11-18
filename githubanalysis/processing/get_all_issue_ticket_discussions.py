@@ -152,7 +152,9 @@ class Discussions(
         TODO: improvement would be to use 'most recent' version.
         """
 
-        print(f"Attempting to find issues content for repo: {self.repo_name}")
+        self.logger.info(
+            f"Attempting to find issues content for repo: {self.repo_name}"
+        )
 
         runissues = RunIssues(
             repo_name=self.repo_name,
@@ -268,7 +270,7 @@ class Discussions(
             lambda x: x.get("login", None)
         )
 
-        print(discussions_df.columns)  # debug
+        # print(discussions_df.columns)  # debug
         self.logger.debug(discussions_df.columns)
 
         non_PR_issue_discussions = discussions_df[
