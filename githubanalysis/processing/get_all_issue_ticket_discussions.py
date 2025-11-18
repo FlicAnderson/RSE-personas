@@ -250,7 +250,7 @@ class Discussions(
         self.logger.info(
             f"There are {len(discussions_df)} discussions for repo {self.repo_name}."
         )
-        if discussions_df is not pd.DataFrame.empty or len(discussions_df) != 0:
+        if discussions_df is pd.DataFrame.empty or len(discussions_df) == 0:
             # raise NoDiscussionsError(
             #    f"There are no discussions for repo {self.repo_name}."
             # )
