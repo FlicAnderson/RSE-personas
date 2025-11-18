@@ -31,6 +31,10 @@ Requires issue ticket numbers information, which may already have been gathered.
 """
 
 
+class NoDiscussionsError(RuntimeError):
+    pass
+
+
 class Discussions(
     RESTRequestSetup,
 ):
@@ -246,7 +250,16 @@ class Discussions(
         self.logger.info(
             f"There are {len(discussions_df)} discussions for repo {self.repo_name}."
         )
-        assert discussions_df is not pd.DataFrame.empty
+        if discussions_df is not pd.DataFrame.empty or len(discussions_df) != 0:
+            # raise NoDiscussionsError(
+            #    f"There are no discussions for repo {self.repo_name}."
+            # )
+            self.logger.error(f"Repo {self.repo_name} has no discussions.")
+            return None  # skip repo with no discussions
+
+        assert discussions_df is not pd.DataFrame.empty or len(discussions_df) != 0, (
+            "Discussions are empty or there are none (0)."
+        )
 
         discussions_df["issue_id_number"] = discussions_df["issue_url"].apply(
             lambda x: int(x.rsplit("/", 1)[1])
