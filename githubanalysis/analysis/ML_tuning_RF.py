@@ -305,7 +305,7 @@ class TuningSetup(DatasetSetup):
                 min_impurity_dec=search.best_params_["min_impurity_decrease"],
                 max_lvs=search.best_params_["max_leaf_nodes"],
             )
-            self.logger.info("Best score {:.2f} with:".format(search.best_score_))
+            self.logger.info("Best score {:.5f} with:".format(search.best_score_))
             self.logger.info(best_params)
         end_hyper_param_search = time.time()
         hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
