@@ -446,10 +446,10 @@ class TuningSetup(DatasetSetup):
         # # multiclass means you can only be in one category only e.g. media format (film or tv-show)
         # # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
         self.logger.info(
-            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
                 roc_auc_score(
                     y_true=self.y_test,  # y_true
-                    y_score=selected_rfc.predict_proba(self.X_test),  # y_pred
+                    y_score=selected_rfc.predict_proba(self.X_test),  # y_score
                     # y_true=y_test,
                     # y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(X_test),
                     average="macro",
@@ -458,26 +458,47 @@ class TuningSetup(DatasetSetup):
                 )
             )
         )
-        # self.logger.info(
-        #     "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
-        #         roc_auc_score(
-        #             self.le.inverse_transform(self.y_true),  # y_true
-        #             self.le.inverse_transform(y_pred),  # y_pred
-        #             average="macro",
-        #             #multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
-        #             multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
-        #         )
-        #     )
-        # )
+        self.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
+                roc_auc_score(
+                    y_true=self.y_test,  # y_true
+                    y_score=selected_rfc.predict_proba(self.X_test),  # y_score
+                    average="macro",
+                    # multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
+            )
+        )
+
+        #         pipeline_class_obj.le.inverse_transform(
+        #     pipeline_class_obj.y_true
+        # ),  # y_true
+        # pipeline_class_obj.le.inverse_transform(
+        #     pipeline_class_obj.y_pred
+        # ),  # y_pred
         self.logger.info(
             "Classification Report: \n",
             metrics.classification_report(
-                self.le.inverse_transform(self.y_true),  # y_true
-                self.le.inverse_transform(y_pred),  # y_pred
+                y_true=self.le.inverse_transform(self.y_true),  # y_true
+                y_pred=self.le.inverse_transform(y_pred),  # y_pred
                 zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
                 digits=5,
-                # labels=ml_pipeline_dt.RSE_info["target"],
-                # target_names=ml_pipeline_dt.RSE_info["target"],
+                # labels=self.RSE_info["target"],
+                # target_names=self.RSE_info["target"],
+                output_dict=True,  # default=False
+            ),
+        )
+
+        self.logger.info(
+            "Classification Report: \n",
+            metrics.classification_report(
+                y_true=self.le.inverse_transform(self.y_true),  # y_true
+                y_pred=self.le.inverse_transform(y_pred),  # y_pred
+                zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+                digits=5,
+                # labels=self.RSE_info["target"],
+                # target_names=self.RSE_info["target"],
+                output_dict=False,  # default=False
             ),
         )
 
