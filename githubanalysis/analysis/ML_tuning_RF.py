@@ -281,7 +281,7 @@ class TuningSetup(DatasetSetup):
             cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
             n_jobs=(N_CORES - 1),
             verbose=4,
-            random_state=None,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
+            random_state=self.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
             return_train_score=True,
         )
         self.logger.info("search declared")
@@ -448,25 +448,27 @@ class TuningSetup(DatasetSetup):
         self.logger.info(
             "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
                 roc_auc_score(
-                    self.le.inverse_transform(self.y_true),  # y_true
-                    self.le.inverse_transform(y_pred),  # y_pred
-                    average="macro",
-                    # multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
-                    multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
-                )
-            )
-        )
-        self.logger.info(
-            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
-                roc_auc_score(
-                    self.le.inverse_transform(self.y_true),  # y_true
-                    self.le.inverse_transform(y_pred),  # y_pred
+                    y_true=self.y_test,  # y_true
+                    y_score=selected_rfc.predict_proba(self.X_test),  # y_pred
+                    # y_true=y_test,
+                    # y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(X_test),
                     average="macro",
                     multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
                     # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
                 )
             )
         )
+        # self.logger.info(
+        #     "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
+        #         roc_auc_score(
+        #             self.le.inverse_transform(self.y_true),  # y_true
+        #             self.le.inverse_transform(y_pred),  # y_pred
+        #             average="macro",
+        #             #multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+        #             multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+        #         )
+        #     )
+        # )
         self.logger.info(
             "Classification Report: \n",
             metrics.classification_report(
