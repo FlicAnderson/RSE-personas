@@ -1,6 +1,7 @@
 from logging import Logger
 import pandas as pd
 from pathlib import Path
+import joblib
 import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
@@ -42,6 +43,7 @@ CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING
     "pc_interaction_days",
     "pc_created-closed_issues",
 ]  # read from file in future perhaps?
+N_CORES = joblib.cpu_count(only_physical_cores=True)
 
 
 def update_candidate_features(
@@ -97,6 +99,7 @@ class ML_Pipeline_Decision_Tree(
                         # bunch more args... #
                         # max_leaf_nodes=None, #set max leaf nodes based on 'best' relative reduction in impurity; None: unlimited leaf nodes
                         # ccp_alpha=0.0, # complexity parameter used for Minimal Cost-Complexity Pruning.
+                        # THERE IS NO EQUIVALENT OF n_jobs (see RF)
                     ),
                 ),
             ],
@@ -380,7 +383,9 @@ class ML_Pipeline_Random_Forest(ML_Pipeline_Decision_Tree):
                         bootstrap=True,
                         max_samples=None,  # controls sub-sampling for bootstrapping
                         oob_score=True,  # Whether to use out-of-bag samples to estimate the generalization score. By default, accuracy_score is used.# can use custom metric.
-                        n_jobs=None,  # how many to run in paralell... None~=use 1.
+                        n_jobs=(
+                            N_CORES - 1
+                        ),  # n_jobs=None,  # how many to run in paralell... None~=use 1.
                         verbose=1,  # verbosity
                         warm_start=False,
                         class_weight=None,  # if not given, all classes have weight 1.
@@ -441,6 +446,7 @@ class ML_Pipeline_HistGradientBoosting(ML_Pipeline_Decision_Tree):
                         verbose=1,  # verbosity: 1:summary info only; 2=per-iteration info;
                         class_weight=None,  # dict / 'balanced' / None (where all classess weight=1) # TODO: consider this more...
                         random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
+                        # THERE IS NO EQUIVALENT OF n_jobs (see RF)
                     ),
                 ),
             ],
@@ -495,6 +501,7 @@ class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
                         verbose=0,  # verbosity: 1:summary info only; 2=per-iteration info;
                         ccp_alpha=0.0,  # TODO FOR PRUNING # complexity parameter used for Minimal Cost-Complexity Pruning
                         random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
+                        # THERE IS NO EQUIVALENT OF n_jobs (see RF)
                     ),
                 ),
             ],
@@ -575,6 +582,7 @@ def run_scoring_printouts(
     ), (
         "model_type not recognised: must be one of 'decision_tree' or 'random_forest' or 'hist_gradient_boosting' or 'gradient_boosting'."
     )
+    print(f"Number of physical cores: {N_CORES}")
 
     # Model Accuracy, how often is the classifier correct?
     if pipeline_class_obj.model_type != "random_forest":
