@@ -477,30 +477,27 @@ class TuningSetup(DatasetSetup):
         #     pipeline_class_obj.y_pred
         # ),  # y_pred
         self.logger.info(
-            "Classification Report: \n",
+            "Classification Report: ",
             metrics.classification_report(
                 y_true=self.le.inverse_transform(self.y_true),  # y_true
                 y_pred=self.le.inverse_transform(y_pred),  # y_pred
                 zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
                 digits=5,
-                # labels=self.RSE_info["target"],
-                # target_names=self.RSE_info["target"],
                 output_dict=True,  # default=False
             ),
         )
-
-        self.logger.info(
-            "Classification Report: \n",
-            metrics.classification_report(
-                y_true=self.le.inverse_transform(self.y_true),  # y_true
-                y_pred=self.le.inverse_transform(y_pred),  # y_pred
-                zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
-                digits=5,
-                # labels=self.RSE_info["target"],
-                # target_names=self.RSE_info["target"],
-                output_dict=False,  # default=False
-            ),
-        )
+        # self.logger.info(
+        #     "Classification Report:",
+        #     metrics.classification_report(
+        #         y_true=self.le.inverse_transform(self.y_true),  # y_true
+        #         y_pred=self.le.inverse_transform(y_pred),  # y_pred
+        #         zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+        #         digits=5,
+        #         # labels=self.RSE_info["target"],
+        #         # target_names=self.RSE_info["target"],
+        #         output_dict=False,  # default=False
+        #     ),
+        # )
 
         self.logger.info("Returning final results now:")
         return (
