@@ -281,7 +281,7 @@ class TuningSetup(DatasetSetup):
             cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
             n_jobs=(N_CORES - 1),
             verbose=4,
-            random_state=None,  # default=None
+            random_state=None,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
             return_train_score=True,
         )
         self.logger.info("search declared")
@@ -291,7 +291,7 @@ class TuningSetup(DatasetSetup):
         with warnings.catch_warnings():
             warnings.simplefilter("once")
             search.fit(self.X_train, self.y_train)
-            self.report(search.cv_results_, n_top=5)  # Report the top 10 results
+            self.report(search.cv_results_, n_top=5)  # Report the top 5 results
 
             param_search_results = pd.DataFrame(search.cv_results_)
             best_params = HyperParams(
@@ -333,7 +333,7 @@ class TuningSetup(DatasetSetup):
             min_impurity_decrease=best_params.min_impurity_dec,
             max_leaf_nodes=best_params.max_lvs,
             oob_score=True,
-            n_jobs=(N_CORES - 1),
+            n_jobs=(N_CORES - 1),  # leave 1 core for everything else on the VM!
             verbose=4,
         ).fit(self.X_train, self.y_train)
         end_selected_rfc_fit = time.time()
@@ -467,6 +467,7 @@ class TuningSetup(DatasetSetup):
                 )
             )
         )
+        self.logger.info("Returning final results now:")
         return (
             f1_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
             precision_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
