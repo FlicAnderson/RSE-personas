@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.metrics import f1_score, precision_score
+from sklearn.metrics import f1_score, precision_score, roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import RandomizedSearchCV
 
@@ -232,7 +232,7 @@ class TuningSetup(DatasetSetup):
             for candidate in candidates:
                 self.logger.info("Model with rank: {0}".format(i))
                 self.logger.info(
-                    "Mean validation score: {0:.3f} (std: {1:.3f})".format(
+                    "Mean validation score: {0:.5f} (std: {1:.5f})".format(
                         results["mean_test_score"][candidate],
                         results["std_test_score"][candidate],
                     )
@@ -385,14 +385,14 @@ class TuningSetup(DatasetSetup):
         )
         for idx in range(len(CLUSTERING_VARIABLES)):
             self.logger.info(
-                "{}: {:.3f}[%]".format(
+                "{}: {:.5f}[%]".format(
                     CLUSTERING_VARIABLES[idx], 100.0 * feature_importances[idx]
                 )
             )
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
         self.logger.info(
-            "Accuracy: {:.3f} (percent of correctly classified samples)".format(
+            "Accuracy: {:.5f} (percent of correctly classified samples)".format(
                 metrics.accuracy_score(self.y_true, y_pred),
             )
         )
@@ -402,7 +402,7 @@ class TuningSetup(DatasetSetup):
             )
         )
         self.logger.info(
-            "Balanced Accuracy: {:.3f} (the average of recall obtained on each class)".format(
+            "Balanced Accuracy: {:.5f} (the average of recall obtained on each class)".format(
                 metrics.balanced_accuracy_score(
                     self.y_true,
                     y_pred,
@@ -411,13 +411,13 @@ class TuningSetup(DatasetSetup):
             )
         )
         self.logger.info(
-            "Out of Bag Error: {:.3f} (smaller better)".format(
+            "Out of Bag Error: {:.5f} (smaller better)".format(
                 # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
                 1 - selected_rfc.oob_score_
             )
         )
         self.logger.info(
-            "F1 Score: {:.3f} (harmonic mean of the precision and recall, both equally weighted)".format(
+            "F1 Score: {:.5f} (harmonic mean of the precision and recall, both equally weighted)".format(
                 metrics.f1_score(
                     self.le.inverse_transform(self.y_true),  # y_true
                     self.le.inverse_transform(y_pred),  # y_pred
@@ -426,7 +426,7 @@ class TuningSetup(DatasetSetup):
             )
         )
         self.logger.info(
-            "Precision: {:.3f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+            "Precision: {:.5f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
                 metrics.precision_score(
                     self.le.inverse_transform(self.y_true),  # y_true
                     self.le.inverse_transform(y_pred),  # y_pred
@@ -435,12 +435,36 @@ class TuningSetup(DatasetSetup):
             )
         )
         self.logger.info(
-            "Recall: {:.3f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+            "Recall: {:.5f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
                 metrics.recall_score(
                     self.le.inverse_transform(self.y_true),  # y_true
                     self.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
                 ),
+            )
+        )
+        # # multiclass means you can only be in one category only e.g. media format (film or tv-show)
+        # # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
+        self.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
+                roc_auc_score(
+                    self.le.inverse_transform(self.y_true),  # y_true
+                    self.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",
+                    # multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
+            )
+        )
+        self.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
+                roc_auc_score(
+                    self.le.inverse_transform(self.y_true),  # y_true
+                    self.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",
+                    multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
             )
         )
         return (
@@ -501,12 +525,17 @@ def main():
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> new paramsearch running <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     )
     tuning_setup.logger.info("\n")
-    print("prepping dataset")
+    tuning_setup.logger.info("prepping dataset")
     tuning_setup.prep_data()
-    print("splitting dataset")
+    tuning_setup.logger.info("splitting dataset")
     tuning_setup.setup_test_train()
-    print("searching for params")
+    tuning_setup.logger.info("searching for params")
     tuning_setup.param_searching()
+    tuning_setup.logger.info(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> paramsearch complete <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    )
+    tuning_setup.logger.info("\n")
+    print("\n paramater search complete.\n")
 
 
 if __name__ == "__main__":
