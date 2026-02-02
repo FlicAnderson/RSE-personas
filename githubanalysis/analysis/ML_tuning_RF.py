@@ -467,6 +467,18 @@ class TuningSetup(DatasetSetup):
                 )
             )
         )
+        self.logger.info(
+            "Classification Report: \n",
+            metrics.classification_report(
+                self.le.inverse_transform(self.y_true),  # y_true
+                self.le.inverse_transform(y_pred),  # y_pred
+                zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+                digits=5,
+                # labels=ml_pipeline_dt.RSE_info["target"],
+                # target_names=ml_pipeline_dt.RSE_info["target"],
+            ),
+        )
+
         self.logger.info("Returning final results now:")
         return (
             f1_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
