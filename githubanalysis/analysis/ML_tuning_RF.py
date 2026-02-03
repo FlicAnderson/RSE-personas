@@ -483,8 +483,9 @@ class TuningSetup(DatasetSetup):
             digits=5,
             # output_dict=True,  # default=False
         )
+        self.logger.info("\n")
         self.logger.info(
-            "\n", classification_rep
+            classification_rep
         )  # try this to avoid logger error with formatting of report
         # self.logger.info(
         #     # "Classification Report: ",
