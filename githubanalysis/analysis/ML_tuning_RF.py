@@ -476,14 +476,24 @@ class TuningSetup(DatasetSetup):
         # pipeline_class_obj.le.inverse_transform(
         #     pipeline_class_obj.y_pred
         # ),  # y_pred
+        classification_rep = metrics.classification_report(
+            y_true=self.le.inverse_transform(self.y_true),  # y_true
+            y_pred=self.le.inverse_transform(y_pred),  # y_pred
+            zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+            digits=5,
+            # output_dict=True,  # default=False
+        )
         self.logger.info(
-            "Classification Report: ",
+            classification_rep
+        )  # try this to avoid logger error with formatting of report
+        self.logger.info(
+            # "Classification Report: ",
             metrics.classification_report(
                 y_true=self.le.inverse_transform(self.y_true),  # y_true
                 y_pred=self.le.inverse_transform(y_pred),  # y_pred
                 zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
                 digits=5,
-                output_dict=True,  # default=False
+                # output_dict=True,  # default=False
             ),
         )
         # self.logger.info(
