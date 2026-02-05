@@ -305,7 +305,7 @@ class TuningSetup(DatasetSetup):
                 0.75,
             ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
             # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
-            #            params["min_samples_split"] = list(range(2, 5, 1))
+            params["min_samples_split"] = list(2)
             params["ccp_alpha"] = np.arange(0, 0.25, 0.05)
             params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
             # params["max_leaf_nodes"] = list(range(7, 260, 10))
