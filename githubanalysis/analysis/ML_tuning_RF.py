@@ -15,7 +15,7 @@ from sklearn import metrics
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.metrics import f1_score, precision_score, roc_auc_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 
 from githubanalysis.analysis.ML_pipeline import (
     ML_Pipeline_Decision_Tree,
@@ -87,6 +87,7 @@ class TuningSetup(DatasetSetup):
         N_OBS: int = 10000,
         N_ITER: int = 50,
         RANDOM_STATE: int = 42,
+        SEARCH_METHOD: str = "RandomizedSearchCV",
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
@@ -100,6 +101,9 @@ class TuningSetup(DatasetSetup):
         self.N_OBS = N_OBS
         self.N_ITER = N_ITER
         self.RANDOM_STATE = RANDOM_STATE
+        self.SEARCH_METHOD = SEARCH_METHOD
+        assert self.SEARCH_METHOD in ["RandomizedSearchCV", "GridSearchCV"]
+        # self.SEARCH_METHOD options should match names of selected hyper-parameter optimisers from here: https://scikit-learn.org/stable/api/sklearn.model_selection.html#hyper-parameter-optimizers
 
     def prep_data(
         self,
@@ -243,6 +247,7 @@ class TuningSetup(DatasetSetup):
     def param_searching(
         self,
     ):
+        assert self.SEARCH_METHOD in ["RandomizedSearchCV", "GridSearchCV"]
         feat_range = self.n_feats_around_optimal()
         params = {
             "n_estimators": [75, 100, 125, 150, 175, 200],
@@ -273,17 +278,47 @@ class TuningSetup(DatasetSetup):
             random_state=None,  # None is default
         )
         self.logger.info("rskf declared")
-        search = RandomizedSearchCV(
-            clf,
-            n_iter=self.N_ITER,  # controls 'combination of parameters'
-            param_distributions=params,
-            scoring="f1_macro",  # "accuracy",
-            cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
-            n_jobs=(N_CORES - 1),
-            verbose=4,
-            random_state=self.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
-            return_train_score=True,
-        )
+        self.logger.info(f"Searching hyper-parameters using {self.SEARCH_METHOD}.")
+        if self.SEARCH_METHOD == "RandomSearchCV":
+            search = RandomizedSearchCV(
+                clf,  # estimator
+                n_iter=self.N_ITER,  # controls 'combination of parameters'
+                param_distributions=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+                scoring="f1_macro",  # "accuracy",
+                cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
+                n_jobs=(N_CORES - 1),
+                verbose=4,
+                random_state=self.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
+                return_train_score=True,
+            )
+            self.logger.info(
+                f"Searching hyper-parameters using search settings: {search}."
+            )
+        elif self.SEARCH_METHOD == "GridSearchCV":
+            search = GridSearchCV(
+                clf,  # estimator
+                param_grid=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+                scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+                cv=rskf.split(
+                    self.X_train, self.y_train
+                ),  # None: default 5-fold  # cross-validation splitting strategy
+                n_jobs=(
+                    N_CORES - 1
+                ),  # number of jobs to run in parallel; default=None (means 1)
+                refit=True,  # default: True # refit an estimator using the best found parameters
+                verbose=2,
+                pre_dispatch="2*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
+                error_score="raise",
+                return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            )
+            self.logger.info(
+                f"Searching hyper-parameters using search settings: {search}."
+            )
+        else:
+            raise ValueError(
+                f"SEARCH_METHOD is not of correct type; SEARCH_METHOD is {self.SEARCH_METHOD} but should be one of: "
+            )
+
         self.logger.info("search declared")
         start_hyper_param_search = time.time()
         self.logger.info("param timer started")
@@ -545,6 +580,14 @@ parser.add_argument(
     type=int,
     default=42,
 )
+parser.add_argument(
+    "-s",
+    "--search-method",
+    metavar="SEARCH",
+    help="which search method to use: GridSearchCV or RandomizedSearchCV (default)",
+    type=str,
+    default="RandomizedSearchCV",
+)
 
 
 def main():
@@ -555,6 +598,7 @@ def main():
     nobs_arg: int = args.n_observations
     niter_arg: int = args.n_iterations
     rand_arg: int = args.random_state
+    search_arg: str = args.search_method
 
     tuning_setup = TuningSetup(
         dataset_name="ML_tune",
@@ -564,6 +608,7 @@ def main():
         N_OBS=nobs_arg,
         N_ITER=niter_arg,
         RANDOM_STATE=rand_arg,
+        SEARCH_METHOD=search_arg,
     )
     tuning_setup.logger.info(
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> new paramsearch running <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -573,7 +618,7 @@ def main():
     tuning_setup.prep_data()
     tuning_setup.logger.info("splitting dataset")
     tuning_setup.setup_test_train()
-    tuning_setup.logger.info("searching for params")
+    tuning_setup.logger.info(f"searching for params using search method: {search_arg} ")
     tuning_setup.param_searching()
     tuning_setup.logger.info(
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> paramsearch complete <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
