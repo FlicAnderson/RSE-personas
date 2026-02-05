@@ -254,7 +254,9 @@ class TuningSetup(DatasetSetup):
             "criterion": ["gini", "entropy", "log_loss"],
             "min_samples_split": range(2, 50),
             "max_depth": [3, 4, 6, 8, 10, 35],
-            "max_samples": stats.uniform(0, 1),
+            "max_samples": stats.uniform(
+                0.01, 1.0
+            ),  # if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
             "max_features": feat_range,
             "ccp_alpha": stats.uniform(0, 0.25),
             "min_impurity_decrease": stats.uniform(0, 0.1),
@@ -279,7 +281,7 @@ class TuningSetup(DatasetSetup):
         )
         self.logger.info("rskf declared")
         self.logger.info(f"Searching hyper-parameters using {self.SEARCH_METHOD}.")
-        if self.SEARCH_METHOD == "RandomSearchCV":
+        if self.SEARCH_METHOD == "RandomizedSearchCV":
             search = RandomizedSearchCV(
                 clf,  # estimator
                 n_iter=self.N_ITER,  # controls 'combination of parameters'
@@ -295,6 +297,18 @@ class TuningSetup(DatasetSetup):
                 f"Searching hyper-parameters using search settings: {search}."
             )
         elif self.SEARCH_METHOD == "GridSearchCV":
+            params["max_samples"] = [
+                0.1,
+                0.25,
+                0.5,
+                0.75,
+                1.0,
+            ]  # change the type of max_samples to test; first go
+            # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
+            params["ccp_alpha"] = np.arange(0, 0.25, 0.05)
+            params["min_impurity_decrease"] = np.arange(0, 0.2, 0.01)
+            params["max_leaf_nodes"] = list(range(7, 260, 10))
+
             search = GridSearchCV(
                 clf,  # estimator
                 param_grid=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
@@ -314,7 +328,7 @@ class TuningSetup(DatasetSetup):
             self.logger.info(
                 f"Searching hyper-parameters using search settings: {search}."
             )
-        else:
+        else:  # This should never happen because there's a default of RandomizedSearchCV
             raise ValueError(
                 f"SEARCH_METHOD is not of correct type; SEARCH_METHOD is {self.SEARCH_METHOD} but should be one of: "
             )
