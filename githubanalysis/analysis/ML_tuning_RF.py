@@ -260,7 +260,7 @@ class TuningSetup(DatasetSetup):
             "max_features": feat_range,
             "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
             "min_impurity_decrease": stats.uniform(0, 0.1),
-            "max_leaf_nodes": None,  # stats.randint(7, 250), # default=None
+            "max_leaf_nodes": [None],  # stats.randint(7, 250), # default=None
         }
 
         N_CORES = joblib.cpu_count(only_physical_cores=True)
