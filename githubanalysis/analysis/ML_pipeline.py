@@ -427,22 +427,23 @@ class ML_Pipeline_HistGradientBoosting(ML_Pipeline_Decision_Tree):
                     "clf",
                     HistGradientBoostingClassifier(
                         loss="log_loss",  # default
-                        learning_rate=0.01,  # can also use 0.01; # shrinkage param (lambda)
-                        max_iter=forest_size,  # number of iterations/trees to generate
+                        learning_rate=0.01,  # default, can also use 0.01; # shrinkage param (lambda)
+                        max_iter=forest_size,  # default=100, number of iterations/trees to generate
                         max_leaf_nodes=None,  # None= no max; default=31 for some reason?
-                        max_depth=None,
-                        l2_regularization=0,  # L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
-                        # max_features = 1.0, # added in v1.4 # float in latest docs, interaction_cst can be used
-                        max_bins=255,  # N bins for non-missing values; more = better? max=255.
+                        max_depth=None,  # default=None, maximum depth of tree ; not constrained by default.
+                        min_samples_leaf=20,  # default=20; minimum samples per leaf - in small datasets, it's worth lowering this or you get only shallow trees; # TODO: adjust this!
+                        l2_regularization=0,  # default. L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
+                        # max_features = 1.0, # this is a proportion; default=1.0; added in v1.4 # float in latest docs, interaction_cst can be used
+                        max_bins=255,  # default=255; N bins for non-missing values; more = better? max=255.
                         categorical_features=None,  # None:no feats categorical; boolean array; integer array of indices of cat feats; str array: cat names of training data if it has them; "from_dtype": use columns with dtype 'category' (default)
                         monotonic_cst=None,  # BINARY ONLY; constant to inforce on each feature; 1:monotonic incr; 0: no constraint; -1:monotonic decrease
                         interaction_cst=None,  # specify sets of feats which can interact in child node splits # "pairwise" "no_interactions", None, or seq of lists/tuples/sets of ints for indices
-                        warm_start=False,  # if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
-                        early_stopping=False,  # if sample > 10k this is enabled w/ 'auto'
+                        warm_start=False,  # if True reuse previous solution to fit/add estimators (True req retrain on same data only or -> invalidity!)
+                        early_stopping=False,  # default='auto' # if sample > 10k this is enabled w/ 'auto'
                         scoring="loss",  # scoring to use w/ early stopping: 'str':*; a scorer callable; None:'accuracy' is used; 'loss'(default): checked with loss value; *=https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-string-names;
                         validation_fraction=0.1,  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
                         n_iter_no_change=10,  # determines early stopping (if it's used)
-                        tol=1e-7,  # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+                        tol=1e-7,  # default. 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
                         verbose=1,  # verbosity: 1:summary info only; 2=per-iteration info;
                         class_weight=None,  # dict / 'balanced' / None (where all classess weight=1) # TODO: consider this more...
                         random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
@@ -482,22 +483,22 @@ class ML_Pipeline_GradientBoosting(ML_Pipeline_Decision_Tree):
                     "clf",
                     GradientBoostingClassifier(
                         loss="log_loss",  # default
-                        learning_rate=0.01,  # can also use 0.1; # shrinkage param (lambda)
+                        learning_rate=0.01,  # default. can also use 0.1; # shrinkage param (lambda)
                         n_estimators=forest_size,  # number of boosting stages to perform
-                        subsample=1.0,  # <1=Stochastic gradient boosting; bootstrapping if <1; <1 => >variance but <bias
-                        criterion="friedman_mse",  # split quality measurement; ‘friedman_mse’ ~=best cf 'squared_error'
-                        min_samples_split=2,  # min number samples for splitting if int; if float it's a fraction
-                        min_samples_leaf=1,  # nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
-                        min_weight_fraction_leaf=0.0,  # min weighted fraction of sum of total weights (input samples) req for a leaf node; equal when sample_weight not provided.
+                        subsample=1.0,  # default. <1=Stochastic gradient boosting; bootstrapping if <1; <1 => >variance but <bias
+                        criterion="friedman_mse",  # default. split quality measurement; ‘friedman_mse’ ~=best cf 'squared_error'
+                        min_samples_split=2,  # default. min number samples for splitting if int; if float it's a fraction
+                        min_samples_leaf=1,  # default. nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
+                        min_weight_fraction_leaf=0.0,  # default. #min weighted fraction of sum of total weights (input samples) req for a leaf node; equal when sample_weight not provided.
                         max_depth=None,  # default=3 # TODO: tune for best performance. If none, expanded until leaves are pure
                         min_impurity_decrease=0.0,  # default. Node split if induces decrease of impurity >= this.
-                        init=None,  # 'zero'(raw predictions set to 0) or None (default, preducts classes' priors) or estimator object
-                        max_features=self.max_feats,  # added in v1.4 # float in latest docs, interaction_cst can be used; max_features < n_features reduces variance and increases bias.
-                        max_leaf_nodes=None,  # Grow trees with max_leaf_nodes in best-first fashion; best==relative reduction in impurity; None=unlimited
-                        warm_start=False,  # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
-                        validation_fraction=0.1,  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
+                        init=None,  # default. #'zero'(raw predictions set to 0) or None (default, preducts classes' priors) or estimator object
+                        max_features=self.max_feats,  # default=None # added in v1.4 # float in latest docs, interaction_cst can be used; max_features < n_features reduces variance and increases bias.
+                        max_leaf_nodes=None,  # default. Grow trees with max_leaf_nodes in best-first fashion; best==relative reduction in impurity; None=unlimited
+                        warm_start=False,  # default=False # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
+                        validation_fraction=0.1,  # default=0.1 # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
                         n_iter_no_change=None,  # 10 for hgbt, # determines early stopping (if it's used)
-                        tol=1e-4,  # 1e-7 default for HistGradBoost, # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+                        tol=1e-4,  # default. # 1e-7 default for HistGradBoost, # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
                         verbose=0,  # verbosity: 1:summary info only; 2=per-iteration info;
                         ccp_alpha=0.0,  # TODO FOR PRUNING # complexity parameter used for Minimal Cost-Complexity Pruning
                         random_state=RANDOM_STATE,  # controls the randomness of the estimator during splitting
@@ -582,7 +583,7 @@ def run_scoring_printouts(
     ), (
         "model_type not recognised: must be one of 'decision_tree' or 'random_forest' or 'hist_gradient_boosting' or 'gradient_boosting'."
     )
-    print(f"Number of physical cores: {N_CORES}")
+    # self.logger.info(f"Number of physical cores: {N_CORES}")
 
     # Model Accuracy, how often is the classifier correct?
     if pipeline_class_obj.model_type != "random_forest":
