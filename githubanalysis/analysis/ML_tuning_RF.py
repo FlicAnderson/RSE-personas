@@ -250,7 +250,12 @@ class TuningSetup(DatasetSetup):
         assert self.SEARCH_METHOD in ["RandomizedSearchCV", "GridSearchCV"]
         feat_range = self.n_feats_around_optimal()
         params = {
-            "n_estimators": [75, 100, 125, 150, 175, 200],
+            "n_estimators": [
+                75,
+                100,
+                125,
+                150,
+            ],  # this does not need to go very high in RF....
             "criterion": ["gini", "entropy", "log_loss"],
             "min_samples_split": [2],  # prev: range(2, 50)
             "max_depth": [10, 35, 50, None],  # prev: "max_depth": [3, 4, 6, 8, 10, 35],
@@ -259,7 +264,9 @@ class TuningSetup(DatasetSetup):
             ),  #  # prev 0.01, 1.0; if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
             "max_features": feat_range,
             "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
-            "min_impurity_decrease": stats.uniform(0, 0.1),
+            "min_impurity_decrease": stats.uniform(
+                0, 0.1
+            ),  # node will be split if split induces a decrease of the impurity greater than or equal to this
             "max_leaf_nodes": [None],  # stats.randint(7, 250), # default=None
         }
 
@@ -291,8 +298,9 @@ class TuningSetup(DatasetSetup):
                 cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
                 n_jobs=(N_CORES - 1),
                 verbose=4,
+                error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
                 random_state=self.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
-                return_train_score=True,
+                return_train_score=True,  # default=False.
             )
             self.logger.info(
                 f"Searching hyper-parameters using search settings: {search}."
