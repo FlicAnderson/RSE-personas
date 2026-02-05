@@ -2,7 +2,7 @@
 
 # Configuration stuff
 
-fspec=qq.c
+fspec= data/sample_repo_names_list_2025-03-31_x2632.txt
 num_files=14
 
 # Work out lines per file.
@@ -12,7 +12,7 @@ total_lines=$(wc -l <${fspec})
 
 # Split the actual file, maintaining lines.
 
-split --lines=${lines_per_file} ${fspec} data/sample_repo_names_list_2025-03-31_x2632.txt
+split --lines=${lines_per_file} ${fspec} data/sample_repo_names_list_2025-03-31_x2632
 
 # Debug information
 
