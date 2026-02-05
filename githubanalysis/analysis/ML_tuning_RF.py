@@ -252,7 +252,7 @@ class TuningSetup(DatasetSetup):
         params = {
             "n_estimators": [75, 100, 125, 150, 175, 200],
             "criterion": ["gini", "entropy", "log_loss"],
-            "min_samples_split": 2,  # prev: range(2, 50)
+            "min_samples_split": [2],  # prev: range(2, 50)
             "max_depth": [10, 35, 50, None],  # prev: "max_depth": [3, 4, 6, 8, 10, 35],
             "max_samples": stats.uniform(
                 0.01, 0.75
