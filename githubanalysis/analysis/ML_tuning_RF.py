@@ -252,15 +252,15 @@ class TuningSetup(DatasetSetup):
         params = {
             "n_estimators": [75, 100, 125, 150, 175, 200],
             "criterion": ["gini", "entropy", "log_loss"],
-            "min_samples_split": range(2, 50),
-            "max_depth": [3, 4, 6, 8, 10, 35],
+            "min_samples_split": 2,  # prev: range(2, 50)
+            "max_depth": [10, 35, 50, None],  # prev: "max_depth": [3, 4, 6, 8, 10, 35],
             "max_samples": stats.uniform(
-                0.01, 1.0
-            ),  # if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
+                0.01, 0.75
+            ),  #  # prev 0.01, 1.0; if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
             "max_features": feat_range,
-            "ccp_alpha": stats.uniform(0, 0.25),
+            "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
             "min_impurity_decrease": stats.uniform(0, 0.1),
-            "max_leaf_nodes": stats.randint(7, 250),
+            "max_leaf_nodes": None,  # stats.randint(7, 250), # default=None
         }
 
         N_CORES = joblib.cpu_count(only_physical_cores=True)
@@ -282,6 +282,7 @@ class TuningSetup(DatasetSetup):
         self.logger.info("rskf declared")
         self.logger.info(f"Searching hyper-parameters using {self.SEARCH_METHOD}.")
         if self.SEARCH_METHOD == "RandomizedSearchCV":
+            self.logger.info(f"param options are: {params}")
             search = RandomizedSearchCV(
                 clf,  # estimator
                 n_iter=self.N_ITER,  # controls 'combination of parameters'
@@ -302,13 +303,13 @@ class TuningSetup(DatasetSetup):
                 0.25,
                 0.5,
                 0.75,
-                1.0,
-            ]  # change the type of max_samples to test; first go
+            ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
             # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
+            #            params["min_samples_split"] = list(range(2, 5, 1))
             params["ccp_alpha"] = np.arange(0, 0.25, 0.05)
-            params["min_impurity_decrease"] = np.arange(0, 0.2, 0.01)
-            params["max_leaf_nodes"] = list(range(7, 260, 10))
-
+            params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
+            # params["max_leaf_nodes"] = list(range(7, 260, 10))
+            self.logger.info(f"param options are: {params}")
             search = GridSearchCV(
                 clf,  # estimator
                 param_grid=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
@@ -321,7 +322,7 @@ class TuningSetup(DatasetSetup):
                 ),  # number of jobs to run in parallel; default=None (means 1)
                 refit=True,  # default: True # refit an estimator using the best found parameters
                 verbose=2,
-                pre_dispatch="2*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
+                pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
                 error_score="raise",
                 return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
             )
