@@ -82,6 +82,7 @@ class TuningSetup(DatasetSetup):
         self,
         dataset_name,
         in_notebook: bool,
+        N_JOBS: int,
         exists_ok: bool = False,
         logger: None | Logger = None,
         N_OBS: int = 10000,
@@ -103,6 +104,7 @@ class TuningSetup(DatasetSetup):
         self.RANDOM_STATE = RANDOM_STATE
         self.SEARCH_METHOD = SEARCH_METHOD
         assert self.SEARCH_METHOD in ["RandomizedSearchCV", "GridSearchCV"]
+        self.N_JOBS = N_JOBS
         # self.SEARCH_METHOD options should match names of selected hyper-parameter optimisers from here: https://scikit-learn.org/stable/api/sklearn.model_selection.html#hyper-parameter-optimizers
 
     def prep_data(
@@ -270,14 +272,14 @@ class TuningSetup(DatasetSetup):
             "max_leaf_nodes": [None],  # stats.randint(7, 250), # default=None
         }
 
-        N_CORES = joblib.cpu_count(only_physical_cores=True)
+        N_CORES = self.N_JOBS
         self.logger.info(f"Number of physical cores: {N_CORES}")
 
         clf = RandomForestClassifier(
             bootstrap=True,
             oob_score=True,
             class_weight=None,
-            n_jobs=(N_CORES - 1),
+            n_jobs=N_CORES,
             verbose=2,
         )
         self.logger.info("clf declared")
@@ -296,7 +298,7 @@ class TuningSetup(DatasetSetup):
                 param_distributions=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
                 scoring="f1_macro",  # "accuracy",
                 cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
-                n_jobs=(N_CORES - 1),
+                n_jobs=N_CORES,
                 verbose=4,
                 error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
                 random_state=self.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
@@ -326,7 +328,7 @@ class TuningSetup(DatasetSetup):
                     self.X_train, self.y_train
                 ),  # None: default 5-fold  # cross-validation splitting strategy
                 n_jobs=(
-                    N_CORES - 1
+                    N_CORES
                 ),  # number of jobs to run in parallel; default=None (means 1)
                 refit=True,  # default: True # refit an estimator using the best found parameters
                 verbose=2,
@@ -391,7 +393,7 @@ class TuningSetup(DatasetSetup):
             min_impurity_decrease=best_params.min_impurity_dec,
             max_leaf_nodes=best_params.max_lvs,
             oob_score=True,
-            n_jobs=(N_CORES - 1),  # leave 1 core for everything else on the VM!
+            n_jobs=N_CORES,
             verbose=4,
         ).fit(self.X_train, self.y_train)
         end_selected_rfc_fit = time.time()
@@ -611,17 +613,26 @@ parser.add_argument(
     type=str,
     default="RandomizedSearchCV",
 )
+parser.add_argument(
+    "-j",
+    "--job-number",
+    metavar="JOBS",
+    help="number of jobs (~cores) to run this script with (ie 7 for EIDF VM, 8 for cirrus)",
+    type=int,
+    default=7,
+)
 
 
 def main():
     """
-    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -r 69
+    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -r 69 -j 7
     """
     args = parser.parse_args()
     nobs_arg: int = args.n_observations
     niter_arg: int = args.n_iterations
     rand_arg: int = args.random_state
     search_arg: str = args.search_method
+    jobs_arg: int = args.job_number
 
     tuning_setup = TuningSetup(
         dataset_name="ML_tune",
@@ -632,6 +643,7 @@ def main():
         N_ITER=niter_arg,
         RANDOM_STATE=rand_arg,
         SEARCH_METHOD=search_arg,
+        N_JOBS=jobs_arg,
     )
     tuning_setup.logger.info(
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> new paramsearch running <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
