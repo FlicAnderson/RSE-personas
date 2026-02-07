@@ -80,7 +80,7 @@ class HyperParams:  # Ananya's!
 
 class TuningSetup(DatasetSetup):
     def _log_name(self) -> str:
-        return "ML_tuning"
+        return f"ML_tuning_{self.SEARCH_METHOD}"
 
     def __init__(
         self,
@@ -94,6 +94,7 @@ class TuningSetup(DatasetSetup):
         RANDOM_STATE: int = 42,
         SEARCH_METHOD: str = "RandomizedSearchCV",
     ) -> None:
+        self.SEARCH_METHOD = SEARCH_METHOD
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
             dataset_name=dataset_name,
@@ -106,7 +107,6 @@ class TuningSetup(DatasetSetup):
         self.N_OBS = N_OBS
         self.N_ITER = N_ITER
         self.RANDOM_STATE = RANDOM_STATE
-        self.SEARCH_METHOD = SEARCH_METHOD
         assert self.SEARCH_METHOD in [
             "RandomizedSearchCV",
             "GridSearchCV",
