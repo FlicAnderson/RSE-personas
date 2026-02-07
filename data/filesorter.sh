@@ -1,44 +1,20 @@
 #!/bin/bash
 
-# via Jakub Adamski :D
+# Example run: bash filesorter_pr-review.sh "all-PR-reviews" "older_PR-reviews/"
+#
+# Script to go through folder, find files matching name pattern specified on commandline, then for all files matching 
+# the pattern per 'reponame', move all except the most-recent file to a folder specified by commandline argument.
+#
+# via Jakub Adamski :D and David Katz 
 
-REPOS=$(ls processed-commits_*.csv | sed 's/.\{15\}$//' | uniq)
-for r in $REPOS
-do
-    ALL=($(ls $r* | sort -r))
-    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" older_processed_commits/
+
+pattern=${1:-"all-PR-reviews"}
+dest_dir=${2:-older_PR-reviews/}
+
+#pattern="all-PR-reviews"
+#dirname=older_PR-reviews/
+REPOS=$(find . -maxdepth 1 -mindepth 1 -name "${pattern}_*.json" | sed 's/.\{16\}$//' | uniq)
+for r in $REPOS; do
+    mapfile -t ALL < <(find . -maxdepth 1 -mindepth 1 -wholename "$r*" |sort -r)
+    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" "${dest_dir}"
 done
-
-REPOS=$(ls processed-commits_*_2024*.csv)
-mv $REPOS older_processed_commits/
-
-REPOS=$(ls processed-issues_*.csv | sed 's/.\{15\}$//' | uniq)
-for r in $REPOS
-do
-    ALL=($(ls $r* | sort -r))
-    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" older_processed_issues/
-done
-
-REPOS=$(ls processed-issues_*_2024*.csv)
-mv $REPOS older_processed_issues/
-
-REPOS=$(ls commits_changes_*.csv | sed 's/.\{15\}$//' | uniq)
-for r in $REPOS
-do
-    ALL=($(ls $r* | sort -r))
-    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" older_commits_changes/
-done
-
-REPOS=$(ls commits_changes_*_2024*.csv)
-mv $REPOS older_commits_changes/
-
-REPOS=$(ls commits_cats_stats_*.csv | sed 's/.\{15\}$//' | uniq)
-for r in $REPOS
-do
-    ALL=($(ls $r* | sort -r))
-    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" older_commits_cats_stats/
-done
-
-REPOS=$(ls commits_cats_stats_*_2024*.csv)
-mv $REPOS older_commits_cats_stats/
-
