@@ -1,15 +1,8 @@
 import datetime
 import pandas as pd
-import numpy as np
-from pathlib import Path
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from githubanalysis.processing.predict_persona_MRC import (
-    persona_tester as persona_tester_script,
-    makeRSE_persona_ranges as makeRSE_persona_ranges_script,
-)
 
 current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
 print(current_date_info)
@@ -116,9 +109,9 @@ for patch, hatch, box_col in zip(patches, h, box_line_col):
     ec = patch.set_edgecolor(box_col)
 #     patch.set_facecolor('#D50032')
 
-l = ax.legend()
+leg = ax.legend()
 
-for lp, hatch, box_col in zip(l.get_patches(), hatches, box_line_col):
+for lp, hatch, box_col in zip(leg.get_patches(), hatches, box_line_col):
     lp.set_hatch(hatch)
     fc = lp.get_facecolor()
     ec = lp.set_edgecolor(box_col)
@@ -135,7 +128,7 @@ cat_labels = [
 ]
 # sns.move_legend(ax, "upper right", bbox_to_anchor=(1, 1))
 
-l.set_label(cat_labels)
+leg.set_label(cat_labels)
 sns.move_legend(
     ax,
     "upper left",

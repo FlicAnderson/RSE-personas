@@ -13,10 +13,6 @@ from sklearn.pipeline import (
 )  # diff twixt make_pipeline()/Pipeline(): https://stackoverflow.com/a/40708448
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-
-# from sklearn.model_selection import cross_validate
-from sklearn.utils import shuffle
-from sklearn.model_selection import LearningCurveDisplay, learning_curve
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import plot_tree, export_graphviz
 from sklearn.tree import DecisionTreeClassifier
