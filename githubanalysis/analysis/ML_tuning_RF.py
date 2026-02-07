@@ -369,7 +369,7 @@ class TuningSetup(DatasetSetup):
                 param_grid=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
                 factor=3,  # 3=default; the 'halving' param: which proportion of candidates selected for the next iteration (e.g. 3 is 1/3rd)
                 resource="n_samples",  # default: 'n_samples'. the resource that increases with each iteration.  Can be 'n_iterations' or 'n_estimators' for gradient boosting estimators. 'max_resources' cannot be auto if that's true
-                max_resources="n_samples",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration
+                max_resources="auto",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration; By default, this is set to n_samples when resource='n_samples' (default), else an error is raised.
                 min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
                 aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
                 cv=rskf.split(
