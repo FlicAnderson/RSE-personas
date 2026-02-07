@@ -1,7 +1,6 @@
 # from sklearn.datasets import fetch_openml
 from logging import Logger
 import argparse
-import joblib
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -15,7 +14,7 @@ from sklearn import metrics
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.metrics import f1_score, precision_score, roc_auc_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.experimental import enable_halving_search_cv
+from sklearn.experimental import enable_halving_search_cv  # noqa
 from sklearn.model_selection import (
     RandomizedSearchCV,
     GridSearchCV,
