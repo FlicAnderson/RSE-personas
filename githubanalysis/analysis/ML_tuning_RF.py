@@ -372,9 +372,10 @@ class TuningSetup(DatasetSetup):
                 max_resources="auto",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration; By default, this is set to n_samples when resource='n_samples' (default), else an error is raised.
                 min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
                 aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
-                cv=rskf.split(
-                    self.X_train, self.y_train
-                ),  # None: default 5-fold  # cross-validation splitting strategy
+                cv=None,  # default 5-fold.
+                # cv=rskf.split(
+                #     self.X_train, self.y_train
+                # ),  # None: default 5-fold  # cross-validation splitting strategy
                 scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
                 refit=True,  # default: True # refit an estimator using the best found parameters
                 n_jobs=(
@@ -400,7 +401,11 @@ class TuningSetup(DatasetSetup):
         # To ignore the warning about the OOB
         with warnings.catch_warnings():
             warnings.simplefilter("once")
-            search.fit(self.X_train, self.y_train)
+            # self.logger.info(f"test test test {}")
+            try:
+                search.fit(self.X_train, self.y_train)
+            except ValueError as e:
+                self.logger.error(f"Error in search.fit(): {e}")
             self.report(search.cv_results_, n_top=5)  # Report the top 5 results
 
             param_search_results = pd.DataFrame(search.cv_results_)
