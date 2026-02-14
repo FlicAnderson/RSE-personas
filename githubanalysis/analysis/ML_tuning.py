@@ -324,6 +324,7 @@ class HGBTParamSearch(AbstractParamSearch):
         return None
 
     def searched_params_fit_to_classifier(self):
+        self.param_searching()
         print(
             "returning model with best hyperparameters fitted, and results, for HGBT model"
         )
@@ -350,6 +351,7 @@ class GBTParamSearch(AbstractParamSearch):
         return None
 
     def searched_params_fit_to_classifier(self):
+        self.param_searching()
         print(
             "returning model with best hyperparameters fitted, and results, for GBT model"
         )
@@ -837,10 +839,12 @@ def main():
     elif tuning_setup.ML_CLASS == "HGBT":
         # thing B
         hgbtparamsearch = HGBTParamSearch(base_tuning_setup=tuning_setup)
+        hgbtparamsearch.searched_params_fit_to_classifier()
 
     elif tuning_setup.ML_CLASS == "GBT":
         # thing C
         gbtparamsearch = GBTParamSearch(base_tuning_setup=tuning_setup)
+        gbtparamsearch.searched_params_fit_to_classifier()
 
     else:
         print("WHELP D:")
