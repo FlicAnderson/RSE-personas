@@ -21,7 +21,7 @@ from sklearn.experimental import enable_halving_search_cv  # noqa
 from sklearn.model_selection import (
     RandomizedSearchCV,
     GridSearchCV,
-    HalvingGridSearchCV,
+    HalvingGridSearchCV,  # noqa
 )
 
 from githubanalysis.analysis.ML_pipeline import (
@@ -276,15 +276,15 @@ class AbstractParamSearch(ABC):
         self.N_CORES = self.base_tuning_setup.N_JOBS  # input from commandline param
 
     @abstractmethod
-    def if_randomized_searching(self):
+    def if_randomized_searching(self) -> RandomizedSearchCV | None:
         pass
 
     @abstractmethod
-    def if_grid_searching(self):
+    def if_grid_searching(self) -> GridSearchCV | None:
         pass
 
     @abstractmethod
-    def if_halving_grid_searching(self):
+    def if_halving_grid_searching(self) -> HalvingGridSearchCV | None:
         pass
 
     def decide_which_hyper_param_method(self) -> Any:
@@ -381,7 +381,7 @@ class RFParamSearch(AbstractParamSearch):
             "max_samples": stats.uniform(
                 0.01, 0.75
             ),  #  # prev 0.01, 1.0; if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
-            "max_features": self.base_tuning_setup.feat_range,
+            "max_features": self.base_tuning_setup.n_feats_around_optimal(),
             "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
             "min_impurity_decrease": stats.uniform(
                 0, 0.1
@@ -390,7 +390,7 @@ class RFParamSearch(AbstractParamSearch):
         }
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         self.base_tuning_setup.logger.info(
-            f"Number of physical cores: {self.base_tuning_setup.N_CORES}"
+            f"Number of physical cores: {self.base_tuning_setup.N_JOBS}"
         )
         assert self.base_tuning_setup.ML_CLASS == "RF", (
             f"There's been an issue, base_tuning_setup ML_CLASS is expected to be RF, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
@@ -399,7 +399,7 @@ class RFParamSearch(AbstractParamSearch):
             bootstrap=True,
             oob_score=True,
             class_weight=None,
-            n_jobs=self.base_tuning_setup.N_CORES,
+            n_jobs=self.base_tuning_setup.N_JOBS,
             verbose=2,
         )
         self.base_tuning_setup.logger.info("clf declared")
@@ -545,7 +545,7 @@ class RFParamSearch(AbstractParamSearch):
         end_hyper_param_search = time.time()
         hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
         self.base_tuning_setup.logger.info(
-            f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for RF took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.base_tuning_setup.params)} parameter categories."
+            f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for RF took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories."
         )
 
         params_filename_out = f"RF_paramsearch_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
