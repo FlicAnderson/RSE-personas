@@ -78,7 +78,7 @@ class HyperParams:  # Ananya's!
         )
 
 
-class TuningSetup(DatasetSetup):
+class BaseTuningSetup(DatasetSetup):
     def _log_name(self) -> str:
         return f"ML_tuning_{self.SEARCH_METHOD}"
 
@@ -298,7 +298,7 @@ class TuningSetup(DatasetSetup):
         rskf = RepeatedStratifiedKFold(
             n_splits=5,  # 5 is default
             n_repeats=10,  # 10 is default
-            random_state=None,  # None is default
+            random_state=self.RANDOM_STATE,  # None is default
         )
         self.logger.info("rskf declared")
         self.logger.info(f"Searching hyper-parameters using {self.SEARCH_METHOD}.")
@@ -373,6 +373,7 @@ class TuningSetup(DatasetSetup):
                 min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
                 aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
                 cv=None,  # default 5-fold.
+                # following alternative removed as it seemed to break the run when attempted with HalvingGridSearchCV?
                 # cv=rskf.split(
                 #     self.X_train, self.y_train
                 # ),  # None: default 5-fold  # cross-validation splitting strategy
@@ -585,12 +586,6 @@ class TuningSetup(DatasetSetup):
             )
         )
 
-        #         pipeline_class_obj.le.inverse_transform(
-        #     pipeline_class_obj.y_true
-        # ),  # y_true
-        # pipeline_class_obj.le.inverse_transform(
-        #     pipeline_class_obj.y_pred
-        # ),  # y_pred
         classification_rep = metrics.classification_report(
             y_true=self.le.inverse_transform(self.y_true),  # y_true
             y_pred=self.le.inverse_transform(y_pred),  # y_pred
@@ -602,29 +597,6 @@ class TuningSetup(DatasetSetup):
         self.logger.info(
             classification_rep
         )  # try this to avoid logger error with formatting of report
-        # self.logger.info(
-        #     # "Classification Report: ",
-        #     metrics.classification_report(
-        #         y_true=self.le.inverse_transform(self.y_true),  # y_true
-        #         y_pred=self.le.inverse_transform(y_pred),  # y_pred
-        #         zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
-        #         digits=5,
-        #         # output_dict=True,  # default=False
-        #     ),
-        # )
-        # self.logger.info(
-        #     "Classification Report:",
-        #     metrics.classification_report(
-        #         y_true=self.le.inverse_transform(self.y_true),  # y_true
-        #         y_pred=self.le.inverse_transform(y_pred),  # y_pred
-        #         zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
-        #         digits=5,
-        #         # labels=self.RSE_info["target"],
-        #         # target_names=self.RSE_info["target"],
-        #         output_dict=False,  # default=False
-        #     ),
-        # )
-
         self.logger.info("Returning final results now:")
         return (
             f1_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
@@ -680,7 +652,7 @@ parser.add_argument(
 
 def main():
     """
-    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -r 69 -j 7
+    $ time python githubanalysis/analysis/ML_tuning_RF.py -n 10000 -i 50 -r 69 -j 7
     """
     args = parser.parse_args()
     nobs_arg: int = args.n_observations
@@ -689,7 +661,7 @@ def main():
     search_arg: str = args.search_method
     jobs_arg: int = args.job_number
 
-    tuning_setup = TuningSetup(
+    tuning_setup = BaseTuningSetup(
         dataset_name="ML_tune",
         in_notebook=False,
         exists_ok=True,
