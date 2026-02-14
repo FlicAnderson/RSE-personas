@@ -7,6 +7,9 @@ from pathlib import Path
 import scipy.stats as stats
 import warnings
 import time
+from abc import ABC, abstractmethod
+from typing import Any
+# from sklearn.model_selection import *
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -89,6 +92,7 @@ class BaseTuningSetup(DatasetSetup):
         N_JOBS: int,
         exists_ok: bool = False,
         logger: None | Logger = None,
+        ML_CLASS: str = "RF",
         N_OBS: int = 10000,
         N_ITER: int = 50,
         RANDOM_STATE: int = 42,
@@ -102,7 +106,12 @@ class BaseTuningSetup(DatasetSetup):
             exists_ok=exists_ok,
             logger=logger,
         )
-        self.model_type = "random_forest"
+        self.ML_CLASS = ML_CLASS
+        assert self.ML_CLASS in [
+            "RF",
+            "HGBT",
+            "GBT",
+        ]
         self.le = LabelEncoder()
         self.N_OBS = N_OBS
         self.N_ITER = N_ITER
@@ -254,16 +263,112 @@ class BaseTuningSetup(DatasetSetup):
                 self.logger.info("Parameters: {0}".format(results["params"][candidate]))
                 self.logger.info("")
 
-    def param_searching(
+
+class AbstractParamSearch(ABC):
+    def __init__(self, base_tuning_setup) -> None:
+        self.base_tuning_setup = base_tuning_setup
+        self.rskf = RepeatedStratifiedKFold(  # THIS step will be repeated for all the ML models.
+            n_splits=5,  # 5 is default
+            n_repeats=10,  # 10 is default
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # None is default
+        )
+        self.base_tuning_setup.logger.info("rskf declared")
+        self.N_CORES = self.base_tuning_setup.N_JOBS  # input from commandline param
+
+    @abstractmethod
+    def __if_randomized_searching(self):
+        pass
+
+    @abstractmethod
+    def __if_grid_searching(self):
+        pass
+
+    @abstractmethod
+    def __if_halving_grid_searching(self):
+        pass
+
+    def __decide_which_hyper_param_method(self) -> Any:
+        if self.base_tuning_setup.SEARCH_METHOD == "RandomizedSearchCV":
+            search = self.__if_randomized_searching()
+        elif self.base_tuning_setup.SEARCH_METHOD == "GridSearchCV":
+            search = self.__if_grid_searching()
+        elif self.base_tuning_setup.SEARCH_METHOD == "HalvingGridSearchCV":
+            search = self.__if_halving_grid_searching()
+        else:
+            raise ValueError(
+                f"SEARCH_METHOD is not of correct type; SEARCH_METHOD is {self.base_tuning_setup.SEARCH_METHOD} there was a problem"
+            )
+        return search
+
+    @abstractmethod
+    def param_searching(self) -> HyperParams | None:
+        pass
+
+    @abstractmethod
+    def searched_params_fit_to_classifier(self) -> tuple | None:
+        pass
+
+
+class HGBTParamSearch(AbstractParamSearch):
+    def __init__(self, base_tuning_setup) -> None:
+        super().__init__(base_tuning_setup)
+        self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
+
+    def __if_randomized_searching(self):
+        print("if randomised searching for HGBT model")
+
+    def __if_grid_searching(self):
+        print("if grid searching for HGBT model")
+
+    def __if_halving_grid_searching(self):
+        print("if halving-grid searching for HGBT model")
+
+    def param_searching(self):
+        print("param searching happens here for HGBT model")
+        return None
+
+    def searched_params_fit_to_classifier(self):
+        print(
+            "returning model with best hyperparameters fitted, and results, for HGBT model"
+        )
+        return None
+
+
+class GBTParamSearch(AbstractParamSearch):
+    def __init__(self, base_tuning_setup) -> None:
+        super().__init__(base_tuning_setup)
+        self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
+
+    def __if_randomized_searching(self):
+        print("if randomised searching for GBT model")
+
+    def __if_grid_searching(self):
+        print("if grid searching for GBT model")
+
+    def __if_halving_grid_searching(self):
+        print("if halving-grid searching for GBT model")
+
+    def param_searching(self):
+        print("param searching happens here for GBT model")
+        return None
+
+    def searched_params_fit_to_classifier(self):
+        print(
+            "returning model with best hyperparameters fitted, and results, for GBT model"
+        )
+        return None
+
+
+class RFParamSearch(AbstractParamSearch):
+    def __init__(
         self,
-    ):
-        assert self.SEARCH_METHOD in [
-            "RandomizedSearchCV",
-            "GridSearchCV",
-            "HalvingGridSearchCV",
-        ]
-        feat_range = self.n_feats_around_optimal()
-        params = {
+        base_tuning_setup: BaseTuningSetup,
+    ) -> None:
+        super().__init__(
+            base_tuning_setup=base_tuning_setup,
+        )
+        self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
+        self.params = {
             "n_estimators": [
                 75,
                 100,
@@ -276,138 +381,151 @@ class BaseTuningSetup(DatasetSetup):
             "max_samples": stats.uniform(
                 0.01, 0.75
             ),  #  # prev 0.01, 1.0; if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
-            "max_features": feat_range,
+            "max_features": self.base_tuning_setup.feat_range,
             "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
             "min_impurity_decrease": stats.uniform(
                 0, 0.1
             ),  # node will be split if split induces a decrease of the impurity greater than or equal to this
             "max_leaf_nodes": [None],  # stats.randint(7, 250), # default=None
         }
-
-        N_CORES = self.N_JOBS
-        self.logger.info(f"Number of physical cores: {N_CORES}")
-
-        clf = RandomForestClassifier(
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        self.base_tuning_setup.logger.info(
+            f"Number of physical cores: {self.base_tuning_setup.N_CORES}"
+        )
+        assert self.base_tuning_setup.ML_CLASS == "RF", (
+            f"There's been an issue, base_tuning_setup ML_CLASS is expected to be RF, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
+        )
+        self.clf = RandomForestClassifier(
             bootstrap=True,
             oob_score=True,
             class_weight=None,
-            n_jobs=N_CORES,
+            n_jobs=self.base_tuning_setup.N_CORES,
             verbose=2,
         )
-        self.logger.info("clf declared")
-        rskf = RepeatedStratifiedKFold(
-            n_splits=5,  # 5 is default
-            n_repeats=10,  # 10 is default
-            random_state=self.RANDOM_STATE,  # None is default
-        )
-        self.logger.info("rskf declared")
-        self.logger.info(f"Searching hyper-parameters using {self.SEARCH_METHOD}.")
-        if self.SEARCH_METHOD == "RandomizedSearchCV":
-            self.logger.info(f"param options are: {params}")
-            search = RandomizedSearchCV(
-                clf,  # estimator
-                n_iter=self.N_ITER,  # controls 'combination of parameters'
-                param_distributions=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
-                scoring="f1_macro",  # "accuracy",
-                cv=rskf.split(self.X_train, self.y_train),  # None: default 5-fold #
-                n_jobs=N_CORES,
-                verbose=4,
-                error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
-                random_state=self.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
-                return_train_score=True,  # default=False.
-            )
-            self.logger.info(
-                f"Searching hyper-parameters using search settings: {search}."
-            )
-        elif self.SEARCH_METHOD == "GridSearchCV":
-            params["max_samples"] = [
-                0.1,
-                0.25,
-                0.5,
-                0.75,
-            ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
-            # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
-            params["min_samples_split"] = [2]
-            params["ccp_alpha"] = np.arange(0, 0.25, 0.05)
-            params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
-            # params["max_leaf_nodes"] = list(range(7, 260, 10))
-            self.logger.info(f"param options are: {params}")
-            search = GridSearchCV(
-                clf,  # estimator
-                param_grid=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
-                scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
-                cv=rskf.split(
-                    self.X_train, self.y_train
-                ),  # None: default 5-fold  # cross-validation splitting strategy
-                n_jobs=(
-                    N_CORES
-                ),  # number of jobs to run in parallel; default=None (means 1)
-                refit=True,  # default: True # refit an estimator using the best found parameters
-                verbose=2,
-                pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
-                error_score="raise",
-                return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
-            )
-            self.logger.info(
-                f"Searching hyper-parameters using search settings: {search}."
-            )
-        elif self.SEARCH_METHOD == "HalvingGridSearchCV":
-            params["max_samples"] = [
-                0.1,
-                0.25,
-                0.5,
-                0.75,
-            ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
-            # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
-            params["min_samples_split"] = [2]
-            params["ccp_alpha"] = np.arange(0, 0.02, 0.005)
-            params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
-            # params["max_leaf_nodes"] = list(range(7, 260, 10))
-            self.logger.info(f"param options are: {params}")
-            search = HalvingGridSearchCV(
-                clf,  # estimator
-                param_grid=params,  # dictionary of parameter keys and lists or distributions of parameter options to try
-                factor=3,  # 3=default; the 'halving' param: which proportion of candidates selected for the next iteration (e.g. 3 is 1/3rd)
-                resource="n_samples",  # default: 'n_samples'. the resource that increases with each iteration.  Can be 'n_iterations' or 'n_estimators' for gradient boosting estimators. 'max_resources' cannot be auto if that's true
-                max_resources="auto",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration; By default, this is set to n_samples when resource='n_samples' (default), else an error is raised.
-                min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
-                aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
-                cv=None,  # default 5-fold.
-                # following alternative removed as it seemed to break the run when attempted with HalvingGridSearchCV?
-                # cv=rskf.split(
-                #     self.X_train, self.y_train
-                # ),  # None: default 5-fold  # cross-validation splitting strategy
-                scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
-                refit=True,  # default: True # refit an estimator using the best found parameters
-                n_jobs=(
-                    N_CORES
-                ),  # number of jobs to run in parallel; default=None (means 1)
-                error_score="raise",
-                return_train_score=True,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
-                random_state=self.RANDOM_STATE,  # state used for subsampling dataset when resources != 'n_samples'.
-                verbose=2,
-                # pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
-            )
-            self.logger.info(
-                f"Searching hyper-parameters using search settings: {search}."
-            )
-        else:  # This should never happen because there's a default of RandomizedSearchCV
-            raise ValueError(
-                f"SEARCH_METHOD is not of correct type; SEARCH_METHOD is {self.SEARCH_METHOD} but should be one of: "
-            )
+        self.base_tuning_setup.logger.info("clf declared")
+        self.__decide_which_hyper_param_method()
 
-        self.logger.info("search declared")
+    def __if_randomized_searching(self):
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = RandomizedSearchCV(
+            self.clf,  # estimator
+            n_iter=self.base_tuning_setup.N_ITER,  # controls 'combination of parameters'
+            param_distributions=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            scoring="f1_macro",  # "accuracy",
+            cv=self.rskf.split(
+                self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+            ),  # None: default 5-fold #
+            n_jobs=self.N_CORES,
+            verbose=4,
+            error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
+            return_train_score=True,  # default=False.
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
+
+    def __if_grid_searching(self):
+        self.params["max_samples"] = [
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+        ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
+        # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
+        self.params["min_samples_split"] = [2]
+        self.params["ccp_alpha"] = np.arange(0, 0.25, 0.05)
+        self.params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
+        # params["max_leaf_nodes"] = list(range(7, 260, 10))
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = GridSearchCV(
+            self.clf,  # estimator
+            param_grid=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+            cv=self.rskf.split(
+                self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+            ),  # None: default 5-fold  # cross-validation splitting strategy
+            n_jobs=(
+                self.N_CORES
+            ),  # number of jobs to run in parallel; default=None (means 1)
+            refit=True,  # default: True # refit an estimator using the best found parameters
+            verbose=2,
+            pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
+            error_score="raise",
+            return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
+
+    def __if_halving_grid_searching(self):
+        self.params["max_samples"] = [
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+        ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
+        # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
+        self.params["min_samples_split"] = [2]
+        self.params["ccp_alpha"] = np.arange(0, 0.02, 0.005)
+        self.params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
+        # params["max_leaf_nodes"] = list(range(7, 260, 10))
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = HalvingGridSearchCV(
+            self.clf,  # estimator
+            param_grid=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            factor=3,  # 3=default; the 'halving' param: which proportion of candidates selected for the next iteration (e.g. 3 is 1/3rd)
+            resource="n_samples",  # default: 'n_samples'. the resource that increases with each iteration.  Can be 'n_iterations' or 'n_estimators' for gradient boosting estimators. 'max_resources' cannot be auto if that's true
+            max_resources="auto",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration; By default, this is set to n_samples when resource='n_samples' (default), else an error is raised.
+            min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
+            aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
+            cv=None,  # default 5-fold.
+            # following alternative removed as it seemed to break the run when attempted with HalvingGridSearchCV?
+            # cv=rskf.split(
+            #     self.X_train, self.y_train
+            # ),  # None: default 5-fold  # cross-validation splitting strategy
+            scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+            refit=True,  # default: True # refit an estimator using the best found parameters
+            n_jobs=(
+                self.N_CORES
+            ),  # number of jobs to run in parallel; default=None (means 1)
+            error_score="raise",
+            return_train_score=True,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # state used for subsampling dataset when resources != 'n_samples'.
+            verbose=2,
+            # pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
+
+    def param_searching(self):
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using {self.base_tuning_setup.SEARCH_METHOD}."
+        )
+
+        search = self.__decide_which_hyper_param_method()
+
+        self.base_tuning_setup.logger.info("search declared")
         start_hyper_param_search = time.time()
-        self.logger.info("param timer started")
+        self.base_tuning_setup.logger.info("param timer started")
+
         # To ignore the warning about the OOB
         with warnings.catch_warnings():
             warnings.simplefilter("once")
             # self.logger.info(f"test test test {}")
             try:
-                search.fit(self.X_train, self.y_train)
+                search.fit(
+                    self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+                )
             except ValueError as e:
-                self.logger.error(f"Error in search.fit(): {e}")
-            self.report(search.cv_results_, n_top=5)  # Report the top 5 results
+                self.base_tuning_setup.logger.error(f"Error in search.fit(): {e}")
+            self.base_tuning_setup.report(
+                search.cv_results_, n_top=5
+            )  # Report the top 5 results
 
             param_search_results = pd.DataFrame(search.cv_results_)
             best_params = HyperParams(
@@ -421,22 +539,28 @@ class BaseTuningSetup(DatasetSetup):
                 min_impurity_dec=search.best_params_["min_impurity_decrease"],
                 max_lvs=search.best_params_["max_leaf_nodes"],
             )
-            self.logger.info("Best score {:.5f} with:".format(search.best_score_))
-            self.logger.info(best_params)
+            self.base_tuning_setup.logger.info(
+                "Best score {:.5f} with:".format(search.best_score_)
+            )
+            self.base_tuning_setup.logger.info(best_params)
         end_hyper_param_search = time.time()
         hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
-        self.logger.info(
-            f"Hyper-Parameter search using {self.SEARCH_METHOD} method for RF took {hyper_param_search_time} seconds for {self.N_ITER} across {len(params)} parameter categories."
+        self.base_tuning_setup.logger.info(
+            f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for RF took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.base_tuning_setup.params)} parameter categories."
         )
 
-        params_filename_out = (
-            f"RF_paramsearch_N{self.y_test_size[0]}_{self.current_date_info}.csv"
+        params_filename_out = f"RF_paramsearch_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        params_save_out = Path(
+            self.base_tuning_setup.data_location, params_filename_out
         )
-        params_save_out = Path(self.data_location, params_filename_out)
         param_search_results.to_csv(params_save_out, header=True, index=False)
+        return best_params
+
+    def searched_params_fit_to_classifier(self):
+        best_params = self.param_searching()
 
         start_selected_rfc_fit = time.time()
-        self.logger.info("fit timer started")
+        self.base_tuning_setup.logger.info("fit timer started")
         # run full model with the best params! :D
         selected_rfc = RandomForestClassifier(
             max_depth=best_params.depth,
@@ -449,75 +573,73 @@ class BaseTuningSetup(DatasetSetup):
             min_impurity_decrease=best_params.min_impurity_dec,
             max_leaf_nodes=best_params.max_lvs,
             oob_score=True,
-            n_jobs=N_CORES,
+            n_jobs=self.N_CORES,
             verbose=4,
-        ).fit(self.X_train, self.y_train)
+        ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_rfc_fit = time.time()
         selected_rfc_fit_time = end_selected_rfc_fit - start_selected_rfc_fit
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             f"Selected Parameters RF model took {selected_rfc_fit_time} seconds to fit"
         )
 
         start_selected_rfc_predict = time.time()
-        y_pred = selected_rfc.predict(self.X_test)
+        y_pred = selected_rfc.predict(self.base_tuning_setup.X_test)
         end_selected_rfc_predict = time.time()
         selected_rfc_predict_time = (
             end_selected_rfc_predict - start_selected_rfc_predict
         )
-        self.y_true = self.y_test
-        self.logger.info(
+        self.y_true = self.base_tuning_setup.y_test
+        self.base_tuning_setup.logger.info(
             f"Selected Parameters RF model took {selected_rfc_predict_time} seconds to predict"
         )
 
         true_df = pd.DataFrame(
             {
-                "Test true": self.y_test,
+                "Test true": self.base_tuning_setup.y_test,
                 "Test predicted": y_pred,
             }
         )
 
-        filename_out = (
-            f"test_prediction_data_N{self.y_test_size[0]}_{self.current_date_info}.csv"
-        )
-        save_out = Path(self.data_location, filename_out)
+        filename_out = f"test_prediction_data_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        save_out = Path(self.base_tuning_setup.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
         feature_importances = selected_rfc.feature_importances_
 
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             f"""
             For Random Forest model trained on: \n
             datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
-            with N observations (repo-individuals): {self.N_OBS} \n
-            hyper-parameter-searched on {self.N_ITER} iterations \n
-            training-set size: N={self.X_train_size[0]} \n
-            and evaluated using test-set size: N={self.X_test_size[0]} repo-individuals \n
-            using N={self.X_test_size[1]} features \n 
+            with N observations (repo-individuals): {self.base_tuning_setup.N_OBS} \n
+            hyper-parameter-searched on {self.base_tuning_setup.N_ITER} iterations \n
+            training-set size: N={self.base_tuning_setup.X_train_size[0]} \n
+            and evaluated using test-set size: N={self.base_tuning_setup.X_test_size[0]} repo-individuals \n
+            using N={self.base_tuning_setup.X_test_size[1]} features \n 
             with N={best_params.trees} trees in forest  \n
-            at {self.current_date_info} \n 
+            at {self.base_tuning_setup.current_date_info} \n 
             with parameters: {selected_rfc.get_params(deep=False)} \n
-            and feature importances: \n
+            and feature importances: 
         """
         )
         for idx in range(len(CLUSTERING_VARIABLES)):
-            self.logger.info(
+            self.base_tuning_setup.logger.info(
                 "{}: {:.5f}[%]".format(
                     CLUSTERING_VARIABLES[idx], 100.0 * feature_importances[idx]
                 )
             )
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Accuracy: {:.5f} (percent of correctly classified samples)".format(
                 metrics.accuracy_score(self.y_true, y_pred),
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Non-Normalised Accuracy: {:.0f} (number of correctly classified samples)".format(
                 metrics.accuracy_score(self.y_true, y_pred, normalize=False),
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Balanced Accuracy: {:.5f} (the average of recall obtained on each class)".format(
                 metrics.balanced_accuracy_score(
                     self.y_true,
@@ -526,46 +648,48 @@ class BaseTuningSetup(DatasetSetup):
                 )
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Out of Bag Error: {:.5f} (smaller better)".format(
                 # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
                 1 - selected_rfc.oob_score_
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "F1 Score: {:.5f} (harmonic mean of the precision and recall, both equally weighted)".format(
                 metrics.f1_score(
-                    self.le.inverse_transform(self.y_true),  # y_true
-                    self.le.inverse_transform(y_pred),  # y_pred
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
                 )
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Precision: {:.5f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
                 metrics.precision_score(
-                    self.le.inverse_transform(self.y_true),  # y_true
-                    self.le.inverse_transform(y_pred),  # y_pred
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
                 )
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Recall: {:.5f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
                 metrics.recall_score(
-                    self.le.inverse_transform(self.y_true),  # y_true
-                    self.le.inverse_transform(y_pred),  # y_pred
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
                     average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
                 ),
             )
         )
         # # multiclass means you can only be in one category only e.g. media format (film or tv-show)
         # # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
                 roc_auc_score(
-                    y_true=self.y_test,  # y_true
-                    y_score=selected_rfc.predict_proba(self.X_test),  # y_score
+                    y_true=self.base_tuning_setup.y_test,  # y_true
+                    y_score=selected_rfc.predict_proba(
+                        self.base_tuning_setup.X_test
+                    ),  # y_score
                     # y_true=y_test,
                     # y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(X_test),
                     average="macro",
@@ -574,11 +698,13 @@ class BaseTuningSetup(DatasetSetup):
                 )
             )
         )
-        self.logger.info(
+        self.base_tuning_setup.logger.info(
             "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
                 roc_auc_score(
-                    y_true=self.y_test,  # y_true
-                    y_score=selected_rfc.predict_proba(self.X_test),  # y_score
+                    y_true=self.base_tuning_setup.y_test,  # y_true
+                    y_score=selected_rfc.predict_proba(
+                        self.base_tuning_setup.X_test
+                    ),  # y_score
                     average="macro",
                     # multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
                     multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
@@ -587,24 +713,33 @@ class BaseTuningSetup(DatasetSetup):
         )
 
         classification_rep = metrics.classification_report(
-            y_true=self.le.inverse_transform(self.y_true),  # y_true
-            y_pred=self.le.inverse_transform(y_pred),  # y_pred
+            y_true=self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+            y_pred=self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
             zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
             digits=5,
             # output_dict=True,  # default=False
         )
-        self.logger.info("\n")
-        self.logger.info(
+        self.base_tuning_setup.logger.info("\n")
+        self.base_tuning_setup.logger.info(
             classification_rep
         )  # try this to avoid logger error with formatting of report
-        self.logger.info("Returning final results now:")
+        self.base_tuning_setup.logger.info("Returning final results now:")
         return (
-            f1_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
-            precision_score(y_true=self.y_test, y_pred=y_pred, average="macro"),
-            selected_rfc.score(self.X_test, self.y_test),
+            selected_rfc,  # this is the actual model, but currently not using this output
+            f1_score(
+                y_true=self.base_tuning_setup.y_test, y_pred=y_pred, average="macro"
+            ),
+            precision_score(
+                y_true=self.base_tuning_setup.y_test, y_pred=y_pred, average="macro"
+            ),
+            selected_rfc.score(
+                self.base_tuning_setup.X_test, self.base_tuning_setup.y_test
+            ),
             best_params,
             # feature_imp,
         )
+
+    # next function would apply selected_rfc to a dataset to predict RSE Personas with it.
 
 
 parser = argparse.ArgumentParser()
@@ -624,6 +759,15 @@ parser.add_argument(
     type=int,
     default=100,
 )
+parser.add_argument(
+    "-c",
+    "--classifier-type",
+    metavar="CLASSIFIER",
+    help="type of classfier to test with (e.g. RF, default; HGBT; GBT)",
+    type=str,
+    default="RF",
+)
+
 parser.add_argument(
     "-r",
     "--random-state",
@@ -652,9 +796,10 @@ parser.add_argument(
 
 def main():
     """
-    $ time python githubanalysis/analysis/ML_tuning_RF.py -n 10000 -i 50 -r 69 -j 7
+    $ time python githubanalysis/analysis/ML_tuning_RF.py -c RF -n 10000 -i 50 -r 69 -j 7
     """
     args = parser.parse_args()
+    class_arg: str = args.classifier_type
     nobs_arg: int = args.n_observations
     niter_arg: int = args.n_iterations
     rand_arg: int = args.random_state
@@ -666,25 +811,50 @@ def main():
         in_notebook=False,
         exists_ok=True,
         logger=None,
+        ML_CLASS=class_arg,
         N_OBS=nobs_arg,
         N_ITER=niter_arg,
         RANDOM_STATE=rand_arg,
         SEARCH_METHOD=search_arg,
         N_JOBS=jobs_arg,
     )
+
     tuning_setup.logger.info(
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> new paramsearch running <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     )
-    tuning_setup.logger.info("\n")
+
     tuning_setup.logger.info("prepping dataset")
     tuning_setup.prep_data()
+
     tuning_setup.logger.info("splitting dataset")
     tuning_setup.setup_test_train()
-    tuning_setup.logger.info(f"searching for params using search method: {search_arg} ")
-    tuning_setup.param_searching()
+
+    tuning_setup.logger.info(
+        f"searching for params using search method {search_arg} on ML classifier {class_arg}"
+    )
+
+    if tuning_setup.ML_CLASS == "RF":
+        rfparamsearch = RFParamSearch(base_tuning_setup=tuning_setup)
+        # this does the searching, and fits final set of params to classifier model:
+        rfparamsearch.searched_params_fit_to_classifier()
+
+    elif tuning_setup.ML_CLASS == "HGBT":
+        # thing B
+        hgbtparamsearch = HGBTParamSearch(base_tuning_setup=tuning_setup)
+
+    elif tuning_setup.ML_CLASS == "GBT":
+        # thing C
+        gbtparamsearch = GBTParamSearch(base_tuning_setup=tuning_setup)
+
+    else:
+        print("WHELP D:")
+        # this oughtn't happen, because there's an assert somewhere
+        # preventing ML_CLASS being NOT those three things, but nevertheless...
+
     tuning_setup.logger.info(
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> paramsearch complete <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     )
+
     tuning_setup.logger.info("\n")
     print("\n paramater search complete.\n")
 
