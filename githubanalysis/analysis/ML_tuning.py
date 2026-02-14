@@ -276,16 +276,13 @@ class AbstractParamSearch(ABC):
         self.N_CORES = self.base_tuning_setup.N_JOBS  # input from commandline param
 
     @abstractmethod
-    def if_randomized_searching(self) -> RandomizedSearchCV | None:
-        pass
+    def if_randomized_searching(self) -> RandomizedSearchCV | None: ...
 
     @abstractmethod
-    def if_grid_searching(self) -> GridSearchCV | None:
-        pass
+    def if_grid_searching(self) -> GridSearchCV | None: ...
 
     @abstractmethod
-    def if_halving_grid_searching(self) -> HalvingGridSearchCV | None:
-        pass
+    def if_halving_grid_searching(self) -> HalvingGridSearchCV | None: ...
 
     def decide_which_hyper_param_method(self) -> Any:
         if self.base_tuning_setup.SEARCH_METHOD == "RandomizedSearchCV":
@@ -301,12 +298,10 @@ class AbstractParamSearch(ABC):
         return search
 
     @abstractmethod
-    def param_searching(self) -> HyperParams | None:
-        pass
+    def param_searching(self) -> HyperParams | None: ...
 
     @abstractmethod
-    def searched_params_fit_to_classifier(self) -> tuple | None:
-        pass
+    def searched_params_fit_to_classifier(self) -> tuple | None: ...
 
 
 class HGBTParamSearch(AbstractParamSearch):
@@ -324,6 +319,7 @@ class HGBTParamSearch(AbstractParamSearch):
         print("if halving-grid searching for HGBT model")
 
     def param_searching(self):
+        self.decide_which_hyper_param_method()
         print("param searching happens here for HGBT model")
         return None
 
@@ -349,6 +345,7 @@ class GBTParamSearch(AbstractParamSearch):
         print("if halving-grid searching for GBT model")
 
     def param_searching(self):
+        self.decide_which_hyper_param_method()
         print("param searching happens here for GBT model")
         return None
 
