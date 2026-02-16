@@ -11,7 +11,11 @@ from abc import ABC, abstractmethod
 from typing import Any
 # from sklearn.model_selection import *
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import (
+    RandomForestClassifier,
+    HistGradientBoostingClassifier,
+    GradientBoostingClassifier,
+)
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.model_selection import RepeatedStratifiedKFold
@@ -306,11 +310,99 @@ class AbstractParamSearch(ABC):
 
 class HGBTParamSearch(AbstractParamSearch):
     def __init__(self, base_tuning_setup) -> None:
-        super().__init__(base_tuning_setup)
+        super().__init__(base_tuning_setup=base_tuning_setup)
         self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
+        self.params = {
+            # add params here
+            "learning_rate": [
+                0.01,
+                0.02,
+                0.05,
+                0.1,
+            ],  # default 0.1, can also use 0.01; # shrinkage param (lambda)
+            "max_iter": [
+                75,
+                100,
+                125,
+                150,
+                200,
+            ],  # default=100, number of iterations/trees to generate; forest_size
+            "max_leaf_nodes": [
+                None,
+                25,
+                31,
+                50,
+                75,
+            ],  # None= no max; default=31 for some reason?
+            "max_depth": [
+                None
+            ],  # default=None, maximum depth of tree ; not constrained by default.
+            "min_samples_leaf": [
+                20,
+                10,
+                5,
+                2,
+            ],  # default=20; minimum samples per leaf - in small datasets, it's worth lowering this or you get only shallow trees; # TODO: adjust this!
+            "warm_start": [
+                False,
+                True,
+            ],  # warm_start=False,  # if True reuse previous solution to fit/add estimators (True req retrain on same data only or -> invalidity!)
+            "scoring": [
+                "loss",
+                "f1_macro",
+            ],  # scoring to use w/ early stopping: 'str':*; a scorer callable; None:'accuracy' is used; 'loss'(default): checked with loss value; *=https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-string-names;
+            "validation_fraction": [
+                0.1,
+            ],  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
+            "class_weight": [
+                None,
+            ],  # class_weight=None,  # dict / 'balanced' / None (where all classess weight=1) # TODO: consider this more...
+        }
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        self.base_tuning_setup.logger.info(
+            f"Number of physical cores: {self.base_tuning_setup.N_JOBS}"
+        )
+        assert self.base_tuning_setup.ML_CLASS == "HGBT", (
+            f"There's been an issue, base_tuning_setup ML_CLASS is expected to be HGBT, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
+        )
+        self.clf = HistGradientBoostingClassifier(
+            # basic HGBT params which won't change during tuning etc
+            loss="log_loss",  # default. loss function to use in boosting process. "For multiclass classification problems, ‘log_loss’ is also known as multinomial deviance or categorical crossentropy. Internally, the model fits one tree per boosting iteration and per class and uses the softmax function as inverse link function to compute the predicted probabilities of the classes."
+            l2_regularization=0,  # default. L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
+            max_bins=255,  # default=255; N bins for non-missing values; more = better? max=255.
+            # max_features = 1.0, # this is a proportion; default=1.0; added in v1.4 # float in latest docs, interaction_cst can be used
+            categorical_features=None,  # None:no feats categorical; boolean array; integer array of indices of cat feats; str array: cat names of training data if it has them; "from_dtype": use columns with dtype 'category' (default)
+            monotonic_cst=None,  # BINARY ONLY; constant to inforce on each feature; 1:monotonic incr; 0: no constraint; -1:monotonic decrease
+            interaction_cst=None,  # specify sets of feats which can interact in child node splits # "pairwise" "no_interactions", None, or seq of lists/tuples/sets of ints for indices
+            early_stopping="auto",  # default='auto' # if sample > 10k this is enabled w/ 'auto'
+            n_iter_no_change=10,  # determines early stopping (if it's used)
+            tol=1e-7,  # default. 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
+            verbose=2,
+        )
+        self.base_tuning_setup.logger.info("clf declared")
 
     def if_randomized_searching(self):
-        print("if randomised searching for HGBT model")
+        # print("if randomised searching for HGBT model")
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = RandomizedSearchCV(
+            self.clf,  # estimator
+            n_iter=self.base_tuning_setup.N_ITER,  # controls 'combination of parameters'
+            param_distributions=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            scoring="f1_macro",
+            cv=self.rskf.split(
+                self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+            ),  # None: default 5-fold #
+            n_jobs=self.N_CORES,
+            verbose=4,
+            error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
+            return_train_score=True,  # default=False.
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
 
     def if_grid_searching(self):
         print("if grid searching for HGBT model")
@@ -319,16 +411,119 @@ class HGBTParamSearch(AbstractParamSearch):
         print("if halving-grid searching for HGBT model")
 
     def param_searching(self):
-        self.decide_which_hyper_param_method()
-        print("param searching happens here for HGBT model")
-        return None
+        # print("param searching happens here for HGBT model")
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using {self.base_tuning_setup.SEARCH_METHOD}."
+        )
+
+        search = self.decide_which_hyper_param_method()
+
+        self.base_tuning_setup.logger.info("search declared")
+        start_hyper_param_search = time.time()
+        self.base_tuning_setup.logger.info("param timer started")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("once")
+            try:
+                search.fit(
+                    self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+                )
+            except ValueError as e:
+                self.base_tuning_setup.logger.error(f"Error in search.fit(): {e}")
+            self.base_tuning_setup.report(
+                search.cv_results_, n_top=5
+            )  # Report the top 5 results
+
+            param_search_results = pd.DataFrame(
+                search.cv_results_
+            )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
+
+            best_params = search.cv_results_[
+                "params"
+            ][
+                search.best_index_
+            ]  # TODO: improve this. RF model uses HyperParams class which is better/diff but won't work for HGBT
+
+            self.base_tuning_setup.logger.info(
+                "Best score {:.5f} with:".format(
+                    search.best_score_
+                )  # params settings that gave best results on holdout data
+            )
+            self.base_tuning_setup.logger.info(
+                best_params
+            )  # parameter settings that gave the best results on the hold out data.
+        end_hyper_param_search = time.time()
+        hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
+        self.base_tuning_setup.logger.info(
+            f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
+        )
+        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        params_save_out = Path(
+            self.base_tuning_setup.data_location, params_filename_out
+        )
+        param_search_results.to_csv(params_save_out, header=True, index=False)
+        self.base_tuning_setup.logger.info(
+            f"Index of the best candidate parameter settings is: {search.best_index_}, in {params_save_out}"
+        )
+        return best_params
 
     def searched_params_fit_to_classifier(self):
-        self.param_searching()
-        print(
-            "returning model with best hyperparameters fitted, and results, for HGBT model"
+        best_params = self.param_searching()
+        # print("returning model with best hyperparameters fitted, and results, for HGBT model")
+        start_selected_hgbtc_fit = time.time()
+        self.base_tuning_setup.logger.info("fit timer started")
+        # run full model with the best params! :D
+        selected_hgbtc = HistGradientBoostingClassifier(
+            # TODO ADD THESE VIParams
+        ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
+        end_selected_hgbtc_fit = time.time()
+        selected_hgbtc_fit_time = end_selected_hgbtc_fit - start_selected_hgbtc_fit
+        self.base_tuning_setup.logger.info(
+            f"Selected Parameters HGBT model took {selected_hgbtc_fit_time} seconds to fit"
         )
-        return None
+
+        start_selected_hgbtc_predict = time.time()
+        y_pred = selected_hgbtc.predict(self.base_tuning_setup.X_test)
+        end_selected_hgbtc_predict = time.time()
+        selected_hgbtc_predict_time = (
+            end_selected_hgbtc_predict - start_selected_hgbtc_predict
+        )
+        self.y_true = self.base_tuning_setup.y_test
+        self.base_tuning_setup.logger.info(
+            f"Selected Parameters HGBT model took {selected_hgbtc_predict_time} seconds to predict"
+        )
+
+        true_df = pd.DataFrame(
+            {
+                "Test true": self.base_tuning_setup.y_test,
+                "Test predicted": y_pred,
+            }
+        )
+
+        filename_out = f"test_prediction_data_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        save_out = Path(self.base_tuning_setup.data_location, filename_out)
+        true_df.to_csv(save_out, header=True, index=False)
+
+        # feature_importances = selected_hgbtc.feature_importances_
+
+        self.base_tuning_setup.logger.info(
+            f"""
+            For {self.base_tuning_setup.ML_CLASS} model trained on: \n
+            datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            with N observations (repo-individuals): {self.base_tuning_setup.N_OBS} \n
+            hyper-parameter-searched with search method {self.base_tuning_setup.SEARCH_METHOD} \n 
+            on {self.base_tuning_setup.N_ITER} iterations \n
+            training-set size: N={self.base_tuning_setup.X_train_size[0]} \n
+            and evaluated using test-set size: N={self.base_tuning_setup.X_test_size[0]} repo-individuals \n
+            using N={self.base_tuning_setup.X_test_size[1]} features \n 
+            with N={best_params.trees} trees in forest  \n
+            at {self.base_tuning_setup.current_date_info} \n 
+            with parameters: {selected_hgbtc.get_params(deep=False)} \n
+            and feature importances: 
+        """
+        )
+
+        # TODO START HEREE ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 class GBTParamSearch(AbstractParamSearch):
@@ -514,7 +709,6 @@ class RFParamSearch(AbstractParamSearch):
         # To ignore the warning about the OOB
         with warnings.catch_warnings():
             warnings.simplefilter("once")
-            # self.logger.info(f"test test test {}")
             try:
                 search.fit(
                     self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
@@ -525,7 +719,10 @@ class RFParamSearch(AbstractParamSearch):
                 search.cv_results_, n_top=5
             )  # Report the top 5 results
 
-            param_search_results = pd.DataFrame(search.cv_results_)
+            param_search_results = pd.DataFrame(
+                search.cv_results_
+            )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
+
             best_params = HyperParams(
                 depth=search.best_params_["max_depth"],
                 trees=search.best_params_["n_estimators"],
@@ -538,20 +735,27 @@ class RFParamSearch(AbstractParamSearch):
                 max_lvs=search.best_params_["max_leaf_nodes"],
             )
             self.base_tuning_setup.logger.info(
-                "Best score {:.5f} with:".format(search.best_score_)
+                "Best score {:.5f} with:".format(
+                    search.best_score_
+                )  # params settings that gave best results on holdout data
             )
-            self.base_tuning_setup.logger.info(best_params)
+            self.base_tuning_setup.logger.info(
+                best_params
+            )  # parameter settings that gave the best results on the hold out data.
         end_hyper_param_search = time.time()
         hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
         self.base_tuning_setup.logger.info(
-            f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for RF took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories."
+            f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
         )
 
-        params_filename_out = f"RF_paramsearch_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
             self.base_tuning_setup.data_location, params_filename_out
         )
         param_search_results.to_csv(params_save_out, header=True, index=False)
+        self.base_tuning_setup.logger.info(
+            f"Index of the best candidate parameter settings is: {search.best_index_}, in {params_save_out}"
+        )
         return best_params
 
     def searched_params_fit_to_classifier(self):
