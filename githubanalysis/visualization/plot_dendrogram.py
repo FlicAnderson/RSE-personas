@@ -1,5 +1,6 @@
 """Generate Dendrogram Plot from Data."""
 
+from logging import Logger
 from pathlib import Path
 import gc
 from githubanalysis.setup_classes import DatasetSetup
@@ -17,6 +18,17 @@ sys.setrecursionlimit(10000)  # :D
 class Dendrogrammer(DatasetSetup):
     def _log_name(self) -> str:
         return "plot_dendrograms"
+
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.data_write_location.mkdir(exist_ok=exists_ok)
+        self.image_write_location.mkdir(exist_ok=exists_ok)
 
     def plot_dendrogram(
         self,

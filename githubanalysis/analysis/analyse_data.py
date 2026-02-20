@@ -1,6 +1,7 @@
 """Data analysis workflow for github repo analysis."""
 
 # import modules
+from logging import Logger
 from pathlib import Path
 import gc
 import argparse
@@ -56,6 +57,16 @@ class DataAnalyser(DatasetSetup):
     def _log_name(self) -> str:
         return "analyse_data"
 
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.exists_ok = exists_ok
+
     def subset_sample_to_repos(
         self,
         data: pd.DataFrame,
@@ -68,9 +79,9 @@ class DataAnalyser(DatasetSetup):
         # subset data df to include only repo_names from file
         # otherwise use complete data df.
 
-        assert isinstance(
-            data, pd.DataFrame
-        ), f"data is not in pd.DataFrame format; please check this. type(data) is: {type(data)}"
+        assert isinstance(data, pd.DataFrame), (
+            f"data is not in pd.DataFrame format; please check this. type(data) is: {type(data)}"
+        )
         assert data.empty is False, "Dataframe data is empty; check inputs."
 
         self.logger.info(f"data is df, with shape: {data.shape}.")
@@ -81,9 +92,9 @@ class DataAnalyser(DatasetSetup):
             )
             return data  # if no subset_repos_file, don't subset, just return as-is.
         else:
-            assert isinstance(
-                subset_repos_file, (str, Path)
-            ), f"subset_repos_file is neither string nor Path object; {type(subset_repos_file)}"
+            assert isinstance(subset_repos_file, (str, Path)), (
+                f"subset_repos_file is neither string nor Path object; {type(subset_repos_file)}"
+            )
 
             if isinstance(subset_repos_file, str):
                 subset_repos_file = Path(self.data_read_location, subset_repos_file)
@@ -466,9 +477,9 @@ class DataAnalyser(DatasetSetup):
         clustering_variables: list[str],
         cleaned_data_with_interactions: pd.DataFrame,
     ):
-        assert isinstance(
-            clustering_variables, list
-        ), f"clustering variables must be a list: please check input variables: {clustering_variables} which are of type {type(clustering_variables)}."
+        assert isinstance(clustering_variables, list), (
+            f"clustering variables must be a list: please check input variables: {clustering_variables} which are of type {type(clustering_variables)}."
+        )
         clustering_data = cleaned_data_with_interactions[clustering_variables]
         return clustering_data
 
@@ -489,9 +500,9 @@ class DataAnalyser(DatasetSetup):
         accessed 10th Feb 2025
         """
         if isinstance(clustering_data, pd.DataFrame):
-            assert (
-                clustering_data.empty is False
-            ), "Dataframe data is empty; check inputs."
+            assert clustering_data.empty is False, (
+                "Dataframe data is empty; check inputs."
+            )
 
         self.logger.info(f"clustering data is df, with shape: {clustering_data.shape}.")
 
@@ -558,9 +569,9 @@ class DataAnalyser(DatasetSetup):
         gc.collect()  # free up space, just in case :)
 
         if n_clusters_to_use is not None:
-            assert isinstance(
-                n_clusters_to_use, int
-            ), "If supplying a number of clusters to use, this must be an integer. Otherwise, the best_n_clusters will be used from evaluation steps."
+            assert isinstance(n_clusters_to_use, int), (
+                "If supplying a number of clusters to use, this must be an integer. Otherwise, the best_n_clusters will be used from evaluation steps."
+            )
             self.logger.info(
                 f"Generating specific n of clusters: {n_clusters_to_use}, rather than best_n_clusters: {best_n_clusters}."
             )
@@ -616,9 +627,9 @@ class DataAnalyser(DatasetSetup):
         clustering_variables: list,
     ) -> pd.DataFrame:
         if isinstance(clustering_data, pd.DataFrame):
-            assert (
-                clustering_data.empty is False
-            ), "Dataframe data is empty; check inputs."
+            assert clustering_data.empty is False, (
+                "Dataframe data is empty; check inputs."
+            )
 
         self.logger.info(f"clustering data is df, with shape: {clustering_data.shape}.")
 
@@ -831,9 +842,9 @@ class DataAnalyser(DatasetSetup):
             repo_stats_file,
             header=0,
         )
-        assert (
-            repo_stats is not None
-        ), f"repo_stats was not read correctly, please check file {repo_stats_file}"
+        assert repo_stats is not None, (
+            f"repo_stats was not read correctly, please check file {repo_stats_file}"
+        )
 
         repo_stats = repo_stats[repo_stats["repo_name"].isin(sample_repo_names)]
 
@@ -899,6 +910,7 @@ class DataAnalyser(DatasetSetup):
             in_notebook=self.in_notebook,
             logger=self.logger,
             dataset_name=run_name,
+            exists_ok=self.exists_ok,
         )
         dendrogrammer.plot_dendrogram(
             clustering_data=clustering_data,
@@ -919,9 +931,9 @@ class DataAnalyser(DatasetSetup):
                 eval_CHs["CH_score"].idxmax(), "N_clusters_evaluated"
             ],
         )
-        assert (
-            best_n_clusters.dtype == np.int64
-        ), "Check that N_clusters_evaluated column contains integers!"
+        assert best_n_clusters.dtype == np.int64, (
+            "Check that N_clusters_evaluated column contains integers!"
+        )
 
         self.logger.info(
             f"Calinski-Harabasz Score evaluation of {max_clusters_to_eval} clusters shows best number of clusters for sample is {best_n_clusters} with score {eval_CHs.loc[eval_CHs['CH_score'].idxmax(), 'CH_score']}."
