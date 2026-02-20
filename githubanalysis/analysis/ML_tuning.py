@@ -734,13 +734,22 @@ class RFParamSearch(AbstractParamSearch):
         assert self.base_tuning_setup.ML_CLASS == "RF", (
             f"There's been an issue, base_tuning_setup ML_CLASS is expected to be RF, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
         )
+        # self.clf = RandomForestClassifier(
+        #     bootstrap=True,
+        #     oob_score=True,
+        #     class_weight=None,
+        #     n_jobs=self.base_tuning_setup.N_JOBS,
+        #     verbose=2,
+        # )
         self.clf = RandomForestClassifier(
-            bootstrap=True,
-            oob_score=True,
-            class_weight=None,
+            min_samples_leaf=HyperParamsRF.min_samples_leaf,
+            bootstrap=HyperParamsRF.bootstrap,
+            oob_score=HyperParamsRF.oob_score,
+            class_weight=HyperParamsRF.class_weight,
             n_jobs=self.base_tuning_setup.N_JOBS,
-            verbose=2,
+            verbose=HyperParamsRF.verbose,
         )
+
         self.base_tuning_setup.logger.info("clf declared")
 
     def if_randomized_searching(self):
@@ -873,7 +882,9 @@ class RFParamSearch(AbstractParamSearch):
                 criterion=search.best_params_["criterion"],
                 max_depth=search.best_params_["max_depth"],
                 min_samples_split=search.best_params_["min_samples_split"],
-                min_samples_leaf=search.best_params_["min_samples_leaf"],
+                min_samples_leaf=search.best_params_[
+                    "min_samples_leaf"
+                ],  # THE ERROR IS HERE
                 min_weight_fraction_leaf=search.best_params_[
                     "min_weight_fraction_leaf"
                 ],
