@@ -726,6 +726,7 @@ class RFParamSearch(AbstractParamSearch):
                 0, 0.1
             ),  # node will be split if split induces a decrease of the impurity greater than or equal to this
             "max_leaf_nodes": [None],  # stats.randint(7, 250), # default=None
+            "min_samples_leaf": [1],  # TESTING THIS
         }
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         self.base_tuning_setup.logger.info(
