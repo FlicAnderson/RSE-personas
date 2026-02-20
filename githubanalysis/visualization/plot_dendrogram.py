@@ -27,8 +27,10 @@ class Dendrogrammer(DatasetSetup):
         logger: None | Logger = None,
     ) -> None:
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
-        self.data_write_location.mkdir(exist_ok=exists_ok)
-        self.image_write_location.mkdir(exist_ok=exists_ok)
+        self.exists_ok = exists_ok
+        self.data_write_location.mkdir(exist_ok=self.exists_ok)
+        self.image_write_location.mkdir(exist_ok=self.exists_ok)
+        print(f"EXISTS OK AT DENDROGRAMMER: {self.exists_ok}")
 
     def plot_dendrogram(
         self,
