@@ -7,8 +7,10 @@ from pathlib import Path
 import scipy.stats as stats
 import warnings
 import time
+from typing import Literal
 from abc import ABC, abstractmethod
 from typing import Any
+from dataclasses import dataclass
 # from sklearn.model_selection import *
 
 from sklearn.ensemble import (
@@ -48,41 +50,65 @@ CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING
 ]  # read from file in future perhaps?
 
 
-class HyperParams:  # Ananya's!
-    def __init__(
-        self,
-        depth=10,
-        trees=20,
-        samples=20,
-        criterion="gini",
-        features=None,
-        ccp=0.0,
-        min_smp_split=2,
-        min_impurity_dec=0.0,
-        max_lvs=250,
-    ):
-        self.depth = depth
-        self.trees = trees
-        self.samples = samples
-        self.criterion = criterion
-        self.features = features
-        self.ccp = ccp
-        self.min_smp_split = min_smp_split
-        self.min_impurity_dec = min_impurity_dec
-        self.max_lvs = max_lvs
+@dataclass
+class HyperParamsRF:  # credit to Ananya & David
+    # taken from v1.3.0 https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
+    n_estimators: int = 100
+    criterion: Literal["gini", "entropy", "log_loss"] = "gini"
+    max_depth: int | None = None
+    min_samples_split: int | float = 2
+    min_samples_leaf: int | float = 1
+    min_weight_fraction_leaf: float = 0.0
+    max_features: Literal["sqrt", "log2", None] | int | float = "sqrt"
+    max_leaf_nodes: int | None = None
+    min_impurity_decrease: float = 0.0
+    bootstrap: bool = True
+    oob_score: bool = True  # bool or callable, default=False
+    n_jobs: int | None = None
+    random_state: int | None = None  # int, RandomState instance or None, default=None
+    verbose: int = 2
+    warm_start: bool = False
+    class_weight: Literal["balanced", "balanced_subsample"] | None = (
+        None  # {“balanced”, “balanced_subsample”}, dict or list of dicts, default=None
+    )
+    ccp_alpha: float = 0.0  # non-negative float, default=0.0
+    max_samples: int | float | None = (
+        None  # the number of samples to draw from X to train each base estimator.
+    )
+    # monotonic_cst: int | None = (
+    #     None  # array-like of int of shape (n_features), default=None
+    # ) # v1.4 onwards
 
-    def __str__(self):
-        return "max_depth: {}; n_estimators: {}, n_samples: {}, criterion: {} features: {} ccp: {} min_samples_split: {} min_impurity_dec: {} max_lvs: {}".format(
-            self.depth,
-            self.trees,
-            self.samples,
-            self.criterion,
-            self.features,
-            self.ccp,
-            self.min_smp_split,
-            self.min_impurity_dec,
-            self.max_lvs,
-        )
+
+@dataclass
+class HyperParamsHGBT:
+    loss: str = "log_loss"
+    learning_rate: float = 0.1
+    max_iter: int = 100  # forest size
+    max_leaf_nodes: int | None = 31
+    max_depth: int | None = None
+    min_samples_leaf: int = 20
+    l2_regularization: float = 0.0
+    max_features: float = 1.0
+    max_bins: int = 255
+    categorical_features: str | None = (
+        "from_dtype"  # array-like of {bool, int, str} of shape (n_features) or shape (n_categorical_features,), default=’from_dtype’
+    )
+    monotonic_cst: int | None = (
+        None  # array-like of int of shape (n_features) or dict, default=None
+    )
+    interaction_cst: None = None  # {“pairwise”, “no_interactions”} or sequence of lists/tuples/sets of int, default=None
+    warm_start: bool = False
+    early_stopping: str | bool = "auto"
+    scoring: str | None = "loss"
+    validation_fraction: float | int | None = 0.1
+    n_iter_no_change: int = 10
+    tol: float = 1e-07
+    verbose: int = 0
+    random_state: int | None = None
+    class_weight: str | None = (
+        None  # dict or ‘balanced’, default=None # TODO: adjust this typing so that dicts can be used!
+    )
 
 
 class BaseTuningSetup(DatasetSetup):
@@ -302,7 +328,7 @@ class AbstractParamSearch(ABC):
         return search
 
     @abstractmethod
-    def param_searching(self) -> HyperParams | None: ...
+    def param_searching(self) -> HyperParamsRF | None: ...
 
     @abstractmethod
     def searched_params_fit_to_classifier(self) -> tuple | None: ...
@@ -442,7 +468,7 @@ class HGBTParamSearch(AbstractParamSearch):
                 "params"
             ][
                 search.best_index_
-            ]  # TODO: improve this. RF model uses HyperParams class which is better/diff but won't work for HGBT
+            ]  # TODO: improve this. RF model uses HyperParamsRF class which is better/diff but won't work for HGBT
 
             self.base_tuning_setup.logger.info(
                 "Best score {:.5f} with:".format(
@@ -474,7 +500,21 @@ class HGBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info("fit timer started")
         # run full model with the best params! :D
         selected_hgbtc = HistGradientBoostingClassifier(
-            # TODO ADD THESE VIParams
+            best_params,  # I'm not sure this will work! TODO TODO
+            # # basic HGBT params which won't change during tuning etc
+            # loss="log_loss",  # default. loss function to use in boosting process. "For multiclass classification problems, ‘log_loss’ is also known as multinomial deviance or categorical crossentropy. Internally, the model fits one tree per boosting iteration and per class and uses the softmax function as inverse link function to compute the predicted probabilities of the classes."
+            # l2_regularization=0,  # default. L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
+            # max_bins=255,  # default=255; N bins for non-missing values; more = better? max=255.
+            # # max_features = 1.0, # this is a proportion; default=1.0; added in v1.4 # float in latest docs, interaction_cst can be used
+            # categorical_features=None,  # None:no feats categorical; boolean array; integer array of indices of cat feats; str array: cat names of training data if it has them; "from_dtype": use columns with dtype 'category' (default)
+            # monotonic_cst=None,  # BINARY ONLY; constant to inforce on each feature; 1:monotonic incr; 0: no constraint; -1:monotonic decrease
+            # interaction_cst=None,  # specify sets of feats which can interact in child node splits # "pairwise" "no_interactions", None, or seq of lists/tuples/sets of ints for indices
+            # early_stopping="auto",  # default='auto' # if sample > 10k this is enabled w/ 'auto'
+            # n_iter_no_change=10,  # determines early stopping (if it's used)
+            # tol=1e-7,  # default. 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+            # random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
+            # verbose=2,
+            # TODO ADD THESE VIParams # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_hgbtc_fit = time.time()
         selected_hgbtc_fit_time = end_selected_hgbtc_fit - start_selected_hgbtc_fit
@@ -523,7 +563,112 @@ class HGBTParamSearch(AbstractParamSearch):
         """
         )
 
-        # TODO START HEREE ><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
+        self.base_tuning_setup.logger.info(
+            "Accuracy: {:.5f} (percent of correctly classified samples)".format(
+                metrics.accuracy_score(self.y_true, y_pred),
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Non-Normalised Accuracy: {:.0f} (number of correctly classified samples)".format(
+                metrics.accuracy_score(self.y_true, y_pred, normalize=False),
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Balanced Accuracy: {:.5f} (the average of recall obtained on each class)".format(
+                metrics.balanced_accuracy_score(
+                    self.y_true,
+                    y_pred,
+                    adjusted=False,
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "F1 Score: {:.5f} (harmonic mean of the precision and recall, both equally weighted)".format(
+                metrics.f1_score(
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Precision: {:.5f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+                metrics.precision_score(
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Recall: {:.5f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+                metrics.recall_score(
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                ),
+            )
+        )
+        # # multiclass means you can only be in one category only e.g. media format (film or tv-show)
+        # # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
+        self.base_tuning_setup.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
+                roc_auc_score(
+                    y_true=self.base_tuning_setup.y_test,  # y_true
+                    y_score=selected_hgbtc.predict_proba(
+                        self.base_tuning_setup.X_test
+                    ),  # y_score
+                    # y_true=y_test,
+                    # y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(X_test),
+                    average="macro",
+                    multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
+                roc_auc_score(
+                    y_true=self.base_tuning_setup.y_test,  # y_true
+                    y_score=selected_hgbtc.predict_proba(
+                        self.base_tuning_setup.X_test
+                    ),  # y_score
+                    average="macro",
+                    # multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
+            )
+        )
+
+        classification_rep = metrics.classification_report(
+            y_true=self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+            y_pred=self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+            zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+            digits=5,
+            # output_dict=True,  # default=False
+        )
+        self.base_tuning_setup.logger.info("\n")
+        self.base_tuning_setup.logger.info(
+            classification_rep
+        )  # try this to avoid logger error with formatting of report
+        self.base_tuning_setup.logger.info("Returning final results now:")
+        return (
+            selected_hgbtc,  # this is the actual model, but currently not using this output
+            f1_score(
+                y_true=self.base_tuning_setup.y_test, y_pred=y_pred, average="macro"
+            ),
+            precision_score(
+                y_true=self.base_tuning_setup.y_test, y_pred=y_pred, average="macro"
+            ),
+            selected_hgbtc.score(
+                self.base_tuning_setup.X_test, self.base_tuning_setup.y_test
+            ),
+            best_params,
+            # feature_imp,
+        )
+
+    # next function would apply selected_rfc to a dataset to predict RSE Personas with it.
 
 
 class GBTParamSearch(AbstractParamSearch):
@@ -723,16 +868,27 @@ class RFParamSearch(AbstractParamSearch):
                 search.cv_results_
             )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
 
-            best_params = HyperParams(
-                depth=search.best_params_["max_depth"],
-                trees=search.best_params_["n_estimators"],
+            best_params = HyperParamsRF(
+                n_estimators=search.best_params_["n_estimators"],
                 criterion=search.best_params_["criterion"],
-                samples=search.best_params_["max_samples"],
-                features=search.best_params_["max_features"],
-                ccp=search.best_params_["ccp_alpha"],
-                min_smp_split=search.best_params_["min_samples_split"],
-                min_impurity_dec=search.best_params_["min_impurity_decrease"],
-                max_lvs=search.best_params_["max_leaf_nodes"],
+                max_depth=search.best_params_["max_depth"],
+                min_samples_split=search.best_params_["min_samples_split"],
+                min_samples_leaf=search.best_params_["min_samples_leaf"],
+                min_weight_fraction_leaf=search.best_params_[
+                    "min_weight_fraction_leaf"
+                ],
+                max_features=search.best_params_["max_features"],
+                max_leaf_nodes=search.best_params_["max_leaf_nodes"],
+                min_impurity_decrease=search.best_params_["min_impurity_decrease"],
+                bootstrap=search.best_params_["bootstrap"],
+                oob_score=search.best_params_["oob_score"],
+                n_jobs=search.best_params_["n_jobs"],
+                random_state=search.best_params_["random_state"],
+                verbose=search.best_params_["verbose"],
+                class_weight=search.best_params_["class_weight"],
+                ccp_alpha=search.best_params_["ccp_alpha"],
+                max_samples=search.best_params_["max_samples"],
+                # monotonic_cst=search.best_params_["monotonic_cst"],
             )
             self.base_tuning_setup.logger.info(
                 "Best score {:.5f} with:".format(
@@ -765,18 +921,25 @@ class RFParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info("fit timer started")
         # run full model with the best params! :D
         selected_rfc = RandomForestClassifier(
-            max_depth=best_params.depth,
-            n_estimators=best_params.trees,
-            criterion=best_params.criterion,  # type: ignore
-            max_samples=best_params.samples,
-            max_features=best_params.features,  # type: ignore
-            ccp_alpha=best_params.ccp,
-            min_samples_split=best_params.min_smp_split,
-            min_impurity_decrease=best_params.min_impurity_dec,
-            max_leaf_nodes=best_params.max_lvs,
-            oob_score=True,
-            n_jobs=self.N_CORES,
-            verbose=4,
+            # pull params from the hyperparams class for RF, with SOME specifics: verbose, random state, n_jobs
+            n_estimators=best_params.n_estimators,
+            criterion=best_params.criterion,
+            max_depth=best_params.max_depth,
+            min_samples_split=best_params.min_samples_split,
+            min_samples_leaf=best_params.min_samples_leaf,
+            min_weight_fraction_leaf=best_params.min_weight_fraction_leaf,
+            max_features=best_params.max_features,  # type: ignore
+            max_leaf_nodes=best_params.max_leaf_nodes,
+            min_impurity_decrease=best_params.min_impurity_decrease,
+            bootstrap=best_params.bootstrap,
+            oob_score=best_params.oob_score,
+            n_jobs=self.base_tuning_setup.N_JOBS,
+            random_state=self.base_tuning_setup.RANDOM_STATE,
+            verbose=4,  # increased for 'best model fit' from candidate fits during search
+            class_weight=best_params.class_weight,
+            ccp_alpha=best_params.ccp_alpha,
+            max_samples=best_params.max_samples,
+            # monotonic_cst=best_params.monotonic_cst,
         ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_rfc_fit = time.time()
         selected_rfc_fit_time = end_selected_rfc_fit - start_selected_rfc_fit
@@ -817,7 +980,7 @@ class RFParamSearch(AbstractParamSearch):
             training-set size: N={self.base_tuning_setup.X_train_size[0]} \n
             and evaluated using test-set size: N={self.base_tuning_setup.X_test_size[0]} repo-individuals \n
             using N={self.base_tuning_setup.X_test_size[1]} features \n 
-            with N={best_params.trees} trees in forest  \n
+            with N={best_params.n_estimators} trees in forest  \n
             at {self.base_tuning_setup.current_date_info} \n 
             with parameters: {selected_rfc.get_params(deep=False)} \n
             and feature importances: 
