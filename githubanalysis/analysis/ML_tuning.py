@@ -872,7 +872,7 @@ class RFParamSearch(AbstractParamSearch):
             )  # Report the top 5 results
 
             self.base_tuning_setup.logger.info(
-                f"Completed search.fit() and have best results: {searc}"
+                f"Completed search.fit() and have best results: {search}"
             )
             param_search_results = pd.DataFrame(
                 search.cv_results_
