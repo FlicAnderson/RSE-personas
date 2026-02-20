@@ -990,6 +990,7 @@ class DataAnalyser(DatasetSetup):
             in_notebook=self.in_notebook,
             logger=self.logger,
             dataset_name=run_name,
+            exists_ok=self.exists_ok,
         )
         # plot 2D
         plotpca.plot_twodim_PCA(

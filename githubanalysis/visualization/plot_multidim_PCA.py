@@ -4,6 +4,7 @@ from pathlib import Path
 
 from githubanalysis.setup_classes import DatasetSetup
 
+from logging import Logger
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
@@ -16,6 +17,19 @@ from matplotlib import pyplot as plt
 class PlotPCA(DatasetSetup):
     def _log_name(self) -> str:
         return "plot_3D_PCA"
+
+    def __init__(
+        self,
+        dataset_name,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        self.exists_ok = exists_ok
+        self.data_write_location.mkdir(exist_ok=self.exists_ok)
+        self.image_write_location.mkdir(exist_ok=self.exists_ok)
+        print(f"EXISTS OK AT PLOTPCA: {self.exists_ok}")
 
     def plot_threedim_PCA(
         self,
@@ -55,9 +69,9 @@ class PlotPCA(DatasetSetup):
                 s=5,
             )
         else:
-            assert (
-                clustering_data_labelled["cluster_labels"].nunique() == 3
-            ), "there should be two or three unique labels, this doesn't seem to be the case. Check this."
+            assert clustering_data_labelled["cluster_labels"].nunique() == 3, (
+                "there should be two or three unique labels, this doesn't seem to be the case. Check this."
+            )
             ax.scatter(
                 X_reduced[:, 0],
                 X_reduced[:, 1],
@@ -153,9 +167,9 @@ class PlotPCA(DatasetSetup):
                 )
             plt.legend(targets, prop={"size": 15})
         else:
-            assert (
-                clustering_data_labelled["cluster_labels"].nunique() == 3
-            ), "there aren't 2 or 3 clusters to plot - is this right?"
+            assert clustering_data_labelled["cluster_labels"].nunique() == 3, (
+                "there aren't 2 or 3 clusters to plot - is this right?"
+            )
             targets = [0, 1, 2]
             if isinstance(colours, dict):
                 colours = list(colours.values())
