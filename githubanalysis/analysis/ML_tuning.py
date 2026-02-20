@@ -894,7 +894,7 @@ class RFParamSearch(AbstractParamSearch):
                 min_impurity_decrease=search.best_params_["min_impurity_decrease"],
                 bootstrap=search.best_params_["bootstrap"],
                 oob_score=search.best_params_["oob_score"],
-                n_jobs=search.best_params_["n_jobs"],
+                # n_jobs=search.best_params_["n_jobs"], # removed because this is NOT set in the initial params used in search
                 random_state=search.best_params_["random_state"],
                 verbose=search.best_params_["verbose"],
                 class_weight=search.best_params_["class_weight"],
