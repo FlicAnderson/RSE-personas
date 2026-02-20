@@ -708,6 +708,7 @@ class RFParamSearch(AbstractParamSearch):
         )
         self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
         self.params = {
+            # TESTED / SEARCHED PARAMS:
             "n_estimators": [
                 75,
                 100,
@@ -715,18 +716,26 @@ class RFParamSearch(AbstractParamSearch):
                 150,
             ],  # this does not need to go very high in RF....
             "criterion": ["gini", "entropy", "log_loss"],
-            "min_samples_split": [2],  # prev: range(2, 50)
             "max_depth": [10, 35, 50, None],  # prev: "max_depth": [3, 4, 6, 8, 10, 35],
-            "max_samples": stats.uniform(
-                0.01, 0.75
-            ),  #  # prev 0.01, 1.0; if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
+            "min_samples_split": [2],  # prev: range(2, 50)
             "max_features": self.base_tuning_setup.n_feats_around_optimal(),
-            "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
             "min_impurity_decrease": stats.uniform(
                 0, 0.1
             ),  # node will be split if split induces a decrease of the impurity greater than or equal to this
-            "max_leaf_nodes": [None],  # stats.randint(7, 250), # default=None
-            "min_samples_leaf": [1],  # TESTING THIS
+            "ccp_alpha": stats.uniform(0, 0.25),  # 0 means no pruning.
+            "max_samples": stats.uniform(
+                0.01, 0.75
+            ),  #  # prev 0.01, 1.0; if this is a float, it represents a percentage of the samples; this shouldn't start at 0 because then the max_samples can be none??
+            # DEFAULT PARAMS:
+            "min_samples_leaf": [HyperParamsRF.min_samples_leaf],
+            "min_weight_fraction_leaf": [HyperParamsRF.min_weight_fraction_leaf],
+            "max_leaf_nodes": [HyperParamsRF.max_leaf_nodes],
+            "bootstrap": [HyperParamsRF.bootstrap],
+            "oob_score": [HyperParamsRF.oob_score],
+            "random_state": [HyperParamsRF.random_state],
+            "verbose": [HyperParamsRF.warm_start],
+            "warm_start": [HyperParamsRF.warm_start],
+            "class_weight": [HyperParamsRF.class_weight],
         }
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         self.base_tuning_setup.logger.info(
@@ -735,23 +744,11 @@ class RFParamSearch(AbstractParamSearch):
         assert self.base_tuning_setup.ML_CLASS == "RF", (
             f"There's been an issue, base_tuning_setup ML_CLASS is expected to be RF, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
         )
-        # self.clf = RandomForestClassifier(
-        #     bootstrap=True,
-        #     oob_score=True,
-        #     class_weight=None,
-        #     n_jobs=self.base_tuning_setup.N_JOBS,
-        #     verbose=2,
-        # )
-        self.clf = RandomForestClassifier(
-            min_samples_leaf=HyperParamsRF.min_samples_leaf,
-            bootstrap=HyperParamsRF.bootstrap,
-            oob_score=HyperParamsRF.oob_score,
-            class_weight=HyperParamsRF.class_weight,
-            n_jobs=self.base_tuning_setup.N_JOBS,
-            verbose=HyperParamsRF.verbose,
-        )
 
-        self.base_tuning_setup.logger.info("clf declared")
+        self.clf = RandomForestClassifier(
+            n_jobs=self.base_tuning_setup.N_JOBS,
+        )
+        self.base_tuning_setup.logger.info(f"clf declared: {self.clf}")
 
     def if_randomized_searching(self):
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
@@ -763,7 +760,7 @@ class RFParamSearch(AbstractParamSearch):
             cv=self.rskf.split(
                 self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
             ),  # None: default 5-fold #
-            n_jobs=self.N_CORES,
+            n_jobs=self.base_tuning_setup.N_JOBS,  # this may be unnecessary here as it's initialised for this class
             verbose=4,
             error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
             random_state=self.base_tuning_setup.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
@@ -874,6 +871,9 @@ class RFParamSearch(AbstractParamSearch):
                 search.cv_results_, n_top=5
             )  # Report the top 5 results
 
+            self.base_tuning_setup.logger.info(
+                f"Completed search.fit() and have best results: {searc}"
+            )
             param_search_results = pd.DataFrame(
                 search.cv_results_
             )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
