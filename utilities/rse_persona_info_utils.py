@@ -35,31 +35,31 @@ class RSE_personas_info:
         6: "Active Contributor",
     }
     marks_palette = {
-        0: ".",
-        1: "o",
+        0: "o",
+        1: "^",
         2: "v",
         3: "s",
         4: "D",
-        5: "x",
+        5: "X",
         6: "*",
     }
     fill_pallette = {
-        0: None,
+        0: "full",
         1: "full",
         2: "full",
         3: "full",
-        4: None,
+        4: "full",
         5: "full",
-        6: None,
+        6: "full",
     }
     edge_pallette = {
         0: None,
         1: "grey",
         2: None,
         3: "grey",
-        4: None,
+        4: "darkblue",
         5: "grey",
-        6: "black",
+        6: "darkturquoise",
     }
 
     def get_params_based_on_cluster_info(self, cluster_labels: pd.Series):
