@@ -90,7 +90,7 @@ class HyperParamsHGBT:
     max_depth: int | None = None
     min_samples_leaf: int = 20
     l2_regularization: float = 0.0
-    # max_features: float = 1.0 # added in v 1.4!
+    # max_features: float = 1.0 # added in v 1.4! # This was removed as the code runs v1.3 scikitlearn rather than v1.4 where this param was introduced!
     max_bins: int = 255
     categorical_features: str | None = (
         None  # array-like of {bool, int, str} of shape (n_features) or shape (n_categorical_features,), default=’from_dtype’
@@ -379,7 +379,7 @@ class HGBTParamSearch(AbstractParamSearch):
             "loss": [HyperParamsHGBT.loss],
             "max_depth": [HyperParamsHGBT.max_depth],
             "l2_regularization": [HyperParamsHGBT.l2_regularization],
-            # "max_features": [HyperParamsHGBT.max_features],
+            # "max_features": [HyperParamsHGBT.max_features],# This was removed as the code runs v1.3 scikitlearn rather than v1.4 where this param was introduced!
             "max_bins": [HyperParamsHGBT.max_bins],
             "categorical_features": [HyperParamsHGBT.categorical_features],
             "monotonic_cst": [HyperParamsHGBT.monotonic_cst],
@@ -475,7 +475,7 @@ class HGBTParamSearch(AbstractParamSearch):
                 max_depth=search.best_params_["max_depth"],
                 min_samples_leaf=search.best_params_["min_samples_leaf"],
                 l2_regularization=search.best_params_["l2_regularization"],
-                # max_features=search.best_params_["max_features"],
+                # max_features=search.best_params_["max_features"],  # param was removed as the code runs v1.3 scikitlearn rather than v1.4 where this param was introduced!
                 max_bins=search.best_params_["max_bins"],
                 categorical_features=search.best_params_["categorical_features"],
                 monotonic_cst=search.best_params_["monotonic_cst"],
@@ -524,8 +524,6 @@ class HGBTParamSearch(AbstractParamSearch):
             **asdict(
                 best_params
             ),  # expand the dictionary created from best_params as arguments to the HGBT function :D
-            # random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
-            # verbose=4,  # increased for 'best model fit' from candidate fits during search
         ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_hgbtc_fit = time.time()
         selected_hgbtc_fit_time = end_selected_hgbtc_fit - start_selected_hgbtc_fit
