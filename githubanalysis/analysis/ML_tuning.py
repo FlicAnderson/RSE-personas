@@ -10,8 +10,9 @@ import time
 from typing import Literal
 from abc import ABC, abstractmethod
 from typing import Any
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 # from sklearn.model_selection import *
+
 
 from sklearn.ensemble import (
     RandomForestClassifier,
@@ -328,7 +329,7 @@ class AbstractParamSearch(ABC):
         return search
 
     @abstractmethod
-    def param_searching(self) -> HyperParamsRF | None: ...
+    def param_searching(self) -> HyperParamsRF | HyperParamsHGBT | None: ...
 
     @abstractmethod
     def searched_params_fit_to_classifier(self) -> tuple | None: ...
@@ -339,7 +340,7 @@ class HGBTParamSearch(AbstractParamSearch):
         super().__init__(base_tuning_setup=base_tuning_setup)
         self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
         self.params = {
-            # add params here
+            # TESTED / SEARCHED PARAMS:
             "learning_rate": [
                 0.01,
                 0.02,
@@ -360,9 +361,6 @@ class HGBTParamSearch(AbstractParamSearch):
                 50,
                 75,
             ],  # None= no max; default=31 for some reason?
-            "max_depth": [
-                None
-            ],  # default=None, maximum depth of tree ; not constrained by default.
             "min_samples_leaf": [
                 20,
                 10,
@@ -377,12 +375,24 @@ class HGBTParamSearch(AbstractParamSearch):
                 "loss",
                 "f1_macro",
             ],  # scoring to use w/ early stopping: 'str':*; a scorer callable; None:'accuracy' is used; 'loss'(default): checked with loss value; *=https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-string-names;
-            "validation_fraction": [
-                0.1,
-            ],  # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
-            "class_weight": [
-                None,
-            ],  # class_weight=None,  # dict / 'balanced' / None (where all classess weight=1) # TODO: consider this more...
+            # DEFAULT PARAMS:
+            "loss": [HyperParamsHGBT.loss],
+            "max_depth": [HyperParamsHGBT.max_depth],
+            "l2_regularization": [HyperParamsHGBT.l2_regularization],
+            "max_features": [HyperParamsHGBT.max_features],
+            "max_bins": [HyperParamsHGBT.max_bins],
+            "categorical_features": [HyperParamsHGBT.categorical_features],
+            "monotonic_cst": [HyperParamsHGBT.monotonic_cst],
+            "interaction_cst": [HyperParamsHGBT.interaction_cst],
+            "early_stopping": [HyperParamsHGBT.early_stopping],
+            "validation_fraction": [HyperParamsHGBT.validation_fraction],
+            "n_iter_no_change": [HyperParamsHGBT.n_iter_no_change],
+            "tol": [HyperParamsHGBT.tol],
+            "verbose": [HyperParamsHGBT.verbose],
+            "random_state": [
+                HyperParamsHGBT.random_state
+            ],  # this is over-written in self.clf below
+            "class_weight": [HyperParamsHGBT.class_weight],
         }
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         self.base_tuning_setup.logger.info(
@@ -392,21 +402,9 @@ class HGBTParamSearch(AbstractParamSearch):
             f"There's been an issue, base_tuning_setup ML_CLASS is expected to be HGBT, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
         )
         self.clf = HistGradientBoostingClassifier(
-            # basic HGBT params which won't change during tuning etc
-            loss="log_loss",  # default. loss function to use in boosting process. "For multiclass classification problems, ‘log_loss’ is also known as multinomial deviance or categorical crossentropy. Internally, the model fits one tree per boosting iteration and per class and uses the softmax function as inverse link function to compute the predicted probabilities of the classes."
-            l2_regularization=0,  # default. L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
-            max_bins=255,  # default=255; N bins for non-missing values; more = better? max=255.
-            # max_features = 1.0, # this is a proportion; default=1.0; added in v1.4 # float in latest docs, interaction_cst can be used
-            categorical_features=None,  # None:no feats categorical; boolean array; integer array of indices of cat feats; str array: cat names of training data if it has them; "from_dtype": use columns with dtype 'category' (default)
-            monotonic_cst=None,  # BINARY ONLY; constant to inforce on each feature; 1:monotonic incr; 0: no constraint; -1:monotonic decrease
-            interaction_cst=None,  # specify sets of feats which can interact in child node splits # "pairwise" "no_interactions", None, or seq of lists/tuples/sets of ints for indices
-            early_stopping="auto",  # default='auto' # if sample > 10k this is enabled w/ 'auto'
-            n_iter_no_change=10,  # determines early stopping (if it's used)
-            tol=1e-7,  # default. 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
-            random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
-            verbose=2,
-        )
-        self.base_tuning_setup.logger.info("clf declared")
+            random_state=self.base_tuning_setup.RANDOM_STATE,
+        )  # no other params set here as defaults are set in self.params!
+        self.base_tuning_setup.logger.info(f"clf declared: {self.clf}")
 
     def if_randomized_searching(self):
         # print("if randomised searching for HGBT model")
@@ -419,7 +417,7 @@ class HGBTParamSearch(AbstractParamSearch):
             cv=self.rskf.split(
                 self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
             ),  # None: default 5-fold #
-            n_jobs=self.N_CORES,
+            n_jobs=self.base_tuning_setup.N_JOBS,
             verbose=4,
             error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
             random_state=self.base_tuning_setup.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
@@ -456,19 +454,42 @@ class HGBTParamSearch(AbstractParamSearch):
                 )
             except ValueError as e:
                 self.base_tuning_setup.logger.error(f"Error in search.fit(): {e}")
+
             self.base_tuning_setup.report(
                 search.cv_results_, n_top=5
             )  # Report the top 5 results
+
+            self.base_tuning_setup.logger.info(
+                f"Completed search.fit() and have best results: {search}"
+            )
 
             param_search_results = pd.DataFrame(
                 search.cv_results_
             )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
 
-            best_params = search.cv_results_[
-                "params"
-            ][
-                search.best_index_
-            ]  # TODO: improve this. RF model uses HyperParamsRF class which is better/diff but won't work for HGBT
+            best_params = HyperParamsHGBT(
+                loss=search.best_params_["loss"],
+                learning_rate=search.best_params_["learning_rate"],
+                max_iter=search.best_params_["max_iter"],
+                max_leaf_nodes=search.best_params_["max_leaf_nodes"],
+                max_depth=search.best_params_["max_depth"],
+                min_samples_leaf=search.best_params_["min_samples_leaf"],
+                l2_regularization=search.best_params_["l2_regularization"],
+                max_features=search.best_params_["max_features"],
+                max_bins=search.best_params_["max_bins"],
+                categorical_features=search.best_params_["categorical_features"],
+                monotonic_cst=search.best_params_["monotonic_cst"],
+                interaction_cst=search.best_params_["interaction_cst"],
+                warm_start=search.best_params_["warm_start"],
+                early_stopping=search.best_params_["early_stopping"],
+                scoring=search.best_params_["scoring"],
+                validation_fraction=search.best_params_["validation_fraction"],
+                n_iter_no_change=search.best_params_["n_iter_no_change"],
+                tol=search.best_params_["tol"],
+                verbose=search.best_params_["verbose"],
+                random_state=search.best_params_["random_state"],
+                class_weight=search.best_params_["class_weight"],
+            )
 
             self.base_tuning_setup.logger.info(
                 "Best score {:.5f} with:".format(
@@ -495,26 +516,16 @@ class HGBTParamSearch(AbstractParamSearch):
 
     def searched_params_fit_to_classifier(self):
         best_params = self.param_searching()
-        # print("returning model with best hyperparameters fitted, and results, for HGBT model")
+
         start_selected_hgbtc_fit = time.time()
         self.base_tuning_setup.logger.info("fit timer started")
-        # run full model with the best params! :D
+        # run full model with the best params for HGBT, with SOME specifics: verbose, random state
         selected_hgbtc = HistGradientBoostingClassifier(
-            best_params,  # I'm not sure this will work! TODO TODO
-            # # basic HGBT params which won't change during tuning etc
-            # loss="log_loss",  # default. loss function to use in boosting process. "For multiclass classification problems, ‘log_loss’ is also known as multinomial deviance or categorical crossentropy. Internally, the model fits one tree per boosting iteration and per class and uses the softmax function as inverse link function to compute the predicted probabilities of the classes."
-            # l2_regularization=0,  # default. L2 regularization parameter penalizing leaves with small hessians. Use 0 for no regularization (default)
-            # max_bins=255,  # default=255; N bins for non-missing values; more = better? max=255.
-            # # max_features = 1.0, # this is a proportion; default=1.0; added in v1.4 # float in latest docs, interaction_cst can be used
-            # categorical_features=None,  # None:no feats categorical; boolean array; integer array of indices of cat feats; str array: cat names of training data if it has them; "from_dtype": use columns with dtype 'category' (default)
-            # monotonic_cst=None,  # BINARY ONLY; constant to inforce on each feature; 1:monotonic incr; 0: no constraint; -1:monotonic decrease
-            # interaction_cst=None,  # specify sets of feats which can interact in child node splits # "pairwise" "no_interactions", None, or seq of lists/tuples/sets of ints for indices
-            # early_stopping="auto",  # default='auto' # if sample > 10k this is enabled w/ 'auto'
-            # n_iter_no_change=10,  # determines early stopping (if it's used)
-            # tol=1e-7,  # default. 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
-            # random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
-            # verbose=2,
-            # TODO ADD THESE VIParams # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            **asdict(
+                best_params
+            ),  # expand the dictionary created from best_params as arguments to the HGBT function :D
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
+            verbose=4,  # increased for 'best model fit' from candidate fits during search
         ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_hgbtc_fit = time.time()
         selected_hgbtc_fit_time = end_selected_hgbtc_fit - start_selected_hgbtc_fit
@@ -556,7 +567,7 @@ class HGBTParamSearch(AbstractParamSearch):
             training-set size: N={self.base_tuning_setup.X_train_size[0]} \n
             and evaluated using test-set size: N={self.base_tuning_setup.X_test_size[0]} repo-individuals \n
             using N={self.base_tuning_setup.X_test_size[1]} features \n 
-            with N={best_params.trees} trees in forest  \n
+            with maximum of N={best_params.max_iter} trees iterated \n
             at {self.base_tuning_setup.current_date_info} \n 
             with parameters: {selected_hgbtc.get_params(deep=False)} \n
             and feature importances: 
@@ -732,7 +743,9 @@ class RFParamSearch(AbstractParamSearch):
             "max_leaf_nodes": [HyperParamsRF.max_leaf_nodes],
             "bootstrap": [HyperParamsRF.bootstrap],
             "oob_score": [HyperParamsRF.oob_score],
-            "random_state": [HyperParamsRF.random_state],
+            "random_state": [
+                HyperParamsRF.random_state
+            ],  # this is over-written in self.clf below
             "verbose": [HyperParamsRF.warm_start],
             "warm_start": [HyperParamsRF.warm_start],
             "class_weight": [HyperParamsRF.class_weight],
@@ -747,6 +760,8 @@ class RFParamSearch(AbstractParamSearch):
 
         self.clf = RandomForestClassifier(
             n_jobs=self.base_tuning_setup.N_JOBS,
+            random_state=self.base_tuning_setup.RANDOM_STATE,
+            # other params set in self.params
         )
         self.base_tuning_setup.logger.info(f"clf declared: {self.clf}")
 
@@ -883,9 +898,7 @@ class RFParamSearch(AbstractParamSearch):
                 criterion=search.best_params_["criterion"],
                 max_depth=search.best_params_["max_depth"],
                 min_samples_split=search.best_params_["min_samples_split"],
-                min_samples_leaf=search.best_params_[
-                    "min_samples_leaf"
-                ],  # THE ERROR IS HERE
+                min_samples_leaf=search.best_params_["min_samples_leaf"],
                 min_weight_fraction_leaf=search.best_params_[
                     "min_weight_fraction_leaf"
                 ],
