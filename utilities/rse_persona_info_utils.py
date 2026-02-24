@@ -62,7 +62,7 @@ class RSE_personas_info:
         6: "black",
     }
 
-    def get_params_based_on_cluster_info(self, cluster_labels: pd.Series[int]):
+    def get_params_based_on_cluster_info(self, cluster_labels: pd.Series):
         persona_idx = []
         persona_col = []
         persona_mark = []
