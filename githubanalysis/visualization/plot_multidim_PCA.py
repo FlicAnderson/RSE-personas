@@ -7,9 +7,13 @@ from githubanalysis.setup_classes import DatasetSetup
 from logging import Logger
 import pandas as pd
 import numpy as np
+from typing import Literal
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from matplotlib.markers import MarkerStyle
+from pathlib import Path
 
-from matplotlib import pyplot as plt
+from utilities.rse_persona_info_utils import RSE_personas_info
 
 #  ruff: noqa: F841
 
@@ -29,7 +33,100 @@ class PlotPCA(DatasetSetup):
         self.exists_ok = exists_ok
         self.data_write_location.mkdir(exist_ok=self.exists_ok)
         self.image_write_location.mkdir(exist_ok=self.exists_ok)
-        print(f"EXISTS OK AT PLOTPCA: {self.exists_ok}")
+
+        def pca3d(
+            self,
+            cluster_labels: pd.Series,
+            clustering_data: pd.DataFrame,
+            cluster_names: list[str] = persona_name,
+            colours: list[str] = persona_palette,
+            marks: list[str] = persona_mark,
+            fill_style: list[
+                Literal["full", "left", "right", "bottom", "top", "none"]
+            ] = persona_fill,
+            edge_col: list[str] = persona_edge,
+            file_name: str = "sample_3D_PCA_",
+            save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
+        ):
+            clustering_data_labelled = pd.concat(
+                [pd.DataFrame({"cluster_labels": cluster_labels}), clustering_data],
+                axis=1,
+            )
+
+            fig = plt.figure(1, figsize=(8, 6))
+            ax = fig.add_subplot(111, projection="3d", elev=-150, azim=110)
+
+            X_reduced = PCA(n_components=3).fit_transform(clustering_data_labelled)
+
+            # this pulls data from the PCA.fit_transform() output X_reduced into N arrays, which is the N of personas:
+            arrays = tuple(
+                np.array(
+                    [r for i, r in enumerate(X_reduced) if cluster_labels[i] == label]
+                )
+                for label in cluster_labels.unique()
+            )
+
+            # get the appropriate data array, plotting mark and colour for each 'layer' of data (ie plotting in layers 1 persona at a time)
+            mrks_used = []
+            edges_used = []
+
+            for arr, mark, col, fill, edge in zip(
+                arrays, marks, colours, fill_style, edge_col
+            ):
+                mrks_used.append(mark)
+                edges_used.append(edge)
+                ax.scatter(
+                    arr[:, 0],
+                    arr[:, 1],
+                    arr[:, 2],
+                    c=[col] * len(arr),
+                    s=5,
+                    marker=MarkerStyle(mark, fillstyle=fill),  # noqa
+                    edgecolor=edge,
+                )
+
+            PCA_3 = PCA(n_components=3)
+            PCA_3_df = pd.DataFrame(
+                data=PCA_3.fit_transform(clustering_data),
+                columns=[
+                    "principal component 1",
+                    "principal component 2",
+                    "principal component 3",
+                ],
+            )
+
+            self.logger.info(
+                f"{'Explained variability per principal component: {}'.format(PCA_3.explained_variance_ratio_)}"
+            )
+
+            eigenvec1 = (PCA_3.explained_variance_ratio_)[0] * 100
+            eigenvec2 = (PCA_3.explained_variance_ratio_)[1] * 100
+            eigenvec3 = (PCA_3.explained_variance_ratio_)[2] * 100
+            ax.set(
+                title="Principal Component Analysis of Repo-Individuals Interactions Data",
+                xlabel=f"Eigenvector 1: ({round(eigenvec1, 2)}%)",
+                ylabel=f"Eigenvector 2: ({round(eigenvec2, 2)}%)",
+                zlabel=f"Eigenvector 3: ({round(eigenvec3, 2)}%)",
+            )
+            ax.xaxis.set_ticklabels([])
+            ax.yaxis.set_ticklabels([])
+            ax.zaxis.set_ticklabels([])
+
+            # Add a legends
+            legend1 = ax.legend(
+                cluster_names,
+                title="RSE Personas",
+                bbox_to_anchor=(1, 0.5),
+            )
+            plot_file = Path(
+                self.image_write_location,
+                f"{file_name}_{self.current_date_info}.{save_type}",
+            )
+            plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
+            plt.close()
+
+            self.logger.info(f"PCA 3D Plot saved out to file {plot_file}.")
+            return fig
 
     def plot_threedim_PCA(
         self,
@@ -43,6 +140,13 @@ class PlotPCA(DatasetSetup):
         file_name: str = "sample_3D_PCA_",
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
+        print(
+            "THIS FUNCTION (plot_threedim_PCA) HAS BEEN SUPERCEDED BY `PlotPCA.pca3d(): please consider using that function instead, as it works for sub-clusters. "
+        )
+        self.logger.warning(
+            "THIS FUNCTION (plot_threedim_PCA) HAS BEEN SUPERCEDED BY `PlotPCA.pca3d(): please consider using that function instead, as it works for sub-clusters. "
+        )
+
         clustering_data_labelled = pd.concat(
             [pd.DataFrame({"cluster_labels": cluster_labels}), clustering_data], axis=1
         )
