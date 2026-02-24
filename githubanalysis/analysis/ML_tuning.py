@@ -90,7 +90,7 @@ class HyperParamsHGBT:
     max_depth: int | None = None
     min_samples_leaf: int = 20
     l2_regularization: float = 0.0
-    max_features: float = 1.0
+    # max_features: float = 1.0 # added in v 1.4!
     max_bins: int = 255
     categorical_features: str | None = (
         "from_dtype"  # array-like of {bool, int, str} of shape (n_features) or shape (n_categorical_features,), default=’from_dtype’
@@ -379,7 +379,7 @@ class HGBTParamSearch(AbstractParamSearch):
             "loss": [HyperParamsHGBT.loss],
             "max_depth": [HyperParamsHGBT.max_depth],
             "l2_regularization": [HyperParamsHGBT.l2_regularization],
-            "max_features": [HyperParamsHGBT.max_features],
+            # "max_features": [HyperParamsHGBT.max_features],
             "max_bins": [HyperParamsHGBT.max_bins],
             "categorical_features": [HyperParamsHGBT.categorical_features],
             "monotonic_cst": [HyperParamsHGBT.monotonic_cst],
@@ -475,7 +475,7 @@ class HGBTParamSearch(AbstractParamSearch):
                 max_depth=search.best_params_["max_depth"],
                 min_samples_leaf=search.best_params_["min_samples_leaf"],
                 l2_regularization=search.best_params_["l2_regularization"],
-                max_features=search.best_params_["max_features"],
+                # max_features=search.best_params_["max_features"],
                 max_bins=search.best_params_["max_bins"],
                 categorical_features=search.best_params_["categorical_features"],
                 monotonic_cst=search.best_params_["monotonic_cst"],
@@ -882,6 +882,7 @@ class RFParamSearch(AbstractParamSearch):
                 )
             except ValueError as e:
                 self.base_tuning_setup.logger.error(f"Error in search.fit(): {e}")
+
             self.base_tuning_setup.report(
                 search.cv_results_, n_top=5
             )  # Report the top 5 results
