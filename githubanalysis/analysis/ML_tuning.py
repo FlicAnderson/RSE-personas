@@ -105,7 +105,7 @@ class HyperParamsHGBT:
     validation_fraction: float | int | None = 0.1
     n_iter_no_change: int = 10
     tol: float = 1e-07
-    verbose: int = 0
+    verbose: int = 2
     random_state: int | None = None
     class_weight: str | None = (
         None  # dict or ‘balanced’, default=None # TODO: adjust this typing so that dicts can be used!
@@ -524,7 +524,7 @@ class HGBTParamSearch(AbstractParamSearch):
             **asdict(
                 best_params
             ),  # expand the dictionary created from best_params as arguments to the HGBT function :D
-            random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
+            # random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
             verbose=4,  # increased for 'best model fit' from candidate fits during search
         ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_hgbtc_fit = time.time()
