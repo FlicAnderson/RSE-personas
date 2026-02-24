@@ -34,7 +34,7 @@ class RSE_personas_info:
         5: "Low-Coding Closer",
         6: "Active Contributor",
     }
-    marks_palette = {
+    marks_palette = {  # https://matplotlib.org/stable/api/markers_api.html#module-matplotlib.markers
         0: "o",
         1: "^",
         2: "v",
@@ -43,7 +43,7 @@ class RSE_personas_info:
         5: "X",
         6: "*",
     }
-    fill_pallette = {
+    fill_pallette = {  # one of these specific Literal options: https://matplotlib.org/stable/api/_as_gen/matplotlib.markers.MarkerStyle.html#matplotlib-markers-markerstyle
         0: "full",
         1: "full",
         2: "full",
