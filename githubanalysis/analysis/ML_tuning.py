@@ -93,7 +93,7 @@ class HyperParamsHGBT:
     # max_features: float = 1.0 # added in v 1.4!
     max_bins: int = 255
     categorical_features: str | None = (
-        "from_dtype"  # array-like of {bool, int, str} of shape (n_features) or shape (n_categorical_features,), default=’from_dtype’
+        None  # array-like of {bool, int, str} of shape (n_features) or shape (n_categorical_features,), default=’from_dtype’
     )
     monotonic_cst: int | None = (
         None  # array-like of int of shape (n_features) or dict, default=None
