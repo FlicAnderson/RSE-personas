@@ -525,7 +525,7 @@ class HGBTParamSearch(AbstractParamSearch):
                 best_params
             ),  # expand the dictionary created from best_params as arguments to the HGBT function :D
             # random_state=self.base_tuning_setup.RANDOM_STATE,  # controls the randomness of the estimator during splitting
-            verbose=4,  # increased for 'best model fit' from candidate fits during search
+            # verbose=4,  # increased for 'best model fit' from candidate fits during search
         ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
         end_selected_hgbtc_fit = time.time()
         selected_hgbtc_fit_time = end_selected_hgbtc_fit - start_selected_hgbtc_fit
