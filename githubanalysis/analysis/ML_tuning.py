@@ -429,10 +429,55 @@ class HGBTParamSearch(AbstractParamSearch):
         return search
 
     def if_grid_searching(self):
-        print("if grid searching for HGBT model")
+        # print("if grid searching for HGBT model")
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = GridSearchCV(
+            self.clf,  # estimator
+            param_grid=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+            cv=self.rskf.split(
+                self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+            ),  # None: default 5-fold  # cross-validation splitting strategy
+            n_jobs=(
+                self.N_CORES
+            ),  # number of jobs to run in parallel; default=None (means 1)
+            refit=True,  # default: True # refit an estimator using the best found parameters
+            verbose=2,
+            pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
+            error_score="raise",
+            return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
 
     def if_halving_grid_searching(self):
-        print("if halving-grid searching for HGBT model")
+        # print("if halving-grid searching for HGBT model")
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = HalvingGridSearchCV(
+            self.clf,  # estimator
+            param_grid=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            factor=3,  # 3=default; the 'halving' param: which proportion of candidates selected for the next iteration (e.g. 3 is 1/3rd)
+            resource="n_samples",  # default: 'n_samples'. the resource that increases with each iteration.  Can be 'n_iterations' or 'n_estimators' for gradient boosting estimators. 'max_resources' cannot be auto if that's true
+            max_resources="auto",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration; By default, this is set to n_samples when resource='n_samples' (default), else an error is raised.
+            min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
+            aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
+            cv=None,  # default 5-fold.
+            scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+            refit=True,  # default: True # refit an estimator using the best found parameters
+            n_jobs=(
+                self.N_CORES
+            ),  # number of jobs to run in parallel; default=None (means 1)
+            error_score="raise",
+            return_train_score=True,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # state used for subsampling dataset when resources != 'n_samples'.
+            verbose=2,
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
 
     def param_searching(self):
         # print("param searching happens here for HGBT model")
