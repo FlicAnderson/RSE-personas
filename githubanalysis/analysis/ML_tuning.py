@@ -794,7 +794,7 @@ class GBTParamSearch(AbstractParamSearch):
                 0.05,
                 0.1,
             ],  # default 0.1, can also use 0.01; # shrinkage param (lambda), trade-off between learning_rate and n_estimators
-            "max_iter": [
+            "n_estimators": [
                 75,
                 100,
                 125,
