@@ -842,7 +842,7 @@ class GBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             f"Number of physical cores: {self.base_tuning_setup.N_JOBS}"
         )
-        assert self.base_tuning_setup.ML_CLASS == "GGBT", (
+        assert self.base_tuning_setup.ML_CLASS == "GBT", (
             f"There's been an issue, base_tuning_setup ML_CLASS is expected to be GBT, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
         )
         self.clf = GradientBoostingClassifier(
