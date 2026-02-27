@@ -112,6 +112,48 @@ class HyperParamsHGBT:
     )
 
 
+@dataclass
+class HyperParamsGBT:
+    loss: str = "log_loss"  # default
+    learning_rate: float = 0.01  # default. can also use 0.1; # shrinkage param (lambda)
+    n_estimators: int = 100  # number of boosting stages to perform
+    subsample: float = 1.0  # default. <1=Stochastic gradient boosting; bootstrapping if <1; <1 => >variance but <bias
+    criterion: Literal["friedman_mse", "squared_error"] = (
+        "friedman_mse"  # default. split quality measurement; ‘friedman_mse’ ~=best cf 'squared_error'
+    )
+    min_samples_split: int | float = (
+        2  # default=2. min number samples for splitting if int; if float it's a fraction
+    )
+    min_samples_leaf: int | float = (
+        1  # default=1. nodes must have this many samples (may smooth regression models); int/float as min_samples_split.
+    )
+    min_weight_fraction_leaf: float = 0.0  # default. #min weighted fraction of sum of total weights (input samples) req for a leaf node; equal when sample_weight not provided.
+    max_depth: int | None = (
+        None  # default=3 # TODO: tune for best performance. If none, expanded until leaves are pure
+    )
+    min_impurity_decrease: float = (
+        0.0  # default=0.0. Node split if induces decrease of impurity >= this.
+    )
+    init: None = None  # default=None; estimator or ‘zero’ #'zero'(raw predictions set to 0) or None (default, preducts classes' priors) or estimator object
+    random_state: int | None = (
+        None  # controls the randomness of the estimator during splitting # int, RandomState instance or None, default=None
+    )
+    max_features: int | float | Literal["sqrt", "log2"] | None = (
+        None  # default=None # added in v1.4 # float in latest docs, interaction_cst can be used; max_features < n_features reduces variance and increases bias.
+    )
+    verbose: int = 2  # verbosity
+    max_leaf_nodes: int | None = (
+        None  # default. Grow trees with max_leaf_nodes in best-first fashion; best==relative reduction in impurity; None=unlimited
+    )
+    warm_start: bool = False  # default=False # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
+    validation_fraction: float = 0.1  # default=0.1 # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
+    n_iter_no_change: None | int = (
+        None  # default=None # determines early stopping (if it's used)
+    )
+    tol: float = 1e-4  # default. # 1e-7 default for HistGradBoost, # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
+    ccp_alpha: float = 0.0  # TODO FOR PRUNING # complexity parameter used for Minimal Cost-Complexity Pruning
+
+
 class BaseTuningSetup(DatasetSetup):
     def _log_name(self) -> str:
         return f"ML_tuning_{self.SEARCH_METHOD}"
@@ -329,7 +371,9 @@ class AbstractParamSearch(ABC):
         return search
 
     @abstractmethod
-    def param_searching(self) -> HyperParamsRF | HyperParamsHGBT | None: ...
+    def param_searching(
+        self,
+    ) -> HyperParamsRF | HyperParamsHGBT | HyperParamsGBT | None: ...
 
     @abstractmethod
     def searched_params_fit_to_classifier(self) -> tuple | None: ...
@@ -408,6 +452,10 @@ class HGBTParamSearch(AbstractParamSearch):
 
     def if_randomized_searching(self):
         # print("if randomised searching for HGBT model")
+        self.params["min_impurity_decrease"] = stats.uniform(
+            0, 0.1
+        )  # node will be split if split induces a decrease of the impurity greater than or equal to this
+        self.params["ccp_alpha"] = (stats.uniform(0, 0.25),)  # 0 means no pruning.
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         search = RandomizedSearchCV(
             self.clf,  # estimator
@@ -446,6 +494,7 @@ class HGBTParamSearch(AbstractParamSearch):
             pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
             error_score="raise",
             return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            # THERE'S NO RANDOM SEED SETTING BECAUSE THIS WORKS SYSTEMATICALLY, WITH NO RANDOM.
         )
         self.base_tuning_setup.logger.info(
             f"Searching hyper-parameters using search settings: {search}."
@@ -598,7 +647,7 @@ class HGBTParamSearch(AbstractParamSearch):
         save_out = Path(self.base_tuning_setup.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
-        # feature_importances = selected_hgbtc.feature_importances_
+        # feature_importances = selected_hgbtc.feature_importances_ # There don't seem to be feature_importances_ for the HGBTClassifier()
 
         self.base_tuning_setup.logger.info(
             f"""
@@ -613,9 +662,17 @@ class HGBTParamSearch(AbstractParamSearch):
             with maximum of N={best_params.max_iter} trees iterated \n
             at {self.base_tuning_setup.current_date_info} \n 
             with parameters: {selected_hgbtc.get_params(deep=False)} \n
-            and feature importances: 
         """
+            # There don't seem to be feature_importances_ for the HGBTClassifier()
         )
+
+        # There don't seem to be feature_importances_ for the HGBTClassifier() D:
+        # for idx in range(len(CLUSTERING_VARIABLES)):
+        #     self.base_tuning_setup.logger.info(
+        #         "{}: {:.5f}[%]".format(
+        #             CLUSTERING_VARIABLES[idx], 100.0 * feature_importances[idx]
+        #         )
+        #     )
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
         self.base_tuning_setup.logger.info(
@@ -722,34 +779,418 @@ class HGBTParamSearch(AbstractParamSearch):
             # feature_imp,
         )
 
-    # next function would apply selected_rfc to a dataset to predict RSE Personas with it.
+    # next function would apply selected_hgbtc to a dataset to predict RSE Personas with it.
 
 
 class GBTParamSearch(AbstractParamSearch):
     def __init__(self, base_tuning_setup) -> None:
-        super().__init__(base_tuning_setup)
+        super().__init__(base_tuning_setup=base_tuning_setup)
         self.search_method = (self.base_tuning_setup.SEARCH_METHOD,)
+        self.params = {
+            # TESTED / SEARCHED PARAMS:
+            "learning_rate": [
+                0.01,
+                0.02,
+                0.05,
+                0.1,
+            ],  # default 0.1, can also use 0.01; # shrinkage param (lambda), trade-off between learning_rate and n_estimators
+            "max_iter": [
+                75,
+                100,
+                125,
+                150,
+                200,
+            ],  # default=100, boosting stages to perform
+            "criterion": [  # split quality measurement method
+                "friedman_mse",
+                "squared_error",
+            ],
+            "min_samples_leaf": [
+                20,
+                10,
+                5,
+                2,
+            ],  # default=20; minimum samples per leaf -
+            "max_leaf_nodes": [
+                None,
+                25,
+                31,
+                50,
+                75,
+            ],  # None= no max; default=None
+            "warm_start": [
+                False,
+                True,
+            ],  # warm_start=False,  # if True reuse previous solution to fit/add estimators (True req retrain on same data only or -> invalidity!)
+            "ccp_alpha": [np.arange(0, 0.02, 0.005)],
+            "min_impurity_decrease": [np.arange(0, 0.15, 0.05)],
+            # DEFAULT PARAMS:
+            "subsample": [HyperParamsGBT.subsample],
+            "min_samples_split": [HyperParamsGBT.min_samples_split],
+            "min_weight_fraction_leaf": [HyperParamsGBT.min_weight_fraction_leaf],
+            "max_depth": [HyperParamsGBT.max_depth],
+            # "min_impurity_decrease": [HyperParamsGBT.min_impurity_decrease],
+            "init": [HyperParamsGBT.init],
+            "random_state": [HyperParamsGBT.random_state],
+            "max_features": [HyperParamsGBT.max_features],
+            "verbose": [HyperParamsGBT.verbose],
+            "validation_fraction": [HyperParamsGBT.validation_fraction],
+            "n_iter_no_change": [HyperParamsGBT.n_iter_no_change],
+            "tol": [HyperParamsGBT.tol],
+        }
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        self.base_tuning_setup.logger.info(
+            f"Number of physical cores: {self.base_tuning_setup.N_JOBS}"
+        )
+        assert self.base_tuning_setup.ML_CLASS == "GGBT", (
+            f"There's been an issue, base_tuning_setup ML_CLASS is expected to be GBT, but isn't... It's: {self.base_tuning_setup.ML_CLASS}"
+        )
+        self.clf = GradientBoostingClassifier(
+            random_state=self.base_tuning_setup.RANDOM_STATE,
+        )  # no other params set here as defaults are set in self.params!
+        self.base_tuning_setup.logger.info(f"clf declared: {self.clf}")
 
     def if_randomized_searching(self):
         print("if randomised searching for GBT model")
+        self.params["min_impurity_decrease"] = stats.uniform(
+            0, 0.1
+        )  # node will be split if split induces a decrease of the impurity greater than or equal to this
+        self.params["ccp_alpha"] = (stats.uniform(0, 0.25),)  # 0 means no pruning.
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = RandomizedSearchCV(
+            self.clf,  # estimator
+            n_iter=self.base_tuning_setup.N_ITER,  # controls 'combination of parameters'
+            param_distributions=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            scoring="f1_macro",
+            cv=self.rskf.split(
+                self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+            ),  # None: default 5-fold #
+            n_jobs=self.base_tuning_setup.N_JOBS,
+            verbose=4,
+            error_score=np.nan,  # np.nan=default; Value to assign to the score if an error occurs in estimator fitting
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # default=None # setting this to self.RANDOM_STATE defeats the point of using randomness, but may be more reproducable, surely?
+            return_train_score=True,  # default=False.
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
 
     def if_grid_searching(self):
         print("if grid searching for GBT model")
+        # no changes to params, all good for grid searching
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = GridSearchCV(
+            self.clf,  # estimator
+            param_grid=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+            cv=self.rskf.split(
+                self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+            ),  # None: default 5-fold  # cross-validation splitting strategy
+            n_jobs=(
+                self.N_CORES
+            ),  # number of jobs to run in parallel; default=None (means 1)
+            refit=True,  # default: True # refit an estimator using the best found parameters
+            verbose=2,
+            pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
+            error_score="raise",
+            return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            # THERE'S NO RANDOM SEED SETTING BECAUSE THIS WORKS SYSTEMATICALLY, WITH NO RANDOM.
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
 
     def if_halving_grid_searching(self):
         print("if halving-grid searching for GBT model")
+        self.base_tuning_setup.logger.info(f"param options are: {self.params}")
+        search = HalvingGridSearchCV(
+            self.clf,  # estimator
+            param_grid=self.params,  # dictionary of parameter keys and lists or distributions of parameter options to try
+            factor=3,  # 3=default; the 'halving' param: which proportion of candidates selected for the next iteration (e.g. 3 is 1/3rd)
+            resource="n_samples",  # default: 'n_samples'. the resource that increases with each iteration.  Can be 'n_iterations' or 'n_estimators' for gradient boosting estimators. 'max_resources' cannot be auto if that's true
+            max_resources="auto",  # default: 'n_samples'; maximum amount of resource candidates can use for given iteration; By default, this is set to n_samples when resource='n_samples' (default), else an error is raised.
+            min_resources="exhaust",  # default="exhaust"; The minimum amount of resource that any candidate is allowed to use for a given iteration."‘exhaust’ leads to a more accurate estimator, but is slightly more time consuming."
+            aggressive_elimination=False,  # only relevant in cases where insufficient resources to reduce remaining candidates to at most 'factor' after last iteration. If True, search process will ‘replay’ first iteration for as long as needed until the number of candidates is small enough. False by default: last iteration may evaluate more than 'factor' candidates
+            cv=None,  # default 5-fold.
+            scoring="f1_macro",  # "accuracy", # strategy evaluating performance of cross-validated model on test set. Default "None" uses the default evaluation criterion of the estimator.
+            refit=True,  # default: True # refit an estimator using the best found parameters
+            n_jobs=(
+                self.N_CORES
+            ),  # number of jobs to run in parallel; default=None (means 1)
+            error_score="raise",
+            return_train_score=True,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            random_state=self.base_tuning_setup.RANDOM_STATE,  # state used for subsampling dataset when resources != 'n_samples'.
+            verbose=2,
+        )
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using search settings: {search}."
+        )
+        return search
 
     def param_searching(self):
         self.decide_which_hyper_param_method()
         print("param searching happens here for GBT model")
-        return None
+        self.base_tuning_setup.logger.info(
+            f"Searching hyper-parameters using {self.base_tuning_setup.SEARCH_METHOD}."
+        )
+
+        search = self.decide_which_hyper_param_method()
+
+        self.base_tuning_setup.logger.info("search declared")
+        start_hyper_param_search = time.time()
+        self.base_tuning_setup.logger.info("param timer started")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("once")
+            try:
+                search.fit(
+                    self.base_tuning_setup.X_train, self.base_tuning_setup.y_train
+                )
+            except ValueError as e:
+                self.base_tuning_setup.logger.error(f"Error in search.fit(): {e}")
+
+            self.base_tuning_setup.report(
+                search.cv_results_, n_top=5
+            )  # Report the top 5 results
+
+            self.base_tuning_setup.logger.info(
+                f"Completed search.fit() and have best results: {search}"
+            )
+
+            param_search_results = pd.DataFrame(
+                search.cv_results_
+            )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
+            best_params = HyperParamsGBT(
+                loss=search.best_params_["loss"],
+                learning_rate=search.best_params_["learning_rate"],
+                n_estimators=search.best_params_["n_estimators"],
+                subsample=search.best_params_["subsample"],
+                criterion=search.best_params_["criterion"],
+                min_samples_split=search.best_params_["min_samples_split"],
+                min_samples_leaf=search.best_params_["min_samples_leaf"],
+                min_weight_fraction_leaf=search.best_params_[
+                    "min_weight_fraction_leaf"
+                ],
+                max_depth=search.best_params_["max_depth"],
+                min_impurity_decrease=search.best_params_["min_impurity_decrease"],
+                init=search.best_params_["init"],
+                random_state=search.best_params_["random_state"],
+                max_features=search.best_params_["max_features"],
+                verbose=search.best_params_["verbose"],
+                max_leaf_nodes=search.best_params_["max_leaf_nodes"],
+                warm_start=search.best_params_["warm_start"],
+                validation_fraction=search.best_params_["validation_fraction"],
+                n_iter_no_change=search.best_params_["n_iter_no_change"],
+                tol=search.best_params_["tol"],
+                ccp_alpha=search.best_params_["ccp_alpha"],
+            )
+            self.base_tuning_setup.logger.info(
+                "Best score {:.5f} with:".format(
+                    search.best_score_
+                )  # params settings that gave best results on holdout data
+            )
+            self.base_tuning_setup.logger.info(
+                best_params
+            )  # parameter settings that gave the best results on the hold out data.
+            end_hyper_param_search = time.time()
+            hyper_param_search_time = end_hyper_param_search - start_hyper_param_search
+            self.base_tuning_setup.logger.info(
+                f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
+            )
+            params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+            params_save_out = Path(
+                self.base_tuning_setup.data_location, params_filename_out
+            )
+            param_search_results.to_csv(params_save_out, header=True, index=False)
+            self.base_tuning_setup.logger.info(
+                f"Index of the best candidate parameter settings is: {search.best_index_}, in {params_save_out}"
+            )
+            return best_params
 
     def searched_params_fit_to_classifier(self):
         self.param_searching()
         print(
             "returning model with best hyperparameters fitted, and results, for GBT model"
         )
-        return None
+        best_params = self.param_searching()
+
+        start_selected_gbtc_fit = time.time()
+        self.base_tuning_setup.logger.info("fit timer started")
+        # run full model with the best params for GBT, inc SOME specifics: verbose, random state
+        selected_gbtc = GradientBoostingClassifier(
+            **asdict(
+                best_params
+            ),  # expand the dictionary created from best_params as arguments to the HGBT function :D
+        ).fit(self.base_tuning_setup.X_train, self.base_tuning_setup.y_train)
+        end_selected_gbtc_fit = time.time()
+        selected_gbtc_fit_time = end_selected_gbtc_fit - start_selected_gbtc_fit
+        self.base_tuning_setup.logger.info(
+            f"Selected Parameters GBT model took {selected_gbtc_fit_time} seconds to fit"
+        )
+
+        start_selected_gbtc_predict = time.time()
+        y_pred = selected_gbtc.predict(self.base_tuning_setup.X_test)
+        end_selected_gbtc_predict = time.time()
+        selected_gbtc_predict_time = (
+            end_selected_gbtc_predict - start_selected_gbtc_predict
+        )
+        self.y_true = self.base_tuning_setup.y_test
+        self.base_tuning_setup.logger.info(
+            f"Selected Parameters HGBT model took {selected_gbtc_predict_time} seconds to predict"
+        )
+
+        true_df = pd.DataFrame(
+            {
+                "Test true": self.base_tuning_setup.y_test,
+                "Test predicted": y_pred,
+            }
+        )
+
+        filename_out = f"test_prediction_data_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        save_out = Path(self.base_tuning_setup.data_location, filename_out)
+        true_df.to_csv(save_out, header=True, index=False)
+
+        feature_importances = selected_gbtc.feature_importances_
+
+        self.base_tuning_setup.logger.info(
+            f"""
+            For {self.base_tuning_setup.ML_CLASS} model trained on: \n
+            datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            with N observations (repo-individuals): {self.base_tuning_setup.N_OBS} \n
+            hyper-parameter-searched with search method {self.base_tuning_setup.SEARCH_METHOD} \n 
+            on {self.base_tuning_setup.N_ITER} iterations \n
+            training-set size: N={self.base_tuning_setup.X_train_size[0]} \n
+            and evaluated using test-set size: N={self.base_tuning_setup.X_test_size[0]} repo-individuals \n
+            using N={self.base_tuning_setup.X_test_size[1]} features \n 
+            with maximum of N={best_params.n_estimators} trees iterated \n
+            at {self.base_tuning_setup.current_date_info} \n 
+            with parameters: {selected_gbtc.get_params(deep=False)} \n
+            with init: {selected_gbtc.init_} \n
+            and feature importances: 
+        """
+        )
+        for idx in range(len(CLUSTERING_VARIABLES)):
+            self.base_tuning_setup.logger.info(
+                "{}: {:.5f}[%]".format(
+                    CLUSTERING_VARIABLES[idx], 100.0 * feature_importances[idx]
+                )
+            )
+
+        # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
+        self.base_tuning_setup.logger.info(
+            "Accuracy: {:.5f} (percent of correctly classified samples)".format(
+                metrics.accuracy_score(self.y_true, y_pred),
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Non-Normalised Accuracy: {:.0f} (number of correctly classified samples)".format(
+                metrics.accuracy_score(self.y_true, y_pred, normalize=False),
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Balanced Accuracy: {:.5f} (the average of recall obtained on each class)".format(
+                metrics.balanced_accuracy_score(
+                    self.y_true,
+                    y_pred,
+                    adjusted=False,
+                )
+            )
+        )
+        if self.params["subsample"] < 1.0:
+            self.base_tuning_setup.logger.info(
+                "(Final) Out of Bag Error: {:.5f} (smaller better)".format(
+                    # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
+                    1 - selected_gbtc.oob_score_
+                )
+            )
+        self.base_tuning_setup.logger.info(
+            "F1 Score: {:.5f} (harmonic mean of the precision and recall, both equally weighted)".format(
+                metrics.f1_score(
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Precision: {:.5f} (Ratio of correctly predicted positive classes to total of positive predictions)".format(
+                metrics.precision_score(
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Recall: {:.5f} (Ratio of correctly predicted positive classes to all actual 'real' positive classes)".format(
+                metrics.recall_score(
+                    self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+                    self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+                    average="macro",  # metrics for each label with the unweighted means. (doesn't account for label imbalance)
+                ),
+            )
+        )
+        # # multiclass means you can only be in one category only e.g. media format (film or tv-show)
+        # # multilabel means you can have multiple labels applying to the same observation e.g. genre of media (horror, shark movie, animals)
+        self.base_tuning_setup.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovr'): {:.5f}".format(
+                roc_auc_score(
+                    y_true=self.base_tuning_setup.y_test,  # y_true
+                    y_score=selected_gbtc.predict_proba(
+                        self.base_tuning_setup.X_test
+                    ),  # y_score
+                    # y_true=y_test,
+                    # y_score=pipeline_class_obj.pipe.named_steps["clf"].predict_proba(X_test),
+                    average="macro",
+                    multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    # multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
+            )
+        )
+        self.base_tuning_setup.logger.info(
+            "Area Under the Receiver Operating Characteristic Curve (ROC AUC), (NB: calculated average='macro' and multiclass='ovo'): {:.5f}".format(
+                roc_auc_score(
+                    y_true=self.base_tuning_setup.y_test,  # y_true
+                    y_score=selected_gbtc.predict_proba(
+                        self.base_tuning_setup.X_test
+                    ),  # y_score
+                    average="macro",
+                    # multi_class="ovr",  # one-vs-rest: Computes the AUC of each class against the rest (sensitive to class imbalance)
+                    multi_class="ovo",  # one-vs-one: SLOWER; Computes the AUC of each class against all possible pairwise combos of class (INsensitive to class imbalance)
+                )
+            )
+        )
+
+        classification_rep = metrics.classification_report(
+            y_true=self.base_tuning_setup.le.inverse_transform(self.y_true),  # y_true
+            y_pred=self.base_tuning_setup.le.inverse_transform(y_pred),  # y_pred
+            zero_division=0,  # in later versions of sklearn options inc 0.0 or np.nan, here it's int.
+            digits=5,
+            # output_dict=True,  # default=False
+        )
+        self.base_tuning_setup.logger.info("\n")
+        self.base_tuning_setup.logger.info(
+            classification_rep
+        )  # try this to avoid logger error with formatting of report
+        self.base_tuning_setup.logger.info("Returning final results now:")
+        return (
+            selected_gbtc,  # this is the actual model, but currently not using this output
+            f1_score(
+                y_true=self.base_tuning_setup.y_test, y_pred=y_pred, average="macro"
+            ),
+            precision_score(
+                y_true=self.base_tuning_setup.y_test, y_pred=y_pred, average="macro"
+            ),
+            selected_gbtc.score(
+                self.base_tuning_setup.X_test, self.base_tuning_setup.y_test
+            ),
+            best_params,
+            # feature_imp,
+        )
+
+    # next function would apply selected_hgbtc to a dataset to predict RSE Personas with it.
 
 
 class RFParamSearch(AbstractParamSearch):
@@ -857,6 +1298,7 @@ class RFParamSearch(AbstractParamSearch):
             pre_dispatch="1.5*n_jobs",  # Controls the number of jobs that get dispatched during parallel execution; int, or str, default=’2*n_jobs’
             error_score="raise",
             return_train_score=False,  # default: False; returning these in cv_results_ will be computationally expensive, but could help give info on over/underfitting; not strictly required.
+            # THERE'S NO RANDOM SEED SETTING BECAUSE THIS WORKS SYSTEMATICALLY, WITH NO RANDOM.
         )
         self.base_tuning_setup.logger.info(
             f"Searching hyper-parameters using search settings: {search}."
