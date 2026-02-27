@@ -822,8 +822,24 @@ class GBTParamSearch(AbstractParamSearch):
                 False,
                 True,
             ],  # warm_start=False,  # if True reuse previous solution to fit/add estimators (True req retrain on same data only or -> invalidity!)
-            "ccp_alpha": [np.arange(0, 0.02, 0.005)],
-            "min_impurity_decrease": [np.arange(0, 0.15, 0.05)],
+            "ccp_alpha": [
+                0,
+                0.001,
+                0.005,
+                0.01,
+                0.02,
+                0.05,
+                0.1,
+            ],
+            "min_impurity_decrease": [
+                0,
+                0.001,
+                0.005,
+                0.01,
+                0.02,
+                0.05,
+                0.1,
+            ],
             # DEFAULT PARAMS:
             "subsample": [HyperParamsGBT.subsample],
             "min_samples_split": [HyperParamsGBT.min_samples_split],
@@ -852,10 +868,6 @@ class GBTParamSearch(AbstractParamSearch):
 
     def if_randomized_searching(self):
         print("if randomised searching for GBT model")
-        self.params["min_impurity_decrease"] = stats.uniform(
-            0, 0.1
-        )  # node will be split if split induces a decrease of the impurity greater than or equal to this
-        self.params["ccp_alpha"] = (stats.uniform(0, 0.25),)  # 0 means no pruning.
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         search = RandomizedSearchCV(
             self.clf,  # estimator
@@ -1314,8 +1326,12 @@ class RFParamSearch(AbstractParamSearch):
         ]  # change the type of max_samples to test;  # removed 1.0, # can't use ALL the samples to train with. That's nonsense.
         # params["max_samples"] = np.arange(0,1.1, 0.1) # shift the uniform distribution random malarky used in the randomized, and go to a larger ordered set of values for the 'grid'
         self.params["min_samples_split"] = [2]
-        self.params["ccp_alpha"] = np.arange(0, 0.02, 0.005)
-        self.params["min_impurity_decrease"] = np.arange(0, 0.15, 0.05)
+        self.params["ccp_alpha"] = np.arange(
+            0, 0.02, 0.005
+        )  # For GBT these are within: [0, 0.001, 0.005, 0.01, 0.02, 0.05, 0.1,],
+        self.params["min_impurity_decrease"] = np.arange(
+            0, 0.15, 0.05
+        )  # For GBT these are within: [0, 0.001, 0.005, 0.01, 0.02, 0.05, 0.1,],
         # params["max_leaf_nodes"] = list(range(7, 260, 10))
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         search = HalvingGridSearchCV(
