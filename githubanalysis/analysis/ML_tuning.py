@@ -975,10 +975,14 @@ class GBTParamSearch(AbstractParamSearch):
                 search.cv_results_
             )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
 
-            print(f"dir(search.cv_results_) is : {dir(search.cv_results_)}")
-            print(f"search.cv_results_ is: {search.cv_results_}")
-            print(f"search.get_params deep=false: {search.get_params(deep=False)}")
-            print(f"search.get_params deep=true: {search.get_params(deep=True)}")
+            print(f"dir(search.cv_results_) is : {dir(search.cv_results_)}\n")
+            print(f"search.cv_results_ is: {search.cv_results_}\n")
+            print(f"search.get_params deep=false: {search.get_params(deep=False)}\n")
+            print(f"search.get_params deep=true: {search.get_params(deep=True)}\n")
+
+            print(f"search.best_params_ are: {search.best_params_} \n")
+            print(f"search.best_estimator_ is: {search.best_estimator_} \n")
+            print(f"search.best_score_ is: {search.best_score_} \n")
 
             # .pipe.get_params(deep=False)
             best_params = HyperParamsGBT(
