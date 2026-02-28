@@ -146,10 +146,9 @@ class HyperParamsGBT:
         None  # default. Grow trees with max_leaf_nodes in best-first fashion; best==relative reduction in impurity; None=unlimited
     )
     warm_start: bool = False  # default=False # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
-    validation_fraction: float = 0.1  # default=0.1 # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
+    validation_fraction: float = 0.0  # default=0.1 # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
     n_iter_no_change: None | int = (
-        # None  # default=None # determines early stopping (if it's used)
-        25
+        25  # None  # default=None # determines early stopping (if it's used)
     )
     tol: float = 1e-4  # default. # 1e-7 default for HistGradBoost, # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
     ccp_alpha: float = 0.0  # TODO FOR PRUNING # complexity parameter used for Minimal Cost-Complexity Pruning
