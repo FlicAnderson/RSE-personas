@@ -1125,7 +1125,7 @@ class GBTParamSearch(AbstractParamSearch):
                 )
             )
         )
-        if self.params["subsample"] < 1.0:
+        if self.params["subsample"][0] < 1.0:
             self.base_tuning_setup.logger.info(
                 "(Final) Out of Bag Error: {:.5f} (smaller better)".format(
                     # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
