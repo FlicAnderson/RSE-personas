@@ -1009,6 +1009,9 @@ class DataAnalyser(DatasetSetup):
         self.get_feature_importance(
             clustering_data=clustering_data, clustering_variables=clustering_variables
         )
+        self.logger.info(
+            f"Completed clustering analysis workflow of data {self.dataset_name}. \n \n"
+        )
 
 
 parser = argparse.ArgumentParser()
@@ -1105,6 +1108,7 @@ def main():
 
     dataanalyser.logger.info(
         f"""
+        \n
         Running Data Analysis with arguments: {args}; 
         data: {data_arg}; 
         run name: {run_name_arg}; 

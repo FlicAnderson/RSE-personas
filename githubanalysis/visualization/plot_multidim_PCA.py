@@ -141,10 +141,10 @@ class PlotPCA(DatasetSetup):
         save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
     ):
         print(
-            "THIS FUNCTION (plot_threedim_PCA) HAS BEEN SUPERCEDED BY `PlotPCA.pca3d(): please consider using that function instead, as it works for sub-clusters. "
+            "THIS FUNCTION (plot_threedim_PCA) HAS BEEN SUPERCEDED BY `PlotPCA.pca3d(): please consider using that function instead, as it works for (NAMED) sub-clusters. "
         )
         self.logger.warning(
-            "THIS FUNCTION (plot_threedim_PCA) HAS BEEN SUPERCEDED BY `PlotPCA.pca3d(): please consider using that function instead, as it works for sub-clusters. "
+            "THIS FUNCTION (plot_threedim_PCA) HAS BEEN SUPERCEDED BY `PlotPCA.pca3d(): please consider using that function instead, as it works for (NAMED) sub-clusters. "
         )
 
         clustering_data_labelled = pd.concat(
