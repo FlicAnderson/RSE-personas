@@ -979,15 +979,6 @@ class GBTParamSearch(AbstractParamSearch):
                 search.cv_results_
             )  # could use comparison approaches like https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_stats.html#sphx-glr-auto-examples-model-selection-plot-grid-search-stats-py on these
 
-            print(f"dir(search.cv_results_) is : {dir(search.cv_results_)}\n")
-            print(f"search.cv_results_ is: {search.cv_results_}\n")
-            print(f"search.get_params deep=false: {search.get_params(deep=False)}\n")
-            print(f"search.get_params deep=true: {search.get_params(deep=True)}\n")
-
-            print(f"search.best_params_ are: {search.best_params_} \n")
-            print(f"search.best_estimator_ is: {search.best_estimator_} \n")
-            print(f"search.best_score_ is: {search.best_score_} \n")
-
             # .pipe.get_params(deep=False)
             best_params = HyperParamsGBT(
                 loss=search.best_params_["loss"],
@@ -1065,7 +1056,7 @@ class GBTParamSearch(AbstractParamSearch):
         )
         self.y_true = self.base_tuning_setup.y_test
         self.base_tuning_setup.logger.info(
-            f"Selected Parameters HGBT model took {selected_gbtc_predict_time} seconds to predict"
+            f"Selected Parameters GBT model took {selected_gbtc_predict_time} seconds to predict"
         )
 
         true_df = pd.DataFrame(
@@ -1104,6 +1095,7 @@ class GBTParamSearch(AbstractParamSearch):
                     CLUSTERING_VARIABLES[idx], 100.0 * feature_importances[idx]
                 )
             )
+        self.base_tuning_setup.logger.info("\n Returning scores:")
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
         self.base_tuning_setup.logger.info(
