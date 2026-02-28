@@ -13,7 +13,9 @@ import matplotlib.pyplot as plt
 from matplotlib.markers import MarkerStyle
 from pathlib import Path
 
-from utilities.rse_persona_info_utils import RSE_personas_info
+from utilities.rse_persona_info_utils import (
+    RSE_personas_info,
+)  # generates info used for pca3d not currently enabled in here
 
 #  ruff: noqa: F841
 
@@ -33,18 +35,19 @@ class PlotPCA(DatasetSetup):
         self.exists_ok = exists_ok
         self.data_write_location.mkdir(exist_ok=self.exists_ok)
         self.image_write_location.mkdir(exist_ok=self.exists_ok)
+        # rse_persona_info = RSE_personas_info()
 
         def pca3d(
             self,
             cluster_labels: pd.Series,
             clustering_data: pd.DataFrame,
-            cluster_names: list[str] = persona_name,
-            colours: list[str] = persona_palette,
-            marks: list[str] = persona_mark,
+            cluster_names: list[str],  # = persona_name,
+            colours: list[str],  # = persona_palette,
+            marks: list[str],  # = persona_mark,
             fill_style: list[
                 Literal["full", "left", "right", "bottom", "top", "none"]
-            ] = persona_fill,
-            edge_col: list[str] = persona_edge,
+            ],  # = persona_fill,
+            edge_col: list[str],  # = persona_edge,
             file_name: str = "sample_3D_PCA_",
             save_type: str = "pdf",  # one of: ['png', 'pdf', 'svg']
         ):
