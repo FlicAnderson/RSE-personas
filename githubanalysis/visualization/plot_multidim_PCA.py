@@ -1,9 +1,5 @@
 """Plot 3-Dimensional PCA plot for labelled analysis dataset."""
 
-from pathlib import Path
-
-from githubanalysis.setup_classes import DatasetSetup
-
 from logging import Logger
 import pandas as pd
 import numpy as np
@@ -13,9 +9,10 @@ import matplotlib.pyplot as plt
 from matplotlib.markers import MarkerStyle
 from pathlib import Path
 
-from utilities.rse_persona_info_utils import (
-    RSE_personas_info,
-)  # generates info used for pca3d not currently enabled in here
+from githubanalysis.setup_classes import DatasetSetup
+# from utilities.rse_persona_info_utils import (
+#     RSE_personas_info,
+# )  # generates info used for pca3d not currently enabled in here
 
 #  ruff: noqa: F841
 
