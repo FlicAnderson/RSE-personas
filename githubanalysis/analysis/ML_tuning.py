@@ -148,7 +148,8 @@ class HyperParamsGBT:
     warm_start: bool = False  # default=False # TODO: check this in tuning; if True reuse previous solution to fit/add esimators (True req retrain on same data only for validity!)
     validation_fraction: float = 0.1  # default=0.1 # proportion(float)/size(int) of training data to set aside for validation of early stopping; None=uses training data.
     n_iter_no_change: None | int = (
-        None  # default=None # determines early stopping (if it's used)
+        # None  # default=None # determines early stopping (if it's used)
+        25
     )
     tol: float = 1e-4  # default. # 1e-7 default for HistGradBoost, # 'absolute tolerance' to use comparing scores. higher = more likely to early stop aaro harder to consider subsq iterations improvements on prev
     ccp_alpha: float = 0.0  # TODO FOR PRUNING # complexity parameter used for Minimal Cost-Complexity Pruning
@@ -841,13 +842,16 @@ class GBTParamSearch(AbstractParamSearch):
                 0.1,
             ],
             # DEFAULT PARAMS:
+            "loss": [HyperParamsGBT.loss],
             "subsample": [HyperParamsGBT.subsample],
             "min_samples_split": [HyperParamsGBT.min_samples_split],
             "min_weight_fraction_leaf": [HyperParamsGBT.min_weight_fraction_leaf],
             "max_depth": [HyperParamsGBT.max_depth],
             # "min_impurity_decrease": [HyperParamsGBT.min_impurity_decrease],
             "init": [HyperParamsGBT.init],
-            "random_state": [HyperParamsGBT.random_state],
+            "random_state": [
+                self.base_tuning_setup.RANDOM_STATE
+            ],  # use the random state fed in via args
             "max_features": [HyperParamsGBT.max_features],
             "verbose": [HyperParamsGBT.verbose],
             "validation_fraction": [HyperParamsGBT.validation_fraction],
