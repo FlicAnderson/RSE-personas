@@ -598,7 +598,7 @@ class HGBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
         )
-        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
             self.base_tuning_setup.data_location, params_filename_out
         )
@@ -1016,7 +1016,7 @@ class GBTParamSearch(AbstractParamSearch):
             self.base_tuning_setup.logger.info(
                 f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
             )
-            params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+            params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
             params_save_out = Path(
                 self.base_tuning_setup.data_location, params_filename_out
             )
@@ -1437,7 +1437,7 @@ class RFParamSearch(AbstractParamSearch):
             f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
         )
 
-        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.y_test_size[0]}_{self.base_tuning_setup.current_date_info}.csv"
+        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
             self.base_tuning_setup.data_location, params_filename_out
         )
