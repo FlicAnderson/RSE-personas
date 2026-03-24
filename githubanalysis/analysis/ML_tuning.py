@@ -451,11 +451,7 @@ class HGBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(f"clf declared: {self.clf}")
 
     def if_randomized_searching(self):
-        # print("if randomised searching for HGBT model")
-        self.params["min_impurity_decrease"] = stats.uniform(
-            0, 0.1
-        )  # node will be split if split induces a decrease of the impurity greater than or equal to this
-        self.params["ccp_alpha"] = (stats.uniform(0, 0.25),)  # 0 means no pruning.
+        print("if randomised searching for HGBT model")
         self.base_tuning_setup.logger.info(f"param options are: {self.params}")
         search = RandomizedSearchCV(
             self.clf,  # estimator
@@ -529,7 +525,7 @@ class HGBTParamSearch(AbstractParamSearch):
         return search
 
     def param_searching(self):
-        # print("param searching happens here for HGBT model")
+        print("param searching happens here for HGBT model")
         self.base_tuning_setup.logger.info(
             f"Searching hyper-parameters using {self.base_tuning_setup.SEARCH_METHOD}."
         )
@@ -609,6 +605,9 @@ class HGBTParamSearch(AbstractParamSearch):
         return best_params
 
     def searched_params_fit_to_classifier(self):
+        print(
+            "returning model with best hyperparameters fitted, and results, for HGBT model"
+        )
         best_params = self.param_searching()
 
         start_selected_hgbtc_fit = time.time()
@@ -946,7 +945,7 @@ class GBTParamSearch(AbstractParamSearch):
         return search
 
     def param_searching(self):
-        self.decide_which_hyper_param_method()
+        # self.decide_which_hyper_param_method()
         print("param searching happens here for GBT model")
         self.base_tuning_setup.logger.info(
             f"Searching hyper-parameters using {self.base_tuning_setup.SEARCH_METHOD}."
@@ -1028,7 +1027,7 @@ class GBTParamSearch(AbstractParamSearch):
             return best_params
 
     def searched_params_fit_to_classifier(self):
-        self.param_searching()
+        # self.param_searching()
         print(
             "returning model with best hyperparameters fitted, and results, for GBT model"
         )
