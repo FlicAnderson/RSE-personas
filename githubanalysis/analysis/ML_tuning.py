@@ -339,6 +339,24 @@ class BaseTuningSetup(DatasetSetup):
                 self.logger.info("Parameters: {0}".format(results["params"][candidate]))
                 self.logger.info("")
 
+    def confusion_matrix_saver(self, y_pred):
+        self.logger.info("Plotting confusion matrices of final results now:")
+        confusion_files = confusion_matrix_plotter(
+            y_test=self.y_test,  # test_supplied_true values
+            y_pred=y_pred,  # test_predicted persona values
+            model_abbrv=self.ML_CLASS,
+            tuning_method=self.SEARCH_METHOD,
+            seed_no=self.RANDOM_STATE,
+            image_write_location=self.image_write_location,
+            current_date_info=self.current_date_info,
+            saveout_args_dpi=400,
+            saveout_args_format="pdf",
+            saveout_args_bboxin="tight",
+        )
+        self.logger.info(
+            f"Confusion matrix plots saved to paths: {confusion_files}"  # this is a tuple of 2x file paths with name info
+        )
+
 
 class AbstractParamSearch(ABC):
     def __init__(self, base_tuning_setup: BaseTuningSetup) -> None:
@@ -640,8 +658,8 @@ class HGBTParamSearch(AbstractParamSearch):
 
         true_df = pd.DataFrame(
             {
-                "Test true": self.base_tuning_setup.y_test,
-                "Test predicted": y_pred,
+                "test_supplied_true": self.base_tuning_setup.y_test,
+                "test_predicted": y_pred,
             }
         )
 
@@ -780,6 +798,7 @@ class HGBTParamSearch(AbstractParamSearch):
             ),
             best_params,
             # feature_imp,
+            y_pred,
         )
 
     # next function would apply selected_hgbtc to a dataset to predict RSE Personas with it.
@@ -1063,8 +1082,8 @@ class GBTParamSearch(AbstractParamSearch):
 
         true_df = pd.DataFrame(
             {
-                "Test true": self.base_tuning_setup.y_test,
-                "Test predicted": y_pred,
+                "test_supplied_true": self.base_tuning_setup.y_test,
+                "test_predicted": y_pred,
             }
         )
 
@@ -1212,6 +1231,7 @@ class GBTParamSearch(AbstractParamSearch):
             ),
             best_params,
             # feature_imp,
+            y_pred,
         )
 
     # next function would apply selected_hgbtc to a dataset to predict RSE Personas with it.
@@ -1628,24 +1648,6 @@ class RFParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             classification_rep
         )  # try this to avoid logger error with formatting of report
-        self.base_tuning_setup.logger.info(
-            "Plotting confusion matrices of final results now:"
-        )
-        confusion_files = confusion_matrix_plotter(
-            y_test=self.base_tuning_setup.y_test,  # test_supplied_true values
-            y_pred=y_pred,  # test_predicted persona values
-            model_abbrv=self.base_tuning_setup.ML_CLASS,
-            tuning_method=self.base_tuning_setup.SEARCH_METHOD,
-            seed_no=self.base_tuning_setup.RANDOM_STATE,
-            image_write_location=self.base_tuning_setup.image_write_location,
-            current_date_info=self.base_tuning_setup.current_date_info,
-            saveout_args_dpi=400,
-            saveout_args_format="pdf",
-            saveout_args_bboxin="tight",
-        )
-        self.base_tuning_setup.logger.info(
-            f"Confusion matrix plots saved to paths: {confusion_files}"  # this is a tuple of 2x file paths with name info
-        )
 
         return (
             selected_rfc,  # this is the actual model, but currently not using this output
@@ -1660,6 +1662,7 @@ class RFParamSearch(AbstractParamSearch):
             ),
             best_params,
             # feature_imp,
+            y_pred,
         )
 
     # next function would apply selected_rfc to a dataset to predict RSE Personas with it.
@@ -1765,29 +1768,46 @@ def main():
             precisionscore,
             overallscore,
             best_params,
+            y_pred,
         ) = rfparamsearch.searched_params_fit_to_classifier()
 
     elif tuning_setup.ML_CLASS == "HGBT":
-        # thing B
         hgbtparamsearch = HGBTParamSearch(base_tuning_setup=tuning_setup)
-        hgbtparamsearch.searched_params_fit_to_classifier()
+        (
+            selected_rfc,  # this is the actual model, but currently not using this output
+            f1score,
+            precisionscore,
+            overallscore,
+            best_params,
+            y_pred,
+        ) = hgbtparamsearch.searched_params_fit_to_classifier()
 
     elif tuning_setup.ML_CLASS == "GBT":
-        # thing C
         gbtparamsearch = GBTParamSearch(base_tuning_setup=tuning_setup)
-        gbtparamsearch.searched_params_fit_to_classifier()
+        (
+            selected_rfc,  # this is the actual model, but currently not using this output
+            f1score,
+            precisionscore,
+            overallscore,
+            best_params,
+            y_pred,
+        ) = gbtparamsearch.searched_params_fit_to_classifier()
 
     else:
         print("WHELP D:")
+        y_pred = None
         # this oughtn't happen, because there's an assert somewhere
         # preventing ML_CLASS being NOT those three things, but nevertheless...
+
+    if y_pred is not None:
+        tuning_setup.confusion_matrix_saver(y_pred=y_pred)
 
     tuning_setup.logger.info(
         ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> paramsearch complete <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     )
 
     tuning_setup.logger.info("\n")
-    print("\n paramater search complete.\n")
+    print("\n parameter search complete.\n")
 
 
 if __name__ == "__main__":
