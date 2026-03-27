@@ -36,6 +36,9 @@ from githubanalysis.analysis.ML_pipeline import (
     update_candidate_features,
 )
 from githubanalysis.setup_classes import DatasetSetup
+from githubanalysis.visualization.plot_confusion_matrices import (
+    confusion_matrix_plotter,
+)
 
 CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
     "pc_commit_created",
@@ -642,7 +645,7 @@ class HGBTParamSearch(AbstractParamSearch):
             }
         )
 
-        filename_out = f"test_prediction_data_N{self.base_tuning_setup.y_test_size[0]}_NObs{self.base_tuning_setup.N_OBS}_Niter{self.base_tuning_setup.N_ITER}_seed{self.base_tuning_setup.RANDOM_STATE}_{self.base_tuning_setup.current_date_info}.csv"
+        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         save_out = Path(self.base_tuning_setup.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
@@ -1065,7 +1068,7 @@ class GBTParamSearch(AbstractParamSearch):
             }
         )
 
-        filename_out = f"test_prediction_data_N{self.base_tuning_setup.y_test_size[0]}_NObs{self.base_tuning_setup.N_OBS}_Niter{self.base_tuning_setup.N_ITER}_seed{self.base_tuning_setup.RANDOM_STATE}_{self.base_tuning_setup.current_date_info}.csv"
+        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         save_out = Path(self.base_tuning_setup.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
@@ -1121,7 +1124,9 @@ class GBTParamSearch(AbstractParamSearch):
             self.base_tuning_setup.logger.info(
                 "(Final) Out of Bag Error: {:.5f} (smaller better)".format(
                     # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
-                    1 - selected_gbtc.oob_score_
+                    1
+                    - selected_gbtc.oob_score_  # this does exist after v1.3, which I'm running?
+                    # I don't know what the IDE's problem is about?
                 )
             )
         self.base_tuning_setup.logger.info(
@@ -1494,12 +1499,12 @@ class RFParamSearch(AbstractParamSearch):
 
         true_df = pd.DataFrame(
             {
-                "Test true": self.base_tuning_setup.y_test,
-                "Test predicted": y_pred,
+                "test_supplied_true": self.base_tuning_setup.y_test,
+                "test_predicted": y_pred,
             }
         )
 
-        filename_out = f"test_prediction_data_N{self.base_tuning_setup.y_test_size[0]}_NObs{self.base_tuning_setup.N_OBS}_Niter{self.base_tuning_setup.N_ITER}_seed{self.base_tuning_setup.RANDOM_STATE}_{self.base_tuning_setup.current_date_info}.csv"
+        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         save_out = Path(self.base_tuning_setup.data_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
@@ -1623,7 +1628,25 @@ class RFParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             classification_rep
         )  # try this to avoid logger error with formatting of report
-        self.base_tuning_setup.logger.info("Returning final results now:")
+        self.base_tuning_setup.logger.info(
+            "Plotting confusion matrices of final results now:"
+        )
+        confusion_files = confusion_matrix_plotter(
+            y_test=self.base_tuning_setup.y_test,  # test_supplied_true values
+            y_pred=y_pred,  # test_predicted persona values
+            model_abbrv=self.base_tuning_setup.ML_CLASS,
+            tuning_method=self.base_tuning_setup.SEARCH_METHOD,
+            seed_no=self.base_tuning_setup.RANDOM_STATE,
+            image_write_location=self.base_tuning_setup.image_write_location,
+            current_date_info=self.base_tuning_setup.current_date_info,
+            saveout_args_dpi=400,
+            saveout_args_format="pdf",
+            saveout_args_bboxin="tight",
+        )
+        self.base_tuning_setup.logger.info(
+            f"Confusion matrix plots saved to paths: {confusion_files}"  # this is a tuple of 2x file paths with name info
+        )
+
         return (
             selected_rfc,  # this is the actual model, but currently not using this output
             f1_score(
@@ -1736,7 +1759,13 @@ def main():
     if tuning_setup.ML_CLASS == "RF":
         rfparamsearch = RFParamSearch(base_tuning_setup=tuning_setup)
         # this does the searching, and fits final set of params to classifier model:
-        rfparamsearch.searched_params_fit_to_classifier()
+        (
+            selected_rfc,  # this is the actual model, but currently not using this output
+            f1score,
+            precisionscore,
+            overallscore,
+            best_params,
+        ) = rfparamsearch.searched_params_fit_to_classifier()
 
     elif tuning_setup.ML_CLASS == "HGBT":
         # thing B
