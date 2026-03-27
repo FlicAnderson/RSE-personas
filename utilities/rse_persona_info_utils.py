@@ -16,6 +16,16 @@ class RSE_personas_info:
         "Active Contributor",
     ]
 
+    persona_abbrevs = [
+        "Ephm",
+        "Occs",
+        "PrOg",
+        "Modr",
+        "LoPr",
+        "LoCo",
+        "Actv",
+    ]
+
     persona_palette = {
         0: "#D50032",
         1: "#D50032",
