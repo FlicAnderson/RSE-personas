@@ -617,7 +617,7 @@ class HGBTParamSearch(AbstractParamSearch):
         )
         params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
-            self.base_tuning_setup.data_location, params_filename_out
+            self.base_tuning_setup.data_write_location, params_filename_out
         )
         param_search_results.to_csv(params_save_out, header=True, index=False)
         self.base_tuning_setup.logger.info(
@@ -664,7 +664,7 @@ class HGBTParamSearch(AbstractParamSearch):
         )
 
         filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
-        save_out = Path(self.base_tuning_setup.data_location, filename_out)
+        save_out = Path(self.base_tuning_setup.data_write_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
         # feature_importances = selected_hgbtc.feature_importances_ # There don't seem to be feature_importances_ for the HGBTClassifier()
@@ -1040,7 +1040,7 @@ class GBTParamSearch(AbstractParamSearch):
             )
             params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
             params_save_out = Path(
-                self.base_tuning_setup.data_location, params_filename_out
+                self.base_tuning_setup.data_write_location, params_filename_out
             )
             param_search_results.to_csv(params_save_out, header=True, index=False)
             self.base_tuning_setup.logger.info(
@@ -1088,7 +1088,7 @@ class GBTParamSearch(AbstractParamSearch):
         )
 
         filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
-        save_out = Path(self.base_tuning_setup.data_location, filename_out)
+        save_out = Path(self.base_tuning_setup.data_write_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
         feature_importances = selected_gbtc.feature_importances_
@@ -1465,7 +1465,7 @@ class RFParamSearch(AbstractParamSearch):
 
         params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
-            self.base_tuning_setup.data_location, params_filename_out
+            self.base_tuning_setup.data_write_location, params_filename_out
         )
         param_search_results.to_csv(params_save_out, header=True, index=False)
         self.base_tuning_setup.logger.info(
@@ -1525,7 +1525,7 @@ class RFParamSearch(AbstractParamSearch):
         )
 
         filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.current_date_info}.csv"
-        save_out = Path(self.base_tuning_setup.data_location, filename_out)
+        save_out = Path(self.base_tuning_setup.data_write_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
         feature_importances = selected_rfc.feature_importances_
