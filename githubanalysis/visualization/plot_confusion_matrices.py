@@ -47,7 +47,7 @@ def confusion_matrix_plotter(
 
     for title, normalize in titles_options:
         disp = ConfusionMatrixDisplay.from_predictions(
-            y_test.apply(lambda x: RSE_personas_info.name_palette.get(x)),
+            np.vectorize(lambda x: RSE_personas_info.name_palette.get(x))(y_test),
             np.vectorize(lambda x: RSE_personas_info.name_palette.get(x))(
                 y_pred
             ),  # can't use apply as it's taking np.ndarray in...
