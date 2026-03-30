@@ -164,7 +164,9 @@ class BaseTuningSetup(DatasetSetup):
     STD_DEV_SCALE: float = 1.0
 
     def _log_name(self) -> str:
-        return f"ML_tuning_{self.SEARCH_METHOD}"
+        return (
+            f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{self.current_date_info}"
+        )
 
     def __init__(
         self,
