@@ -843,6 +843,7 @@ class HGBTParamSearch(AbstractParamSearch):
             using N={self.base_tuning_setup.X_test_size[1]} features \n 
             with maximum of N={best_params.max_iter} trees iterated \n
             at {self.base_tuning_setup.current_date_info} \n 
+            with noise info: {self.base_tuning_setup.noisestr} \n
             with parameters: {selected_hgbtc.get_params(deep=False)} \n
         """
             # There don't seem to be feature_importances_ for the HGBTClassifier()
@@ -1268,6 +1269,7 @@ class GBTParamSearch(AbstractParamSearch):
             at {self.base_tuning_setup.current_date_info} \n 
             with parameters: {selected_gbtc.get_params(deep=False)} \n
             with init: {selected_gbtc.init_} \n
+            with noise info: {self.base_tuning_setup.noisestr} \n
             and feature importances: 
         """
         )
