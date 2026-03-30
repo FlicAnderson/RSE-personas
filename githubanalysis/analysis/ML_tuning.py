@@ -165,7 +165,7 @@ class BaseTuningSetup(DatasetSetup):
     STD_DEV_SCALE: float = 1.0
 
     def _log_name(self) -> str:
-        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_noise{self.add_noise}_{datetime.now().strftime('%Y-%m-%d')}"
+        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_Xnoise{self.ADD_X_TRAIN_NOISE}_ynoise{self.ADD_Y_TRAIN_NOISE}_StdDevScale{self.STD_DEV_SCALE}_{datetime.now().strftime('%Y-%m-%d')}"
 
     def __init__(
         self,
@@ -361,6 +361,9 @@ class BaseTuningSetup(DatasetSetup):
                 list_of_test_train_data_filenames.append(X_train_orig_filename)
                 print(f"X_TRAIN pc noise to add: {add_X_train_noise}")
                 self.logger.info(f"X_TRAIN pc noise to add: {add_X_train_noise}")
+                self.logger.info(
+                    f"Adding noise with STD Dev of {std_dev_scale} relative to each X_train columns."
+                )
 
                 # this is the important part where noisy X_train is generated and saved to self as X_train
                 self.X_train = noised_X_train(
@@ -484,13 +487,20 @@ class BaseTuningSetup(DatasetSetup):
                 self.logger.info("Parameters: {0}".format(results["params"][candidate]))
                 self.logger.info("")
 
-    def confusion_matrix_saver(self, y_pred):
+    def confusion_matrix_saver(
+        self,
+        y_pred,
+    ):
         self.logger.info("Plotting confusion matrices of final results now:")
         confusion_files = confusion_matrix_plotter(
             y_test=self.y_test,  # test_supplied_true values
             y_pred=y_pred,  # test_predicted persona values
             model_abbrv=self.ML_CLASS,
             tuning_method=self.SEARCH_METHOD,
+            added_noise=self.add_noise,
+            x_noise=self.ADD_X_TRAIN_NOISE,
+            y_noise=self.ADD_Y_TRAIN_NOISE,
+            noiseSDscale=self.STD_DEV_SCALE,
             seed_no=self.RANDOM_STATE,
             image_write_location=self.image_write_location,
             current_date_info=self.current_date_info,
