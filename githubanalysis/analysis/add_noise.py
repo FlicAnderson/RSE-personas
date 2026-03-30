@@ -3,40 +3,59 @@
 import numpy as np
 
 
-def generate_noise(original_matrix, noise_percentage: float):
-    # Get stats and dimensions
-    means = np.mean(original_matrix, axis=0)
-    stds = np.std(original_matrix, axis=0)
-    row_count, col_count = original_matrix.shape
+def noised_X_train(
+    X_train: np.ndarray,  # matrix of columns of RSE interactions data Repository Contibutions values, each column has different means and std deviations and represents different variable
+    random_seed: int = 42,
+    percent_of_data_to_noise: float = 0.0,  # this applies to the whole dataset, but will be applied columnwise.
+    std_dev_scale: float = 1.0,  # the amount to multiply standard deviation of each column by (default:1 = 100% of existing stddev)
+):
+    random_generator = np.random.default_rng(random_seed)
+    print(
+        f"Using random number generator: {random_generator} with random seed {random_seed}"
+    )
 
-    noise_cols = []
+    n_to_change = round(len(X_train) * percent_of_data_to_noise)
+    print(
+        f"Adding noise to: {n_to_change} rows in each column; columns have {len(X_train)} rows in total."
+    )
 
-    # Calculate how many rows should remain UNCHANGED (0 noise)
-    # If noise_percentage is 10, we want 90% of rows to be 0
-    num_to_keep_clean = int(row_count * (1 - (noise_percentage / 100)))
+    for column in range(X_train.shape[1]):
+        # for each column in all the df's 10 columns:
 
-    for i in range(col_count):
-        # Generate full Gaussian noise for the column
-        column_noise = np.random.normal(loc=means[i], scale=stds[i], size=row_count)
+        # get the column's standard deviation and mean
+        col = X_train[:, column]
 
-        # Pick random indices to "zero out" (the clean rows)
-        clean_indices = np.random.choice(
-            row_count, size=num_to_keep_clean, replace=False
+        col_mean = col.mean()
+        print(f"Mean of column {column} is: {col_mean}")
+
+        col_std = col.std()
+        print(f"StdDev of column is: {col_std}")
+
+        # randomly choose row indices to change by adding random values
+        replace_these_indices = random_generator.choice(
+            len(col), size=n_to_change, replace=False
         )
+        # X_train[column][indices] will be the index of the cell to replace each time
+        # print(f"Replace indices: {replace_these_indices}")
 
-        column_noise[clean_indices] = 0
-        noise_cols.append(column_noise)
+        generated_noise = random_generator.normal(
+            # this generates data with a normal distribution with mean matching column, and scale match
+            loc=col_mean,  #  μ (mean),
+            scale=col_std
+            * std_dev_scale,  # σ (standard dev) multiplied by a scaler value float supplied as arg,
+            size=n_to_change,  # size = number of values to generate (equivalent to len(replace_these_indices))
+        )
+        # use the generated noise values to overwrite the current values.
+        # replace all indices identified with generated noise
+        col[replace_these_indices] = generated_noise[
+            :
+        ]  # this OVERWRITES/updates X_train values!!
 
-    noise_matrix = np.column_stack(noise_cols)
-    print()
-    print(noise_matrix)
-    print()
+        col_mean = col.mean()
+        print(f"NEW Mean of column {column} is: {col_mean}")
+        col_std = col.std()
+        print(f"NEW StdDev of column is: {col_std}")
 
-    # Return original matrix with random noise added
-    return original_matrix + noise_matrix
+    print("Noise generation loop completed")
 
-
-matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [0, 1, 2, 3]])
-print()
-print(matrix)
-print(generate_noise(matrix, 0.1))
+    return X_train
