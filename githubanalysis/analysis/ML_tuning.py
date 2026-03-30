@@ -368,6 +368,9 @@ class BaseTuningSetup(DatasetSetup):
                 list_of_test_train_data_filenames.append(X_train_orig_filename)
                 print(f"X_TRAIN pc noise to add: {add_X_train_noise}")
                 self.logger.info(f"X_TRAIN pc noise to add: {add_X_train_noise}")
+                print(
+                    f"Adding noise with STD Dev of {std_dev_scale} relative to each X_train columns."
+                )
                 self.logger.info(
                     f"Adding noise with STD Dev of {std_dev_scale} relative to each X_train columns."
                 )
