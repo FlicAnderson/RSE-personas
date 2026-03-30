@@ -14,6 +14,10 @@ def confusion_matrix_plotter(
     y_pred: pd.Series | np.ndarray,
     model_abbrv: str,
     tuning_method: str,
+    added_noise: bool,
+    x_noise: float,
+    y_noise: float,
+    noiseSDscale: float,
     seed_no: int,
     image_write_location: str | Path,
     current_date_info: str,
@@ -28,14 +32,19 @@ def confusion_matrix_plotter(
         bbox_inches=saveout_args_bboxin,
     )
 
+    if added_noise is True:
+        noisestr = f"Xnoise={round(x_noise * 100)}%, ynoise={round(y_noise * 100)}%, noiseSD={(noiseSDscale * 100)}%"
+    else:
+        noisestr = "No Noise"
+
     # Plot non-normalized confusion matrix
     titles_options = [
         (
-            f"{model_abbrv} with {tuning_method}: no normalization (Ntest={len(y_test)}, seed={seed_no})",
+            f"{model_abbrv} with {tuning_method}: no normalization (Ntest={len(y_test)}, seed={seed_no}, {noisestr})",
             None,
         ),
         (
-            f"{model_abbrv}with {tuning_method}: normalized (Ntest={len(y_test)}, seed={seed_no})",
+            f"{model_abbrv}with {tuning_method}: normalized (Ntest={len(y_test)}, seed={seed_no}, {noisestr})",
             "true",
         ),  # normalise on True value pcs
     ]
@@ -68,7 +77,7 @@ def confusion_matrix_plotter(
         disp.ax_.set_title(title)
         saveout_name = Path(
             image_write_location,
-            f"{model_abbrv}_{tuning_method}_seed{seed_no}_confusion_matrix_normalise{normalize}_N{len(y_test)}_{current_date_info}.pdf",
+            f"{model_abbrv}_{tuning_method}_seed{seed_no}_confusion_matrix_normalise{normalize}_N{len(y_test)}_{noisestr}_{current_date_info}.pdf",
         )
         plt.savefig(
             saveout_name,
