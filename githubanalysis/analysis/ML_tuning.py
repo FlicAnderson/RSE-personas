@@ -3,6 +3,7 @@ from logging import Logger
 import argparse
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from pathlib import Path
 import scipy.stats as stats
 import warnings
@@ -164,9 +165,7 @@ class BaseTuningSetup(DatasetSetup):
     STD_DEV_SCALE: float = 1.0
 
     def _log_name(self) -> str:
-        return (
-            f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{self.current_date_info}"
-        )
+        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_noise{self.add_noise}_{datetime.now().strftime('%Y-%m-%d')}"
 
     def __init__(
         self,
@@ -185,6 +184,10 @@ class BaseTuningSetup(DatasetSetup):
         STD_DEV_SCALE: float = 1.0,
     ) -> None:
         self.SEARCH_METHOD = SEARCH_METHOD
+        self.ML_CLASS = ML_CLASS
+        self.add_noise: bool = bool(
+            ADD_X_TRAIN_NOISE + ADD_Y_TRAIN_NOISE
+        )  # 0.0 + 0.0 = FALSE
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
             dataset_name=dataset_name,
@@ -192,7 +195,6 @@ class BaseTuningSetup(DatasetSetup):
             exists_ok=exists_ok,
             logger=logger,
         )
-        self.ML_CLASS = ML_CLASS
         assert self.ML_CLASS in [
             "RF",
             "HGBT",
@@ -1901,6 +1903,16 @@ def main():
     X_train_noise_arg: float = args.add_X_train_noise
     y_train_noise_arg: float = args.add_y_train_noise
     std_dev_scale_arg: float = args.std_dev_scale
+
+    # if logger is None:
+    #         self.logger = loggit.get_default_logger(
+    #             console=False,
+    #             set_level_to="DEBUG",
+    #             log_name=f"logs/{self._log_name()}.txt",
+    #             in_notebook=in_notebook,
+    #         )
+    #     else:
+    #         self.logger = logger
 
     tuning_setup = BaseTuningSetup(
         dataset_name="ML_tune",
