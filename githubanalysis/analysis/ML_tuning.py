@@ -165,7 +165,11 @@ class BaseTuningSetup(DatasetSetup):
     STD_DEV_SCALE: float = 1.0
 
     def _log_name(self) -> str:
-        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_Xnoise{self.ADD_X_TRAIN_NOISE}_ynoise{self.ADD_Y_TRAIN_NOISE}_StdDevScale{self.STD_DEV_SCALE}_{datetime.now().strftime('%Y-%m-%d')}"
+        if self.add_noise is True:
+            noisestr = f"Xnoise={round(self.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.STD_DEV_SCALE * 100)}%"
+        else:
+            noisestr = "noiseFalse"
+        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{noisestr}_{datetime.now().strftime('%Y-%m-%d')}"
 
     def __init__(
         self,
