@@ -39,6 +39,7 @@ from githubanalysis.setup_classes import DatasetSetup
 from githubanalysis.visualization.plot_confusion_matrices import (
     confusion_matrix_plotter,
 )
+from githubanalysis.analysis.add_noise import noised_X_train
 
 CLUSTERING_VARIABLES = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
     "pc_commit_created",
@@ -158,6 +159,10 @@ class HyperParamsGBT:
 
 
 class BaseTuningSetup(DatasetSetup):
+    ADD_X_TRAIN_NOISE: float = 0.0
+    ADD_Y_TRAIN_NOISE: float = 0.0
+    STD_DEV_SCALE: float = 1.0
+
     def _log_name(self) -> str:
         return f"ML_tuning_{self.SEARCH_METHOD}"
 
@@ -173,6 +178,9 @@ class BaseTuningSetup(DatasetSetup):
         N_ITER: int = 50,
         RANDOM_STATE: int = 42,
         SEARCH_METHOD: str = "RandomizedSearchCV",
+        ADD_X_TRAIN_NOISE: float = 0.0,
+        ADD_Y_TRAIN_NOISE: float = 0.0,
+        STD_DEV_SCALE: float = 1.0,
     ) -> None:
         self.SEARCH_METHOD = SEARCH_METHOD
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
@@ -188,6 +196,9 @@ class BaseTuningSetup(DatasetSetup):
             "HGBT",
             "GBT",
         ]
+        self.ADD_X_TRAIN_NOISE = ADD_X_TRAIN_NOISE
+        self.ADD_Y_TRAIN_NOISE = ADD_Y_TRAIN_NOISE
+        self.STD_DEV_SCALE = STD_DEV_SCALE
         self.le = LabelEncoder()
         self.N_OBS = N_OBS
         self.N_ITER = N_ITER
@@ -199,6 +210,12 @@ class BaseTuningSetup(DatasetSetup):
         ]
         self.N_JOBS = N_JOBS
         # self.SEARCH_METHOD options should match names of selected hyper-parameter optimisers from here: https://scikit-learn.org/stable/api/sklearn.model_selection.html#hyper-parameter-optimizers
+        assert self.ADD_X_TRAIN_NOISE <= 1.0, (
+            "This value for X Train noise to incorporate should be between 0.0 (0%) and 1.0 (100%) inclusive."
+        )
+        assert self.ADD_Y_TRAIN_NOISE <= 1.0, (
+            "This value for X Train noise to incorporate should be between 0.0 (0%) and 1.0 (100%) inclusive."
+        )
 
     def prep_data(
         self,
@@ -286,7 +303,14 @@ class BaseTuningSetup(DatasetSetup):
         self.logger.info(feat_range)
         return feat_range
 
-    def setup_test_train(self):
+    def setup_test_train(
+        self,
+        random_seed: int,
+        add_X_train_noise: float = 0.0,
+        add_y_train_noise: float = 0.0,
+        std_dev_scale: float = 1.0,
+        # intensity_of_data_to_noise: float | None = None,
+    ):
         # set X (data, no colnames, no personas), y (personas only)
         X, y = (
             self.RSE_info["data"],
@@ -308,9 +332,111 @@ class BaseTuningSetup(DatasetSetup):
             shuffle=True,  # shuffle_state,  # True by (sklearn) default
             stratify=self.RSE_info["target"],  # same as y; None by (sklearn) default
         )
-        self.X_train = X_train  # type: ignore
+
+        X_train_filename = f"preanalysis_X_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(X_train)}train_{self.current_date_info}.csv"
+        y_train_filename = f"preanalysis_y_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(y_train)}train_{self.current_date_info}.csv"
+        X_test_filename = f"preanalysis_X_test_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(X_test)}test_{self.current_date_info}.csv"
+        y_test_filename = f"preanalysis_y_test_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(y_test)}test_{self.current_date_info}.csv"
+
+        list_of_test_train_data_filenames = [
+            X_train_filename,
+            y_train_filename,
+            X_test_filename,
+            y_test_filename,
+        ]
+        list_of_test_train_data = [X_train, y_train, X_test, y_test]
+        print(len(list_of_test_train_data_filenames), len(list_of_test_train_data))
+
+        if add_X_train_noise != 0.0 or add_y_train_noise != 0.0:
+            # if either of them aren't zero, we want to do randomness stuff
+
+            if add_X_train_noise > 0.0:  # add noise!
+                orig_X_train = X_train.copy()
+                list_of_test_train_data.append(orig_X_train)
+                X_train_orig_filename = f"NO-NOISE_preanalysis_X_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(orig_X_train)}train_{self.current_date_info}.csv"
+                list_of_test_train_data_filenames.append(X_train_orig_filename)
+                print(f"X_TRAIN pc noise to add: {add_X_train_noise}")
+                self.logger.info(f"X_TRAIN pc noise to add: {add_X_train_noise}")
+
+                # this is the important part where noisy X_train is generated and saved to self as X_train
+                self.X_train = noised_X_train(
+                    X_train=X_train,
+                    random_seed=random_seed,
+                    percent_of_data_to_noise=add_X_train_noise,
+                    std_dev_scale=std_dev_scale,
+                )  # type: ignore
+
+                # compare original and noisy X_trains:
+                for old, new in zip(
+                    orig_X_train.T, self.X_train.T
+                ):  # .T means transpose,
+                    boolz = sum(old == new)
+                    print(
+                        f"Percentage of cells adjusted per column is: {(1 - boolz / len(old)) * 100}%"
+                    )
+                    self.logger.info(
+                        f"Percentage of cells adjusted per column is: {(1 - boolz / len(old)) * 100}%"
+                    )
+                    meanz = ((new.mean() - old.mean()) / abs(old.mean())) * 100
+                    print(f"Percentage Changes in column means are: {meanz}%")
+                    self.logger.info(
+                        f"Percentage Changes in column means are: {meanz}%"
+                    )
+                    stdz = (
+                        ((new.std(ddof=1)) - old.std(ddof=1))
+                        / abs(old.std(ddof=1))
+                        * 100
+                    )
+                    print(
+                        f"Percentage Changes in column standard deviations (ddof=1) are: {stdz}%"
+                    )
+                    self.logger.info(
+                        f"Percentage Changes in column standard deviations (ddof=1) are: {stdz}%"
+                    )
+
+            else:
+                self.X_train = X_train  # no Xtrain noise
+            assert len(list_of_test_train_data_filenames) == len(
+                list_of_test_train_data
+            ), (
+                f"Number of test_train_split filenames ({len(list_of_test_train_data_filenames)}) and data objects ({len(list_of_test_train_data)}) don't match; confirm this."
+            )
+
+            if add_y_train_noise > 0.0:
+                # do something to add y training data noise (e.g. swap labels)
+                print(
+                    "!!!! THIS CODE DOES NOT CURRENTLY HAVE NOISE ADDITION ENABLED FOR Y_TRAIN !!!!"
+                )
+                print(f"y_TRAIN pc noise to add: {add_y_train_noise}")
+                self.logger.info(f"y_TRAIN pc noise to add: {add_y_train_noise}")
+                orig_y_train = y_train.copy()
+                list_of_test_train_data.append(orig_y_train)
+                y_train_orig_filename = f"NO-NOISE_preanalysis_y_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(orig_y_train)}train_{self.current_date_info}.csv"
+                list_of_test_train_data_filenames.append(y_train_orig_filename)
+                ###### TODO: REMOVE vvvvTHISvvv ONCE ADDED NOISE CODE!! vvvvvvvvvvvv
+                self.y_train = y_train
+                pass  # TODO: add this y-train randomizing code soon
+            else:
+                self.y_train = y_train
+            assert len(list_of_test_train_data_filenames) == len(
+                list_of_test_train_data
+            ), (
+                f"Number of test_train_split filenames ({len(list_of_test_train_data_filenames)}) and data objects ({len(list_of_test_train_data)}) don't match; confirm this."
+            )
+
+        else:
+            self.logger.info("No random noise generation will be necessary.")
+            self.logger.info(
+                f"NOT adding noise, i.e. X_TRAIN pc noise to add: {add_X_train_noise}"
+            )
+            self.X_train = X_train  # type: ignore
+            self.logger.info(
+                f"NOT adding noise, i.e. y_TRAIN pc noise to add: {add_y_train_noise}"
+            )
+            self.y_train = y_train
+
+        # do not add noise to the 'test' data which will be used for comparisons and evaluation.
         self.X_test = X_test
-        self.y_train = y_train
         self.y_test = y_test
 
         # add size info from test and training datasets to self for future reporting.
@@ -321,7 +447,22 @@ class BaseTuningSetup(DatasetSetup):
 
         self.logger.info(f"{self.X_train_size = }")
         self.logger.info(f"{self.X_test_size = }")
-        # no return as all saved to self.
+
+        assert len(list_of_test_train_data_filenames) == len(list_of_test_train_data), (
+            f"Number of test_train_split filenames ({len(list_of_test_train_data_filenames)}) and data objects ({len(list_of_test_train_data)}) don't match; confirm this."
+        )
+        for file, data in zip(
+            list_of_test_train_data_filenames, list_of_test_train_data
+        ):
+            file_out = Path(self.data_write_location, file)
+            try:
+                data.tofile(file_out, sep=",")
+            except RuntimeError as e:
+                self.logger.error(
+                    f"ERROR: failed attempting to write out test_train_split data item {file} to file {file_out} with error: {e}"
+                )
+
+        # no function return as all saved to self.
 
     # Ref: https://scikit-learn.org/stable/auto_examples/model_selection/plot_randomized_search.html
     # Utility function to report best scores
@@ -1144,7 +1285,7 @@ class GBTParamSearch(AbstractParamSearch):
                 "(Final) Out of Bag Error: {:.5f} (smaller better)".format(
                     # 1-oob_score_ via https://scikit-learn.org/stable/auto_examples/ensemble/plot_ensemble_oob.html#id2
                     1
-                    - selected_gbtc.oob_score_  # this does exist after v1.3, which I'm running?
+                    - selected_gbtc.oob_score_  # this does exist after v1.3, which I'm running? # pyright: ignore[reportAttributeAccessIssue]
                     # I don't know what the IDE's problem is about?
                 )
             )
@@ -1718,11 +1859,35 @@ parser.add_argument(
     type=int,
     default=7,
 )
+parser.add_argument(
+    "-x",
+    "--add-X-train-noise",
+    metavar="XNOISE",
+    help="Replace certain proportion of X Train dataset (clustering variables data) with randomly sampled noise",
+    type=float,
+    default=0.0,
+)
+parser.add_argument(
+    "-y",
+    "--add-y-train-noise",
+    metavar="YNOISE",
+    help="Replace certain proportion of y Train dataset (cluster labels) with randomly sampled noise",
+    type=float,
+    default=0.0,
+)
+parser.add_argument(
+    "-d",  # d for standard DEEV
+    "--std-dev-scale",
+    metavar="STDDEVSCALE",
+    help="Determines the standard deviation of noise to generate in random part.",
+    type=float,
+    default=1.0,
+)
 
 
 def main():
     """
-    $ time python githubanalysis/analysis/ML_tuning.py -c RF -n 10000 -i 50 -r 69 -j 7
+    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -c RF -s RandomizedSearchCV -r 69 -j 7 -x 0.0 -y 0.0
     """
     args = parser.parse_args()
     class_arg: str = args.classifier_type
@@ -1731,6 +1896,9 @@ def main():
     rand_arg: int = args.random_state
     search_arg: str = args.search_method
     jobs_arg: int = args.job_number
+    X_train_noise_arg: float = args.add_X_train_noise
+    y_train_noise_arg: float = args.add_y_train_noise
+    std_dev_scale_arg: float = args.std_dev_scale
 
     tuning_setup = BaseTuningSetup(
         dataset_name="ML_tune",
@@ -1743,6 +1911,9 @@ def main():
         RANDOM_STATE=rand_arg,
         SEARCH_METHOD=search_arg,
         N_JOBS=jobs_arg,
+        ADD_X_TRAIN_NOISE=X_train_noise_arg,
+        ADD_Y_TRAIN_NOISE=y_train_noise_arg,
+        STD_DEV_SCALE=std_dev_scale_arg,
     )
 
     tuning_setup.logger.info(
@@ -1753,7 +1924,12 @@ def main():
     tuning_setup.prep_data()
 
     tuning_setup.logger.info("splitting dataset")
-    tuning_setup.setup_test_train()
+    tuning_setup.setup_test_train(
+        add_X_train_noise=tuning_setup.ADD_X_TRAIN_NOISE,
+        add_y_train_noise=tuning_setup.ADD_Y_TRAIN_NOISE,
+        random_seed=tuning_setup.RANDOM_STATE,
+        std_dev_scale=tuning_setup.STD_DEV_SCALE,
+    )
 
     tuning_setup.logger.info(
         f"searching for params using search method {search_arg} on ML classifier {class_arg}"
