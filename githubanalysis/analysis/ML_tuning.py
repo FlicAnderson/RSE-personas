@@ -165,10 +165,7 @@ class BaseTuningSetup(DatasetSetup):
     STD_DEV_SCALE: float = 1.0
 
     def _log_name(self) -> str:
-        if self.add_noise is True:
-            noisestr = f"Xnoise{int(self.ADD_X_TRAIN_NOISE * 100)}_ynoise{int(self.ADD_Y_TRAIN_NOISE * 100)}_noiseSD{int(self.STD_DEV_SCALE * 100)}"
-        else:
-            noisestr = "noiseFalse"
+        noisestr = f"Xnoise{int(self.ADD_X_TRAIN_NOISE * 100)}_ynoise{int(self.ADD_Y_TRAIN_NOISE * 100)}_noiseSD{int(self.STD_DEV_SCALE * 100)}"
         return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{noisestr}_{datetime.now().strftime('%Y-%m-%d')}"
 
     def __init__(
@@ -189,9 +186,6 @@ class BaseTuningSetup(DatasetSetup):
     ) -> None:
         self.SEARCH_METHOD = SEARCH_METHOD
         self.ML_CLASS = ML_CLASS
-        self.add_noise: bool = bool(
-            ADD_X_TRAIN_NOISE + ADD_Y_TRAIN_NOISE
-        )  # 0.0 + 0.0 = FALSE
         super().__init__(dataset_name, in_notebook, exists_ok, logger)
         self.ml_pipeline_dt = ML_Pipeline_Decision_Tree(
             dataset_name=dataset_name,
@@ -207,6 +201,9 @@ class BaseTuningSetup(DatasetSetup):
         self.ADD_X_TRAIN_NOISE = ADD_X_TRAIN_NOISE
         self.ADD_Y_TRAIN_NOISE = ADD_Y_TRAIN_NOISE
         self.STD_DEV_SCALE = STD_DEV_SCALE
+        self.add_noise: bool = bool(
+            ADD_X_TRAIN_NOISE + ADD_Y_TRAIN_NOISE
+        )  # 0.0 + 0.0 = FALSE
         self.le = LabelEncoder()
         self.N_OBS = N_OBS
         self.N_ITER = N_ITER
@@ -224,6 +221,10 @@ class BaseTuningSetup(DatasetSetup):
         assert self.ADD_Y_TRAIN_NOISE <= 1.0, (
             "This value for X Train noise to incorporate should be between 0.0 (0%) and 1.0 (100%) inclusive."
         )
+        if self.add_noise is True:
+            self.noisestr = f"Xnoise{round(self.ADD_X_TRAIN_NOISE * 100)}pc_ynoise{round(self.ADD_Y_TRAIN_NOISE * 100)}pc_noiseSD{round(self.STD_DEV_SCALE * 100)}pc"
+        else:
+            self.noisestr = "noiseFalse"
 
     def prep_data(
         self,
@@ -340,14 +341,10 @@ class BaseTuningSetup(DatasetSetup):
             shuffle=True,  # shuffle_state,  # True by (sklearn) default
             stratify=self.RSE_info["target"],  # same as y; None by (sklearn) default
         )
-        if self.add_noise is True:
-            noisestr = f"Xnoise={round(self.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.STD_DEV_SCALE * 100)}%"
-        else:
-            noisestr = "No Noise"
-        X_train_filename = f"preanalysis_X_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(X_train)}train_{noisestr}_{self.current_date_info}.csv"
-        y_train_filename = f"preanalysis_y_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(y_train)}train_{noisestr}_{self.current_date_info}.csv"
-        X_test_filename = f"preanalysis_X_test_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(X_test)}test_{noisestr}_{self.current_date_info}.csv"
-        y_test_filename = f"preanalysis_y_test_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(y_test)}test_{noisestr}_{self.current_date_info}.csv"
+        X_train_filename = f"preanalysis_X_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(X_train)}train_{self.noisestr}_{self.current_date_info}.csv"
+        y_train_filename = f"preanalysis_y_train_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(y_train)}train_{self.noisestr}_{self.current_date_info}.csv"
+        X_test_filename = f"preanalysis_X_test_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(X_test)}test_{self.noisestr}_{self.current_date_info}.csv"
+        y_test_filename = f"preanalysis_y_test_data_{self.ML_CLASS}_paramsearch_{self.SEARCH_METHOD}_N{self.N_OBS}Obs_N{self.N_ITER}iter_seed{self.RANDOM_STATE}_N{len(y_test)}test_{self.noisestr}_{self.current_date_info}.csv"
 
         list_of_test_train_data_filenames = [
             X_train_filename,
@@ -780,11 +777,7 @@ class HGBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
         )
-        if self.base_tuning_setup.add_noise is True:
-            noisestr = f"Xnoise={round(self.base_tuning_setup.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.base_tuning_setup.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.base_tuning_setup.STD_DEV_SCALE * 100)}%"
-        else:
-            noisestr = "No Noise"
-        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{noisestr}_{self.base_tuning_setup.current_date_info}.csv"
+        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.noisestr}_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
             self.base_tuning_setup.data_write_location, params_filename_out
         )
@@ -831,11 +824,8 @@ class HGBTParamSearch(AbstractParamSearch):
                 "test_predicted": y_pred,
             }
         )
-        if self.base_tuning_setup.add_noise is True:
-            noisestr = f"Xnoise={round(self.base_tuning_setup.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.base_tuning_setup.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.base_tuning_setup.STD_DEV_SCALE * 100)}%"
-        else:
-            noisestr = "No Noise"
-        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{noisestr}_{self.base_tuning_setup.current_date_info}.csv"
+
+        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.noisestr}_{self.base_tuning_setup.current_date_info}.csv"
         save_out = Path(self.base_tuning_setup.data_write_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
@@ -1210,11 +1200,7 @@ class GBTParamSearch(AbstractParamSearch):
             self.base_tuning_setup.logger.info(
                 f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
             )
-            if self.base_tuning_setup.add_noise is True:
-                noisestr = f"Xnoise={round(self.base_tuning_setup.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.base_tuning_setup.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.base_tuning_setup.STD_DEV_SCALE * 100)}%"
-            else:
-                noisestr = "No Noise"
-            params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{noisestr}_{self.base_tuning_setup.current_date_info}.csv"
+            params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.noisestr}_{self.base_tuning_setup.current_date_info}.csv"
             params_save_out = Path(
                 self.base_tuning_setup.data_write_location, params_filename_out
             )
@@ -1262,11 +1248,7 @@ class GBTParamSearch(AbstractParamSearch):
                 "test_predicted": y_pred,
             }
         )
-        if self.base_tuning_setup.add_noise is True:
-            noisestr = f"Xnoise={round(self.base_tuning_setup.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.base_tuning_setup.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.base_tuning_setup.STD_DEV_SCALE * 100)}%"
-        else:
-            noisestr = "No Noise"
-        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{noisestr}_{self.base_tuning_setup.current_date_info}.csv"
+        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.noisestr}_{self.base_tuning_setup.current_date_info}.csv"
         save_out = Path(self.base_tuning_setup.data_write_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
@@ -1642,11 +1624,7 @@ class RFParamSearch(AbstractParamSearch):
             f"Hyper-Parameter search using {self.base_tuning_setup.SEARCH_METHOD} method for {self.base_tuning_setup.ML_CLASS} took {hyper_param_search_time} seconds for {self.base_tuning_setup.N_ITER} across {len(self.params)} parameter categories, across {search.n_splits_} cross-validation splits (folds/iterations) and refitting the best model took {search.refit_time_} seconds."
         )
 
-        if self.base_tuning_setup.add_noise is True:
-            noisestr = f"Xnoise={round(self.base_tuning_setup.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.base_tuning_setup.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.base_tuning_setup.STD_DEV_SCALE * 100)}%"
-        else:
-            noisestr = "No Noise"
-        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{noisestr}_{self.base_tuning_setup.current_date_info}.csv"
+        params_filename_out = f"{self.base_tuning_setup.ML_CLASS}_paramsearch_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.noisestr}_{self.base_tuning_setup.current_date_info}.csv"
         params_save_out = Path(
             self.base_tuning_setup.data_write_location, params_filename_out
         )
@@ -1706,11 +1684,7 @@ class RFParamSearch(AbstractParamSearch):
                 "test_predicted": y_pred,
             }
         )
-        if self.base_tuning_setup.add_noise is True:
-            noisestr = f"Xnoise={round(self.base_tuning_setup.ADD_X_TRAIN_NOISE * 100)}%, ynoise={round(self.base_tuning_setup.ADD_Y_TRAIN_NOISE * 100)}%, noiseSD={(self.base_tuning_setup.STD_DEV_SCALE * 100)}%"
-        else:
-            noisestr = "No Noise"
-        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{noisestr}_{self.base_tuning_setup.current_date_info}.csv"
+        filename_out = f"test_prediction_data_{self.base_tuning_setup.ML_CLASS}_{self.base_tuning_setup.SEARCH_METHOD}_N{self.base_tuning_setup.N_OBS}Obs_N{self.base_tuning_setup.N_ITER}iter_seed{self.base_tuning_setup.RANDOM_STATE}_N{self.base_tuning_setup.y_test_size[0]}test_{self.base_tuning_setup.noisestr}_{self.base_tuning_setup.current_date_info}.csv"
         save_out = Path(self.base_tuning_setup.data_write_location, filename_out)
         true_df.to_csv(save_out, header=True, index=False)
 
@@ -1729,6 +1703,7 @@ class RFParamSearch(AbstractParamSearch):
             with N={best_params.n_estimators} trees in forest  \n
             at {self.base_tuning_setup.current_date_info} \n 
             with parameters: {selected_rfc.get_params(deep=False)} \n
+            with noise info: {self.base_tuning_setup.noisestr} \n
             and feature importances: 
         """
         )
@@ -1945,16 +1920,6 @@ def main():
     y_train_noise_arg: float = args.add_y_train_noise
     std_dev_scale_arg: float = args.std_dev_scale
 
-    # if logger is None:
-    #         self.logger = loggit.get_default_logger(
-    #             console=False,
-    #             set_level_to="DEBUG",
-    #             log_name=f"logs/{self._log_name()}.txt",
-    #             in_notebook=in_notebook,
-    #         )
-    #     else:
-    #         self.logger = logger
-
     tuning_setup = BaseTuningSetup(
         dataset_name="ML_tune",
         in_notebook=False,
@@ -1979,6 +1944,8 @@ def main():
     tuning_setup.prep_data()
 
     tuning_setup.logger.info("splitting dataset")
+    tuning_setup.logger.info(f"Adding noise {tuning_setup.add_noise}")
+    tuning_setup.logger.info(f"Noise info: {tuning_setup.noisestr}")
     tuning_setup.setup_test_train(
         add_X_train_noise=tuning_setup.ADD_X_TRAIN_NOISE,
         add_y_train_noise=tuning_setup.ADD_Y_TRAIN_NOISE,

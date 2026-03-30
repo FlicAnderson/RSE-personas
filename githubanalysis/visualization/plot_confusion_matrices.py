@@ -33,9 +33,9 @@ def confusion_matrix_plotter(
     )
 
     if added_noise is True:
-        noisestr = f"Xnoise={round(x_noise * 100)}%, ynoise={round(y_noise * 100)}%, noiseSD={(noiseSDscale * 100)}%"
+        noisestr = f"Xnoise{round(x_noise * 100)}pc_ynoise{round(y_noise * 100)}pc_noiseSD{round(noiseSDscale * 100)}pc"
     else:
-        noisestr = "No Noise"
+        noisestr = "noiseFalse"
 
     # Plot non-normalized confusion matrix
     titles_options = [
