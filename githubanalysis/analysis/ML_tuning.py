@@ -160,13 +160,12 @@ class HyperParamsGBT:
 
 
 class BaseTuningSetup(DatasetSetup):
-    ADD_X_TRAIN_NOISE: float = 0.0
-    ADD_Y_TRAIN_NOISE: float = 0.0
-    STD_DEV_SCALE: float = 1.0
+    ADD_X_TRAIN_NOISE: float
+    ADD_Y_TRAIN_NOISE: float
+    STD_DEV_SCALE: float
 
     def _log_name(self) -> str:
-        noisestr = self.noisestr
-        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{noisestr}_{datetime.now().strftime('%Y-%m-%d')}"
+        return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{datetime.now().strftime('%Y-%m-%d')}"
 
     def __init__(
         self,
