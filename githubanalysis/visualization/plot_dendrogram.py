@@ -117,13 +117,13 @@ class Dendrogrammer(DatasetSetup):
         dendrogram(
             ward_clustering,
             show_contracted=True,
-            # no_labels=show_leaves,  # set this to false to re-allow values under leafs.
+            no_labels=False,  # set this to false to re-allow values under leafs.
             color_threshold=4000,
             above_threshold_color="black",
             count_sort=False,
             distance_sort=True,
             show_leaf_counts=True,  # use =True to add numbers below leaves
-            truncate_mode="lastp",  # show only the last p merged clusters
+            truncate_mode="level",  # show only the last p merged clusters
             p=5,  # show only the last p merged clusters
             # leaf_rotation=360,  # this does nothing if show_leaf_counts is false
             leaf_rotation=90.0,
