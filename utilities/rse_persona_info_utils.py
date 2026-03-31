@@ -16,6 +16,16 @@ class RSE_personas_info:
         "Active Contributor",
     ]
 
+    cat_order = [
+        "ephemeral_contributor",
+        "occasional_contributor",
+        "project_organiser",
+        "moderate_contributor",
+        "low-process_closer",
+        "low-coding_closer",
+        "active_contributor",
+    ]
+
     persona_abbrevs = [
         "Ephm",
         "Occs",
