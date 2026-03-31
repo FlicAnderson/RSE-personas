@@ -841,6 +841,7 @@ class DataAnalyser(DatasetSetup):
             assert skip_cleaning is True, (
                 "problem encountered: skip_cleaning is not true but standard code pathway wasn't followed..."
             )
+            repo_stats_file = Path(self.data_read_location, repo_stats_file)
 
             if not isinstance(data, pd.DataFrame):
                 data = Path(self.data_read_location, data)
