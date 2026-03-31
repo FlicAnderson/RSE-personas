@@ -28,8 +28,16 @@ def noised_X_train(
         col_mean = col.mean()
         print(f"Mean of column {column} is: {col_mean}")
 
-        col_std = col.std()
+        # get stats using Bessel's correction as we're handling SAMPLES of data, rather than the entire population!
+        # (i.e. setting degrees of freedom to be calculated with N-1 rather than N as np default...)
+        col_std = col.std(ddof=1)
         print(f"StdDev of column is: {col_std}")
+        # get variances: https://numpy.org/doc/2.1/reference/generated/numpy.var.html
+        # good explanation about degrees of freedom: https://stackoverflow.com/a/35584364
+        col_var = col.var(ddof=1)
+        # NOTE: np.var() default uses degrees of freedom (ddof) =0, not N-1 which is the stats preference,
+        # so setting ddof=1 means N-1 is used as divisor instead of N.
+        print(f"(Sample) Variance of column is {col_var}")
 
         # randomly choose row indices to change by adding random values
         replace_these_indices = random_generator.choice(
@@ -53,8 +61,14 @@ def noised_X_train(
 
         col_mean = col.mean()
         print(f"NEW Mean of column {column} is: {col_mean}")
-        col_std = col.std()
+        col_std = col.std(ddof=1)
         print(f"NEW StdDev of column is: {col_std}")
+        # get variances: https://numpy.org/doc/2.1/reference/generated/numpy.var.html
+        # good explanation about degrees of freedom: https://stackoverflow.com/a/35584364
+        col_var = col.var(ddof=1)
+        # NOTE: np.var() default uses degrees of freedom (ddof) =0, not N-1 which is the stats preference,
+        # so setting ddof=1 means N-1 is used as divisor instead of N.
+        print(f"NEW (Sample) Variance of column is {col_var}")
 
     print("Noise generation loop completed")
 
