@@ -103,7 +103,7 @@ class PlotPCA(DatasetSetup):
             eigenvec2 = (PCA_3.explained_variance_ratio_)[1] * 100
             eigenvec3 = (PCA_3.explained_variance_ratio_)[2] * 100
             ax.set(
-                title="Principal Component Analysis of Repo-Individuals Interactions Data",
+                title=f"{self.dataset_name} Principal Component Analysis of Repo-Individuals Interactions Data",
                 xlabel=f"Eigenvector 1: ({round(eigenvec1, 2)}%)",
                 ylabel=f"Eigenvector 2: ({round(eigenvec2, 2)}%)",
                 zlabel=f"Eigenvector 3: ({round(eigenvec3, 2)}%)",
@@ -120,7 +120,7 @@ class PlotPCA(DatasetSetup):
             )
             plot_file = Path(
                 self.image_write_location,
-                f"{file_name}_{self.current_date_info}.{save_type}",
+                f"{self.dataset_name}_{file_name}_{self.current_date_info}.{save_type}",
             )
             plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
             plt.close()
@@ -202,7 +202,7 @@ class PlotPCA(DatasetSetup):
         eigenvec2 = (PCA_3.explained_variance_ratio_)[1] * 100
         eigenvec3 = (PCA_3.explained_variance_ratio_)[2] * 100
         ax.set(
-            title="Principal Component Analysis of Repo-Individuals Interactions Data",
+            title=f"{self.dataset_name} Principal Component Analysis of Repo-Individuals Interactions Data",
             xlabel=f"Eigenvector 1: ({round(eigenvec1, 2)}%)",
             ylabel=f"Eigenvector 2: ({round(eigenvec2, 2)}%)",
             zlabel=f"Eigenvector 3: ({round(eigenvec3, 2)}%)",
@@ -213,7 +213,7 @@ class PlotPCA(DatasetSetup):
 
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_{self.current_date_info}.{save_type}",
+            f"{self.dataset_name}_{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
@@ -255,7 +255,8 @@ class PlotPCA(DatasetSetup):
         plt.xlabel(f"Principal Component 1: ({round(eigenvec1, 2)}%)", fontsize=20)
         plt.ylabel(f"Principal Component 2: ({round(eigenvec2, 2)}%)", fontsize=20)
         plt.title(
-            "Principal Component Analysis of Repo-Individuals Interactions", fontsize=20
+            f"{self.dataset_name} Principal Component Analysis of Repo-Individuals Interactions",
+            fontsize=20,
         )
         if clustering_data_labelled["cluster_labels"].nunique() == 2:
             targets = [0, 1]
@@ -289,7 +290,7 @@ class PlotPCA(DatasetSetup):
 
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_{self.current_date_info}.{save_type}",
+            f"{self.dataset_name}_{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()

@@ -73,11 +73,11 @@ class Dendrogrammer(DatasetSetup):
         )
         # plt.savefig(f"../../images/dendrogram_ward_euclidian_x{n_repos}repos_x{len(clustering_data)}project_individuals_{current_date_info}.png")
         plt.title(
-            f"Hierarchical Clustering (Ward Method, Euclidian Distance), N repo-individuals={len(clustering_data)}."
+            f"{self.dataset_name} Hierarchical Clustering (Ward Method, Euclidian Distance), N repo-individuals={len(clustering_data)}."
         )
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_{self.current_date_info}.{save_type}",
+            f"{self.dataset_name}_{file_name}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
@@ -93,7 +93,7 @@ class Dendrogrammer(DatasetSetup):
         assert isinstance(show_leaves, bool), "show_leaves must be boolean"
         # THIS IS THE SCIPY HIERARCHICAL CLUSTERING METHODS
         self.logger.info(
-            f"Attempting to use {len(clustering_data)} repo-individuals dataset for clustering"
+            f"Attempting to use {len(clustering_data)} repo-individuals dataset for clustering WITH LEAFCOUNTS"
         )
 
         label_color_dict = [
@@ -129,11 +129,11 @@ class Dendrogrammer(DatasetSetup):
         )
         # plt.savefig(f"../../images/dendrogram_ward_euclidian_x{n_repos}repos_x{len(clustering_data)}project_individuals_{current_date_info}.png")
         plt.title(
-            f"Hierarchical Clustering (Ward Method, Euclidian Distance), N repo-individuals={len(clustering_data)}."
+            f"{self.dataset_name}_Hierarchical Clustering (Ward Method, Euclidian Distance), N repo-individuals={len(clustering_data)}."
         )
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_leaves_{show_leaves}_{self.current_date_info}.{save_type}",
+            f"{self.dataset_name}_{file_name}_leaves_{show_leaves}_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
