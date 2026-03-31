@@ -349,7 +349,7 @@ class DataAnalyser(DatasetSetup):
         )
         self.writeout_data_to_csv(
             cleaned_data_with_interactions,
-            filename=f"{self.dataset_name}_sample_cleaned_data_with_interactions_",
+            filename="sample_cleaned_data_with_interactions_",
         )
 
         assert (
@@ -439,7 +439,7 @@ class DataAnalyser(DatasetSetup):
             f"Top 15 RS Repo Languages from Dataset: {dataset_languages.loc[0:14]}"
         )
         writeout_to_languages = self.writeout_data_to_csv(
-            df=dataset_languages, filename=f"{self.dataset_name}_sample_languages_info_"
+            df=dataset_languages, filename="sample_languages_info_"
         )
         self.logger.info(
             f"dataset languages information written out to {writeout_to_languages}"
@@ -538,7 +538,7 @@ class DataAnalyser(DatasetSetup):
         # write out results df
         writeout_to_CHscores = self.writeout_data_to_csv(
             eval_df,
-            f"{self.dataset_name}_sample_calinski-harabasz_scores_across_N_clusters_",
+            "sample_calinski-harabasz_scores_across_N_clusters_",
         )
         self.logger.info(
             f"CH scores for {len(eval_df)} clusters written out to file {writeout_to_CHscores}."
@@ -621,7 +621,7 @@ class DataAnalyser(DatasetSetup):
         # write out dataset used for clustering:
         self.writeout_data_to_csv(
             labelled_data,
-            f"{self.dataset_name}_clustered_sample_data_with_labels_",
+            "clustered_sample_data_with_labels_",
         )
         return labelled_data
 
@@ -652,7 +652,7 @@ class DataAnalyser(DatasetSetup):
         # write out PCA eigenvalues to csv:
         self.writeout_data_to_csv(
             PCA_3_df,
-            f"{self.dataset_name}_sample_PCA_eigenvalues_per_repo-individual_",
+            "sample_PCA_eigenvalues_per_repo-individual_",
         )
 
         self.logger.info(
@@ -715,7 +715,7 @@ class DataAnalyser(DatasetSetup):
         # write out PCA importance rankings to csv:
         self.writeout_data_to_csv(
             PCA_features,
-            f"{self.dataset_name}_sample_feature_importance_data_",
+            "sample_feature_importance_data_",
         )
         return PCA_features
 
@@ -766,7 +766,7 @@ class DataAnalyser(DatasetSetup):
 
             self.writeout_data_to_csv(
                 data,
-                filename=f"{self.dataset_name}_sample_post-subset_data_",
+                filename="sample_post-subset_data_",
             )
 
             interactions_data_file = Path(
@@ -804,7 +804,7 @@ class DataAnalyser(DatasetSetup):
             )
             self.writeout_data_to_csv(
                 cleaned_data,
-                filename=f"{self.dataset_name}_sample_cleaned_data_",
+                filename="sample_cleaned_data_",
             )
 
             interact = pd.read_csv(
@@ -828,7 +828,7 @@ class DataAnalyser(DatasetSetup):
 
             write_out_to_combined = self.writeout_data_to_csv(
                 df=cleaned_data_with_interactions,
-                filename=f"{self.dataset_name}cleaned_data_with_interaction-data-per-dev_",
+                filename="cleaned_data_with_interaction-data-per-dev_",
             )
             self.logger.info(
                 f"Combined cleaned_data and interaction_data written out to {write_out_to_combined}"
@@ -894,7 +894,7 @@ class DataAnalyser(DatasetSetup):
 
         # write out relevant repo stats:
         write_out_to_repo_stats = self.writeout_data_to_csv(
-            df=repo_stats, filename=f"{self.dataset_name}_summarised_SAMPLE_repos_stats"
+            df=repo_stats, filename="summarised_SAMPLE_repos_stats"
         )
         self.logger.info(
             f"Relevant repo_stats subset written out to {write_out_to_repo_stats}"
@@ -918,7 +918,7 @@ class DataAnalyser(DatasetSetup):
         n_users = len(cleaned_data_with_interactions)
         write_out_to_preprocessed = self.writeout_data_to_csv(
             cleaned_data_with_interactions,
-            f"{self.dataset_name}_pre-clustering_dataset_x{n_repos}repos_x{n_users}project-individuals_",
+            f"pre-clustering_dataset_x{n_repos}repos_x{n_users}project-individuals_",
         )
         self.logger.info(
             f"Pre-clustering sample data written out to {write_out_to_preprocessed}"
@@ -945,9 +945,7 @@ class DataAnalyser(DatasetSetup):
             cleaned_data_with_interactions=cleaned_data_with_interactions,
         )
 
-        self.writeout_data_to_csv(
-            clustering_data, filename=f"{self.dataset_name}_sample_clustering_data"
-        )
+        self.writeout_data_to_csv(clustering_data, filename="sample_clustering_data")
         # clustering
         self.logger.info(f"Clustering dataset has shape {clustering_data.shape}")
         # plot dendrogram
