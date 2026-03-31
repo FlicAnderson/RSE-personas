@@ -349,7 +349,7 @@ class DataAnalyser(DatasetSetup):
         )
         self.writeout_data_to_csv(
             cleaned_data_with_interactions,
-            filename="sample_cleaned_data_with_interactions_",
+            filename=f"{self.dataset_name}_sample_cleaned_data_with_interactions_",
         )
 
         assert (
@@ -403,7 +403,7 @@ class DataAnalyser(DatasetSetup):
         # cleaned_data_with_interactions.rename(columns={"breadth_interactions": "CBRI"}) # probably clearer if I don't rename it :C
 
     def writeout_data_to_csv(self, df: pd.DataFrame, filename: str | Path):
-        filestr = f"{filename}_{self.current_date_info}.csv"
+        filestr = f"{self.dataset_name}_{filename}_{self.current_date_info}.csv"
         filepath = Path(self.data_write_location, filestr)
         df.to_csv(path_or_buf=filepath, header=True, index=False)
         return filepath
@@ -439,7 +439,7 @@ class DataAnalyser(DatasetSetup):
             f"Top 15 RS Repo Languages from Dataset: {dataset_languages.loc[0:14]}"
         )
         writeout_to_languages = self.writeout_data_to_csv(
-            df=dataset_languages, filename="sample_languages_info_"
+            df=dataset_languages, filename=f"{self.dataset_name}_sample_languages_info_"
         )
         self.logger.info(
             f"dataset languages information written out to {writeout_to_languages}"
@@ -458,15 +458,17 @@ class DataAnalyser(DatasetSetup):
             data=over1pclanguages, x="repo_language", y="pc_repos_using_language"
         )
         if n_repos is not None and isinstance(n_repos, int):
-            titletxt = f"Percentage (>=1%) of SAMPLE Repos using 'Language' (N repos = {n_repos})"
+            titletxt = f"Percentage (>=1%) of {self.dataset_name} Repos using 'Language' (N repos = {n_repos})"
         else:
-            titletxt = "Percentage (>=1%) of SAMPLE Repos using 'Language'"
+            titletxt = (
+                f"Percentage (>=1%) of {self.dataset_name} Repos using 'Language'"
+            )
         plt.title(titletxt)
         plt.xticks(rotation=90)
         plt.tight_layout()
         plot_file = Path(
             self.image_write_location,
-            f"sample_languages_{self.current_date_info}.{save_type}",
+            f"{self.dataset_name}_sample_languages_{self.current_date_info}.{save_type}",
         )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
@@ -536,7 +538,7 @@ class DataAnalyser(DatasetSetup):
         # write out results df
         writeout_to_CHscores = self.writeout_data_to_csv(
             eval_df,
-            "sample_calinski-harabasz_scores_across_N_clusters_",
+            f"{self.dataset_name}_sample_calinski-harabasz_scores_across_N_clusters_",
         )
         self.logger.info(
             f"CH scores for {len(eval_df)} clusters written out to file {writeout_to_CHscores}."
@@ -553,9 +555,11 @@ class DataAnalyser(DatasetSetup):
         sns.barplot(data=df, x="N_clusters_evaluated", y="CH_score")
         plot_file = Path(
             self.image_write_location,
-            f"{file_name}_{self.current_date_info}.{save_type}",
+            f"{self.dataset_name}_{file_name}_{self.current_date_info}.{save_type}",
         )
-        plt.title("Calinski-Harabasz Scores for different N Clusters")
+        plt.title(
+            f"{self.dataset_name}_Calinski-Harabasz Scores for different N Clusters"
+        )
         plt.savefig(fname=plot_file, format=save_type, bbox_inches="tight")
         plt.close()
         self.logger.info(f"Plot saved out to file {plot_file}.")
@@ -617,7 +621,7 @@ class DataAnalyser(DatasetSetup):
         # write out dataset used for clustering:
         self.writeout_data_to_csv(
             labelled_data,
-            "clustered_sample_data_with_labels_",
+            f"{self.dataset_name}_clustered_sample_data_with_labels_",
         )
         return labelled_data
 
@@ -648,7 +652,7 @@ class DataAnalyser(DatasetSetup):
         # write out PCA eigenvalues to csv:
         self.writeout_data_to_csv(
             PCA_3_df,
-            "sample_PCA_eigenvalues_per_repo-individual_",
+            f"{self.dataset_name}_sample_PCA_eigenvalues_per_repo-individual_",
         )
 
         self.logger.info(
@@ -711,7 +715,7 @@ class DataAnalyser(DatasetSetup):
         # write out PCA importance rankings to csv:
         self.writeout_data_to_csv(
             PCA_features,
-            "sample_feature_importance_data_",
+            f"{self.dataset_name}_sample_feature_importance_data_",
         )
         return PCA_features
 
@@ -725,104 +729,143 @@ class DataAnalyser(DatasetSetup):
         repo_stats_file: str | Path,
         max_clusters_to_eval: int = 10,
         n_clusters_to_use: int | None = None,
+        skip_cleaning: bool = False,  # this should be filepath of the appropriately subset data for clustering.
     ):
-        # if data is file:
+        if skip_cleaning is False:
+            # if data is file:
 
-        # if data is df:
-        if isinstance(data, pd.DataFrame):
-            assert data.empty is False, "Dataframe data is empty; check inputs."
-            self.logger.info(f"data is df, with shape: {data.shape}.")
+            # if data is df:
+            if isinstance(data, pd.DataFrame):
+                assert data.empty is False, "Dataframe data is empty; check inputs."
+                self.logger.info(f"data is df, with shape: {data.shape}.")
 
-        self.logger.info(
-            f"Before subsetting: Number of unique gh_usernames in sample is: {data.groupby('gh_username').ngroups}."
-        )
-        self.logger.info(
-            f"Before subsetting: Number of gh_usernames appearing in more than one repository in this sample is: {len(data.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
-        )
-
-        self.logger.info(
-            f"Before subsetting: Number of repo-individuals (repo_name plus gh_username combos) in sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
-        )
-        self.logger.info(
-            f"Before subsetting: Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
-        )
-
-        # if subset_repos_file is not None:
-        if subset_repos_file is not None:
-            data = self.subset_sample_to_repos(
-                data,
-                subset_repos_file=subset_repos_file,
-                subset_pc=pc_subset,
+            self.logger.info(
+                f"Before subsetting: Number of unique gh_usernames in sample is: {data.groupby('gh_username').ngroups}."
             )
-        # read in file of repos
-        # subset data df to include only repo_names from file
-        # otherwise use complete data df.
+            self.logger.info(
+                f"Before subsetting: Number of gh_usernames appearing in more than one repository in this sample is: {len(data.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
+            )
 
-        self.writeout_data_to_csv(
-            data,
-            filename="sample_post-subset_data_",
-        )
+            self.logger.info(
+                f"Before subsetting: Number of repo-individuals (repo_name plus gh_username combos) in sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
+            )
+            self.logger.info(
+                f"Before subsetting: Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
+            )
 
-        interactions_data_file = Path(self.data_read_location, interactions_data_file)
-        repo_stats_file = Path(self.data_read_location, repo_stats_file)
+            # if subset_repos_file is not None:
+            if subset_repos_file is not None:
+                data = self.subset_sample_to_repos(
+                    data,
+                    subset_repos_file=subset_repos_file,
+                    subset_pc=pc_subset,
+                )
+            # read in file of repos
+            # subset data df to include only repo_names from file
+            # otherwise use complete data df.
 
-        self.logger.info(
-            f"Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
-        )
+            self.writeout_data_to_csv(
+                data,
+                filename=f"{self.dataset_name}_sample_post-subset_data_",
+            )
 
-        # self.logger.info("Team size of repositories in sample is: TODO.")
-        # min, max, mean, stddev, size of repos - n of contributors via API, n of repo-individuals.
+            interactions_data_file = Path(
+                self.data_read_location, interactions_data_file
+            )
+            repo_stats_file = Path(self.data_read_location, repo_stats_file)
 
-        self.logger.info(
-            f"Number of unique gh_usernames in sample is: {data.groupby('gh_username').ngroups}."
-        )
-        self.logger.info(
-            f"Number of gh_usernames appearing in more than one repository in this sample is: {len(data.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
-        )
+            self.logger.info(
+                f"Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
+            )
 
-        self.logger.info(
-            f"Number of repo-individuals (repo_name plus gh_username combos) in sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
-        )
+            # self.logger.info("Team size of repositories in sample is: TODO.")
+            # min, max, mean, stddev, size of repos - n of contributors via API, n of repo-individuals.
 
-        # log out:
-        # number of probable 'bots'
-        # number of 'ghost' users
-        # number of repo-individuals who come from issues API, or commits API, or appear in both APIs.
+            self.logger.info(
+                f"Number of unique gh_usernames in sample is: {data.groupby('gh_username').ngroups}."
+            )
+            self.logger.info(
+                f"Number of gh_usernames appearing in more than one repository in this sample is: {len(data.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
+            )
 
-        # clean data and rename columns as req
+            self.logger.info(
+                f"Number of repo-individuals (repo_name plus gh_username combos) in sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
+            )
 
-        cleaned_data = self.clean_and_contributors(
-            data,
-        )
-        self.writeout_data_to_csv(
-            cleaned_data,
-            filename="sample_cleaned_data_",
-        )
+            # log out:
+            # number of probable 'bots'
+            # number of 'ghost' users
+            # number of repo-individuals who come from issues API, or commits API, or appear in both APIs.
 
-        interact = pd.read_csv(
-            interactions_data_file,
-            header=0,
-            low_memory=False,
-        )
+            # clean data and rename columns as req
 
-        self.logger.info(f"Column names from cleaned_df: {cleaned_data.columns}")
-        self.logger.info(f"Column names from interactions file: {interact.columns}")
-        # add interaction data, merge onto cleaned_data.
-        cleaned_data_with_interactions = self.combine_cleaned_data_with_interactions(
-            cleaned_data=cleaned_data,
-            all_interaction_data=interact,
-        )
-        self.logger.info(
-            f"Combined cleaned_data_with_interaction_data df has shape: {cleaned_data_with_interactions.shape}."
-        )
+            cleaned_data = self.clean_and_contributors(
+                data,
+            )
+            self.writeout_data_to_csv(
+                cleaned_data,
+                filename=f"{self.dataset_name}_sample_cleaned_data_",
+            )
 
-        write_out_to_combined = self.writeout_data_to_csv(
-            df=cleaned_data_with_interactions,
-            filename="cleaned_data_with_interaction-data-per-dev_",
-        )
-        self.logger.info(
-            f"Combined cleaned_data and interaction_data written out to {write_out_to_combined}"
-        )
+            interact = pd.read_csv(
+                interactions_data_file,
+                header=0,
+                low_memory=False,
+            )
+
+            self.logger.info(f"Column names from cleaned_df: {cleaned_data.columns}")
+            self.logger.info(f"Column names from interactions file: {interact.columns}")
+            # add interaction data, merge onto cleaned_data.
+            cleaned_data_with_interactions = (
+                self.combine_cleaned_data_with_interactions(
+                    cleaned_data=cleaned_data,
+                    all_interaction_data=interact,
+                )
+            )
+            self.logger.info(
+                f"Combined cleaned_data_with_interaction_data df has shape: {cleaned_data_with_interactions.shape}."
+            )
+
+            write_out_to_combined = self.writeout_data_to_csv(
+                df=cleaned_data_with_interactions,
+                filename=f"{self.dataset_name}cleaned_data_with_interaction-data-per-dev_",
+            )
+            self.logger.info(
+                f"Combined cleaned_data and interaction_data written out to {write_out_to_combined}"
+            )
+        else:  # skip the cleaning and jump ahead to rest of analysis, reading in the file:
+            self.logger.info(
+                "SKIPPING PRE-PROCESSING OF DATA {data} AND USING DATAFILE AS-IS FOR CLUSTERING."
+            )
+
+            assert skip_cleaning is True, (
+                "problem encountered: skip_cleaning is not true but standard code pathway wasn't followed..."
+            )
+
+            if not isinstance(data, pd.DataFrame):
+                data = Path(self.data_read_location, data)
+                cleaned_data_with_interactions = pd.read_csv(
+                    skip_cleaning,
+                    header=0,
+                    low_memory=False,
+                )
+            else:
+                cleaned_data_with_interactions = data
+
+            self.logger.info(
+                f"Number of repositories in sample is: {cleaned_data_with_interactions.groupby('repo_name').ngroups}."
+            )
+
+            self.logger.info(
+                f"Number of unique gh_usernames in sample is: {cleaned_data_with_interactions.groupby('gh_username').ngroups}."
+            )
+            self.logger.info(
+                f"Number of gh_usernames appearing in more than one repository in this sample is: {len(cleaned_data_with_interactions.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
+            )
+
+            self.logger.info(
+                f"Number of repo-individuals (repo_name plus gh_username combos) in sample is: {cleaned_data_with_interactions.groupby(['repo_name', 'gh_username']).ngroups}."
+            )
 
         # write out sample repos to file:
         sample_repo_names = list(cleaned_data_with_interactions.repo_name.unique())
@@ -850,7 +893,7 @@ class DataAnalyser(DatasetSetup):
 
         # write out relevant repo stats:
         write_out_to_repo_stats = self.writeout_data_to_csv(
-            df=repo_stats, filename="summarised_SAMPLE_repos_stats"
+            df=repo_stats, filename=f"{self.dataset_name}_summarised_SAMPLE_repos_stats"
         )
         self.logger.info(
             f"Relevant repo_stats subset written out to {write_out_to_repo_stats}"
@@ -874,10 +917,10 @@ class DataAnalyser(DatasetSetup):
         n_users = len(cleaned_data_with_interactions)
         write_out_to_preprocessed = self.writeout_data_to_csv(
             cleaned_data_with_interactions,
-            f"pre-processing_dataset_x{n_repos}repos_x{n_users}project-individuals_",
+            f"{self.dataset_name}_pre-clustering_dataset_x{n_repos}repos_x{n_users}project-individuals_",
         )
         self.logger.info(
-            f"Processed sample data written out to {write_out_to_preprocessed}"
+            f"Pre-clustering sample data written out to {write_out_to_preprocessed}"
         )
 
         clustering_variables = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
@@ -901,7 +944,9 @@ class DataAnalyser(DatasetSetup):
             cleaned_data_with_interactions=cleaned_data_with_interactions,
         )
 
-        self.writeout_data_to_csv(clustering_data, filename="sample_clustering_data")
+        self.writeout_data_to_csv(
+            clustering_data, filename=f"{self.dataset_name}_sample_clustering_data"
+        )
         # clustering
         self.logger.info(f"Clustering dataset has shape {clustering_data.shape}")
         # plot dendrogram
@@ -916,6 +961,10 @@ class DataAnalyser(DatasetSetup):
             clustering_data=clustering_data,
             colours=["#D50032", "#1D2A3D", "#FDBC42"],
         )
+        dendrogrammer.plot_dendrogram_with_leaf_counts(
+            clustering_data=clustering_data,
+            show_leaves=True,
+        )  # REPEAT PLOTTING LEAF COUNTS
 
         # clustering:
         # run clustering with diff N of clusters and calculate calinski_harabasz score to evaluate
@@ -1086,6 +1135,14 @@ parser.add_argument(
     action="store_true",
     default=False,
 )
+parser.add_argument(
+    "-k",
+    "--skip-cleaning",
+    help="This argument will skip subsetting, data cleaning and etc; ASSUMES INTERACTIONS DATA IS JOINED AND COLUMN NAMES ARE AS EXPECTED SUBSEQUENT TO CLEANING (e.g. matches format of pre-processing_dataset_xNrepos_xNproject-individuals__2025-05-12.csv )",
+    type=bool,
+    default=False,
+    required=True,
+)
 
 
 def main():
@@ -1099,6 +1156,7 @@ def main():
     n_clusters_arg: int | None = args.n_clusters
     run_name_arg: str = args.dataset_run_name
     force_exists_ok: bool = args.force_reuse_folder
+    skip_cleaning_arg: bool = args.skip_cleaning
 
     dataanalyser = DataAnalyser(
         in_notebook=False,
@@ -1117,7 +1175,8 @@ def main():
         interactions: {interactions_arg}; 
         repo_stats summary data: {repo_stats_arg}; 
         max number of clusters to eval: {max_clusters_arg}; 
-        number of clusters to use: {n_clusters_arg};.
+        number of clusters to use: {n_clusters_arg};
+        skip_cleaning: {skip_cleaning_arg}.
         """
     )
 
@@ -1137,6 +1196,7 @@ def main():
             repo_stats_file=repo_stats_arg,
             max_clusters_to_eval=max_clusters_arg,
             n_clusters_to_use=n_clusters_arg,
+            skip_cleaning=skip_cleaning_arg,
         )
     except Exception as e:
         dataanalyser.logger.error(
