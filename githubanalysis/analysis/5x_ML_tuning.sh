@@ -25,21 +25,23 @@
 #source /.../clonezone/RSE-personas/coding-smart-github/bin/activate
 
 # Run your Python program
+#echo "BEGINNING TUNING RUN"
 echo "BEGINNING MULTI-SEED TUNING RUNS"
 
 echo "============================= Run 1: seed 69 =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 50000 -i 25 -r 69 -c HGBT -s GridSearchCV -j 16
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 2: seed 74 =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 50000 -i 25 -r 74 -c HGBT -s GridSearchCV -j 16
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 3: seed 50 =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 50000 -i 25 -r 50 -c HGBT -s GridSearchCV -j 16
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 4: seed 42 =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 50000 -i 25 -r 42 -c HGBT -s GridSearchCV -j 16
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 5: seed 88 =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 50000 -i 25 -r 88 -c HGBT -s GridSearchCV -j 16
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "COMPLETE"
+

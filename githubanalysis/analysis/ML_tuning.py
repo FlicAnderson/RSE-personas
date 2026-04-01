@@ -163,6 +163,7 @@ class BaseTuningSetup(DatasetSetup):
     ADD_X_TRAIN_NOISE: float
     ADD_Y_TRAIN_NOISE: float
     STD_DEV_SCALE: float
+    datafile_to_ML: str
 
     def _log_name(self) -> str:
         return f"ML_tuning_{self.ML_CLASS}_{self.SEARCH_METHOD}_{datetime.now().strftime('%Y-%m-%d')}"
@@ -182,6 +183,7 @@ class BaseTuningSetup(DatasetSetup):
         ADD_X_TRAIN_NOISE: float = 0.0,
         ADD_Y_TRAIN_NOISE: float = 0.0,
         STD_DEV_SCALE: float = 1.0,
+        datafile_to_ML: str = "None",
     ) -> None:
         self.SEARCH_METHOD = SEARCH_METHOD
         self.ML_CLASS = ML_CLASS
@@ -197,6 +199,7 @@ class BaseTuningSetup(DatasetSetup):
             "HGBT",
             "GBT",
         ]
+        self.datafile_to_ML = datafile_to_ML
         self.ADD_X_TRAIN_NOISE = ADD_X_TRAIN_NOISE
         self.ADD_Y_TRAIN_NOISE = ADD_Y_TRAIN_NOISE
         self.STD_DEV_SCALE = STD_DEV_SCALE
@@ -227,11 +230,18 @@ class BaseTuningSetup(DatasetSetup):
 
     def prep_data(
         self,
-        filename="sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv",
     ):
+        if (
+            self.datafile_to_ML == "None"
+        ):  # this is actually presumed to be a string, I just used the word None :s
+            datafile = (
+                "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv"
+            )
+        else:
+            datafile = self.datafile_to_ML
         data_file = Path(
             self.data_location,
-            filename,
+            datafile,
         )
         classified_df = pd.read_csv(
             data_file,
@@ -1904,11 +1914,19 @@ parser.add_argument(
     type=float,
     default=1.0,
 )
+parser.add_argument(
+    "-f",  # f for data fILE
+    "--datafile-to-ML",
+    metavar="DATA",
+    help="the file to run ML tuning pipeline on. If None, the default Set1 dataset is run.",
+    type=str,
+    default=None,
+)
 
 
 def main():
     """
-    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -c RF -s RandomizedSearchCV -r 69 -j 7 -x 0.0 -y 0.0
+    $ time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 50 -c RF -s RandomizedSearchCV -r 69 -j 7 -x 0.0 -y 0.0 -f None
     """
     args = parser.parse_args()
     class_arg: str = args.classifier_type
@@ -1920,6 +1938,7 @@ def main():
     X_train_noise_arg: float = args.add_X_train_noise
     y_train_noise_arg: float = args.add_y_train_noise
     std_dev_scale_arg: float = args.std_dev_scale
+    datafile_to_ML_arg: str = args.datafile_to_ML
 
     tuning_setup = BaseTuningSetup(
         dataset_name="ML_tune",
@@ -1935,6 +1954,7 @@ def main():
         ADD_X_TRAIN_NOISE=X_train_noise_arg,
         ADD_Y_TRAIN_NOISE=y_train_noise_arg,
         STD_DEV_SCALE=std_dev_scale_arg,
+        datafile_to_ML=datafile_to_ML_arg,
     )
 
     tuning_setup.logger.info(

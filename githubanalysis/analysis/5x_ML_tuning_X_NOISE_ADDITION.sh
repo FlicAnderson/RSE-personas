@@ -26,21 +26,22 @@
 
 # Run your Python program
 echo "BEGINNING MULTI-SEED TUNING RUNS WITH NOISE!"
+echo "dataset: equal_set1_134_ABC"
 
 echo "============================= Run 0: seed 69: No X Noise =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0
+time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 1a: seed 69: 10% X Noise @ 1SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.1 -y 0.0 -d 1.0
+time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.1 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 1b: seed 69: 20% X Noise @ 1SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.2 -y 0.0 -d 1.0
+time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.2 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 2a: seed 69: 10% X Noise @ 1.5SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.1 -y 0.0 -d 1.5
+time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.1 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 2b: seed 69: 20% X Noise @ 1.5SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.2 -y 0.0 -d 1.5
+time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.2 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 
 echo "COMPLETE"
