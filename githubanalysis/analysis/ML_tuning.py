@@ -843,7 +843,7 @@ class HGBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             f"""
             For {self.base_tuning_setup.ML_CLASS} model trained on: \n
-            datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            datafile: {self.base_tuning_setup.datafile_to_ML} \n
             with N observations (repo-individuals): {self.base_tuning_setup.N_OBS} \n
             hyper-parameter-searched with search method {self.base_tuning_setup.SEARCH_METHOD} \n 
             on {self.base_tuning_setup.N_ITER} iterations \n
@@ -1267,7 +1267,7 @@ class GBTParamSearch(AbstractParamSearch):
         self.base_tuning_setup.logger.info(
             f"""
             For {self.base_tuning_setup.ML_CLASS} model trained on: \n
-            datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            datafile: {self.base_tuning_setup.datafile_to_ML} \n
             with N observations (repo-individuals): {self.base_tuning_setup.N_OBS} \n
             hyper-parameter-searched with search method {self.base_tuning_setup.SEARCH_METHOD} \n 
             on {self.base_tuning_setup.N_ITER} iterations \n
@@ -1703,9 +1703,10 @@ class RFParamSearch(AbstractParamSearch):
 
         self.base_tuning_setup.logger.info(
             f"""
-            For Random Forest model trained on: \n
-            datafile: sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv \n
+            For {self.base_tuning_setup.ML_CLASS} model trained on: \n
+            datafile: {self.base_tuning_setup.datafile_to_ML} \n
             with N observations (repo-individuals): {self.base_tuning_setup.N_OBS} \n
+            hyper-parameter-searched with search method {self.base_tuning_setup.SEARCH_METHOD} \n 
             hyper-parameter-searched on {self.base_tuning_setup.N_ITER} iterations \n
             training-set size: N={self.base_tuning_setup.X_train_size[0]} \n
             and evaluated using test-set size: N={self.base_tuning_setup.X_test_size[0]} repo-individuals \n
