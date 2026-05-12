@@ -1,4 +1,4 @@
-"""Workflow for running commits processing and analysis code for 1 repo."""
+"""Workflow for running PR Code Review (PRCR) processing and analysis code for 1 repo."""
 
 import logging
 import pandas as pd
@@ -102,9 +102,9 @@ class RunPRReviews(LocationSetup):
 
                 self.logger.info(f"Generated df of {len(reviews_data)} review data.")
 
-                assert (
-                    reviews_data is not None
-                ), "reviews_data type is None; something went wrong!"
+                assert reviews_data is not None, (
+                    "reviews_data type is None; something went wrong!"
+                )
 
                 filestr = f"merged_reviews_data_x{len(review_files)}-repos_{self.current_date_info}.csv"
                 writeout_path = Path(self.data_location, filestr)
