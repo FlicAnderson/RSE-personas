@@ -1,4 +1,4 @@
-"""Get code review data if present for repos; save out to files."""
+"""Data collection script: Gets Issue Ticket Discussions Then Pull Request Code Review data if present for repos; saves out to files."""
 
 import json
 import argparse
