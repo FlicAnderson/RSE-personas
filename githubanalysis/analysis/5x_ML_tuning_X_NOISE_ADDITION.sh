@@ -28,21 +28,41 @@
 echo "BEGINNING MULTI-SEED TUNING RUNS WITH NOISE!"
 echo "dataset: equal_set1_134_ABC"
 
-echo "============================= Run 0: seed 69: No X Noise =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
+# Run your Python program
+echo "BEGINNING 5x5 MULTI-SEED TUNING RUNS WITH NOISE!"
+#echo "BEGINNING 5X SEED TUNING RUNS NO NOISE"
 
-echo "============================= Run 1a: seed 69: 10% X Noise @ 1SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.1 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
+echo "dataset: equal_set1_134_ABC"
+echo "SEED 69 (1/5)"
+
+#echo "============================= Run 0: seed 69: No X Noise =================================="
+#time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 69 -c HGBT -s GridSearchCV -j $(nproc) -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
+
+#echo "============================= Run 1a: seed 69: 10% X Noise @ 1SD =================================="
+#time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 69 -c HGBT -s GridSearchCV -j $(nproc) -x 0.1 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 1b: seed 69: 20% X Noise @ 1SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.2 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 69 -c HGBT -s GridSearchCV -j $(nproc) -x 0.2 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 2a: seed 69: 10% X Noise @ 1.5SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.1 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 69 -c HGBT -s GridSearchCV -j $(nproc) -x 0.1 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 echo "============================= Run 2b: seed 69: 20% X Noise @ 1.5SD =================================="
-time python githubanalysis/analysis/ML_tuning.py -n 10000 -i 1 -r 69 -c RF -s HalvingGridSearchCV -j 32 -x 0.2 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_named_clustered_sample_data_with_labels__2026-04-01.csv
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 69 -c HGBT -s GridSearchCV -j $(nproc) -x 0.2 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
 
 
-echo "COMPLETE"
 
+echo "SEED 74 (2/5)"
+#echo "============================= Run 0: seed 74: No X Noise =================================="
+#time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 74 -c HGBT -s GridSearchCV -j $(nproc) -x 0.0 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
+
+#echo "============================= Run 1a: seed 74: 10% X Noise @ 1SD =================================="
+#time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 74 -c HGBT -s GridSearchCV -j $(nproc) -x 0.1 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
+
+echo "============================= Run 1b: seed 74: 20% X Noise @ 1SD =================================="
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 74 -c HGBT -s GridSearchCV -j $(nproc) -x 0.2 -y 0.0 -d 1.0 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
+
+echo "============================= Run 2a: seed 74: 10% X Noise @ 1.5SD =================================="
+time python githubanalysis/analysis/ML_tuning.py -n 938 -i 5 -r 74 -c HGBT -s GridSearchCV -j $(nproc) -x 0.1 -y 0.0 -d 1.5 -f equal_set1_134_ABC_ML-ready_origclassn_named_clustered_sample_data_with_labels__2026-04-01.csv
+
+ech
