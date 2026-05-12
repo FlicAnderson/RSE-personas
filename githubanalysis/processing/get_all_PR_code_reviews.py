@@ -6,10 +6,8 @@ from typing import Any
 from pathlib import Path
 import pandas as pd
 
-# from run_commits_workflow import read_repos_from_file
 from githubanalysis.processing.get_all_pages_issues import is_this_single_page
 
-# from githubanalysis.setup_classes import RESTRequestSetup
 from utilities.check_gh_reponse import (
     raise_if_response_error,
     run_with_retries,
@@ -326,7 +324,7 @@ parser.add_argument(
     "-f",
     "--filepath-for-repos-list",
     metavar="PATH",
-    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
+    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/RSE-personas)",
     type=str,
 )
 
