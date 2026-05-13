@@ -1,11 +1,59 @@
 # RSE-personas
-PhD research software research code. 
+
+# Project Quick Start
+
+Research software supporting @FlicAnderson's PhD research. 
 
 [![DOI](https://zenodo.org/badge/639069825.svg)](https://doi.org/10.5281/zenodo.15458393)
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![python-code-checking](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml/badge.svg)](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/FlicAnderson/RSE-personas/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/FlicAnderson/RSE-personas)
 [![SWH](https://archive.softwareheritage.org/badge/swh:1:dir:cf8176f6f8cbb3eff513e5f2d6206621bdf0dd27/)](https://archive.softwareheritage.org/swh:1:dir:cf8176f6f8cbb3eff513e5f2d6206621bdf0dd27;origin=https://github.com/FlicAnderson/RSE-personas;visit=swh:1:snp:a478d04aa42a30409e47a356e4c0c19062a69310;anchor=swh:1:rev:786a35215b8779f78c3acae5931d1dedc961a76a)
+
+*A sentence summarising what to expect from this repository*  
+
+## Vision and Mission
+
+- **Vision:** One sentence capturing the project's overarching vision.
+- **Mission:** One sentence defining the project's goals and target audience.
+
+## About
+
+Motivation and background in a nutshell.
+
+## Roadmap & Milestones
+
+- **Goals:** Clear overview of overarching and short-term goals.
+- **Outcomes:** Description of expected results and deliverables.
+
+## The Team
+
+- **Members:** List of team members and their roles in the project.
+- **Roles & Responsibilities:** [Team Directory](link-to-directory) outlines roles, responsibilities and their ways of working.
+
+## Contributing
+
+- **Guidelines:** [Contribution Guidelines](link-to-guidelines) for contributors.
+- **Code of Conduct:** [Code of Conduct](link-to-coc) ensures a respectful project environment.
+- **Resource Plans:** Details on available resources and recommended practices for the project team.
+
+## Licensing
+
+This project uses a [](https://github.com/FlicAnderson/RSE-personas/tree/main?tab=BSD-3-Clause-1-ov-file#BSD-3-Clause-1-ov-file) License - see LICSENSE.md for details. 
+
+## Citing & Acknowledgement
+
+- **Citation Instructions:** How to cite the project.
+- **Acknowledgment:** Recognising contributions by different members.
+
+
+This repository uses the template created and maintained by The Turing Way team members and shared under CC-BY 4.0 for reuse: https://github.com/alan-turing-institute/reproducible-project-template.
+
+
+## Contact
+
+- **Reach Out:** Felicity (dot) Anderson @ ed.ac.uk
+
 
 ## Environment  
 
