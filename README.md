@@ -4,7 +4,7 @@
 
 Research software supporting @FlicAnderson's PhD research. 
 
-[![DOI](https://zenodo.org/badge/639069825.svg)](https://doi.org/10.5281/zenodo.15458393)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20124656.svg)](https://doi.org/10.5281/zenodo.20124656)
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![python-code-checking](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml/badge.svg)](https://github.com/FlicAnderson/coding-smart/actions/workflows/python-code-checking.yml)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/FlicAnderson/RSE-personas/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/FlicAnderson/RSE-personas)
