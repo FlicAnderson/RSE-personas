@@ -1,6 +1,6 @@
 BSD 3-Clause License
 
-Copyright (c) 2023, Flic Anderson
+Copyright (c) 2022-2026, Flic Anderson
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
