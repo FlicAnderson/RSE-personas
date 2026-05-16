@@ -37,6 +37,7 @@ class RunPRReviews(LocationSetup):
     def process_format_PR_reviews(
         self,
         reviews_json_file: Path,
+        reviews_type: str,
         writeout: bool = True,
         out_filename="processed-PR-reviews",
     ):
@@ -44,22 +45,31 @@ class RunPRReviews(LocationSetup):
         Process and format PR_reviews (ie output of
         get_all_PR_code_reviews() for a repo) into a dataframe.
         """
-        self.logger.info(f"Processing PR reviews data from file {reviews_json_file}")
+        self.logger.info(
+            f"Processing PR {reviews_type} reviews data from file {reviews_json_file}"
+        )
+
+        assert reviews_type in ["sub", "main"], (
+            "'reviews_type' must be one of 'sub' or 'main' for correct handling."
+        )
+
         reformat_PR_reviews = ReviewsFormatter(
             in_notebook=self.in_notebook,
         )
         reformatted_PR_reviews = reformat_PR_reviews.reformat_PR_reviews_object(
-            PR_reviews_json_file=reviews_json_file,
+            PR_reviews_json_file=reviews_json_file, reviews_type=reviews_type
         )
         self.logger.info(
-            f"did reformat PR_reviews, created df of shape {reformatted_PR_reviews.shape} for repo {reformat_PR_reviews.repo_name}."
+            f"did reformat {reviews_type} PR_reviews, created df of shape {reformatted_PR_reviews.shape} for repo {reformat_PR_reviews.repo_name}."
         )
 
         self.repo_name = reformat_PR_reviews.repo_name
 
         if writeout:
-            reformat_PR_reviews.save_formatted_PR_reviews(out_filename=out_filename)
-            self.logger.info("saved out reformat PR_reviews")
+            reformat_PR_reviews.save_formatted_PR_reviews(
+                out_filename=out_filename, reviews_type=reviews_type
+            )
+            self.logger.info(f"saved out reformat {reviews_type} PR_reviews")
 
         return reformat_PR_reviews.reformatted_PR_reviews
 
@@ -95,7 +105,27 @@ class RunPRReviews(LocationSetup):
             if file.exists():
                 self.logger.debug(f"Running on PR reviews file {file}.")
                 # gather THIS repo's data
-                reviews_data_next = self.process_format_PR_reviews(file)
+
+                # check whether file is _main or _sub, then process it accordingly!
+                if "_main-" in repofile:
+                    # print("main")
+                    review_handle_type = "main"
+                elif "_sub-" in repofile:
+                    # print("sub")
+                    review_handle_type = "sub"
+                else:
+                    review_handle_type = "unknown review type"
+                    raise RuntimeError(
+                        f"Error: Failed handling {review_handle_type} PR Reviews data file {file}."
+                    )
+
+                assert review_handle_type in ["sub", "main"], (
+                    "'reviews_type' must be one of 'sub' or 'main' for correct handling."
+                )
+
+                reviews_data_next = self.process_format_PR_reviews(
+                    file, reviews_type=review_handle_type
+                )
 
                 # join this data to overall dataset from many repos
                 reviews_data = pd.concat([reviews_data, reviews_data_next])
@@ -106,7 +136,7 @@ class RunPRReviews(LocationSetup):
                     "reviews_data type is None; something went wrong!"
                 )
 
-                filestr = f"merged_reviews_data_x{len(review_files)}-repos_{self.current_date_info}.csv"
+                filestr = f"merged_reviews_data_all_types_x{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
                 writeout_path = Path(self.data_location, filestr)
 
                 try:
