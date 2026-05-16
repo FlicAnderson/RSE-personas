@@ -47,7 +47,7 @@ class ReviewsFormatter(LocationSetup):
         )
 
         if reviews_type == "main":
-            df_needs_these_colums = [
+            df_needs_these_colums_main = [
                 "repo_name",  # not currently present at read-in of json, added subsequently in this script.
                 "PR_review_id",
                 "reviewed_PR_number",
@@ -80,7 +80,7 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_type"] = "main"  # create column filled with text 'main'
 
         elif reviews_type == "sub":
-            df_needs_these_colums = [
+            df_needs_these_colums_sub = [
                 "repo_name",  # not currently present at read-in of json, added subsequently in this script.
                 "PR_review_id",
                 "reviewed_PR_number",
@@ -151,12 +151,25 @@ class ReviewsFormatter(LocationSetup):
             lambda x: x.get("id", None)
         )
 
-        # match columns to df_needs_these_columns
-        assert len(set(df_needs_these_colums) & set(rough_df.columns)) == len(
-            set(df_needs_these_colums)
-        ), (
-            f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums}."
-        )
+        if reviews_type == "main":
+            # match columns to df_needs_these_columns
+            assert len(set(df_needs_these_colums_main) & set(rough_df.columns)) == len(
+                set(df_needs_these_colums_main)
+            ), (
+                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
+            )
+        elif reviews_type == "sub":
+            # match columns to df_needs_these_columns
+            assert len(set(df_needs_these_colums_sub) & set(rough_df.columns)) == len(
+                set(df_needs_these_colums_sub)
+            ), (
+                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_sub}."
+            )
+        else:
+            self.logger.error(
+                "Encountered review-formatting function error trying to handle reviews_type for PR reviews file"
+            )
+            raise RuntimeError  # handle this error! oughtn't occur due to the assert at the start tho
 
         self.reformatted_PR_reviews = rough_df  # save processed df to reformatted_PR_reviews in class for reuse elsewhere
 
