@@ -88,12 +88,12 @@ class ReviewsFormatter(LocationSetup):
                 "review_comment_url",
                 "review_author_gh_username",
                 "review_author_gh_id",
-                "author_review_date",
+                "review_author_association",
                 # "review_state", # no 'state' for subreviews
                 "review_body",
                 "commit_id",
                 "main_PR_review_id",  # main PR CR this is a subreview to
-                "initial_author_review_date",
+                "author_review_date",
                 "subsequent_author_review_date",
                 "reply_to_subreview_id",
                 "commit_id",
@@ -110,8 +110,7 @@ class ReviewsFormatter(LocationSetup):
                     "pull_request_review_id": "main_PR_review_id",  # main PR CR this is a subreview to
                     "pull_request_url": "review_PR_url",  # url for the PR this review item
                     "author_association": "review_author_association",
-                    # "submitted_at": "author_review_date", # there's no submitted_at for subreviews.
-                    "created_at": "initial_author_review_date",  # subreview created
+                    "created_at": "author_review_date",  # using subreview created date, as there's no submitted_at for subreviews.
                     "updated_at": "subsequent_author_review_date",  # subreview updated (? future feat: consider counting this as a separate review interaction, esp if some time has passed? ?)
                     "in_reply_to_id": "reply_to_subreview_id",
                     "path": "file_reviewed",  # where the review applies to
@@ -159,6 +158,14 @@ class ReviewsFormatter(LocationSetup):
                 f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
             )
         elif reviews_type == "sub":
+            # drop columns not in list...
+            rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
+                columns=[
+                    col for col in rough_df if col not in df_needs_these_colums_sub
+                ],
+                inplace=True,
+            )
+
             # match columns to df_needs_these_columns
             assert len(set(df_needs_these_colums_sub) & set(rough_df.columns)) == len(
                 set(df_needs_these_colums_sub)
