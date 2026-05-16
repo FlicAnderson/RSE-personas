@@ -10,7 +10,6 @@ import os
 from githubanalysis.setup_classes import LocationSetup
 import utilities.get_default_logger as loggit
 from githubanalysis.processing.reformat_PR_reviews import ReviewsFormatter
-# from githubanalysis.processing.get_all_PR_code_reviews import GetCodeReviews
 
 
 class RunPRReviews(LocationSetup):
@@ -75,6 +74,7 @@ class RunPRReviews(LocationSetup):
 
     def format_many_repo_PR_reviews(
         self,
+        subset_repos_file: None | Path | str = None,
     ):
         """
         Look in the initialised data location (default: data/) and
@@ -82,16 +82,64 @@ class RunPRReviews(LocationSetup):
         then run process_format_PR_reviews() on them.
         """
 
-        review_files = [
-            f
-            for f in os.listdir(self.data_location)
-            if re.match(rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE)
-        ]  # this is a list comprehension, just split over 3 lines ^
-        self.logger.info("{repolist}")
+        if subset_repos_file is None:
+            self.logger.info(
+                f"No subset_repos_file provided, so will attempt formatting of ALL reviews files in {self.data_location}"
+            )
+            review_files = [
+                f
+                for f in os.listdir(self.data_location)
+                if re.match(
+                    rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
+                )
+            ]  # this is a list comprehension, just split over 3 lines ^
+            repolist = review_files
+            self.logger.info("{repolist}")
 
-        print(
-            f"Currently processing {len(review_files)} repos' worth of PR Reviews data"
-        )
+            print(
+                f"Currently processing {len(review_files)} review files' worth of PR Reviews data"
+            )
+
+        else:
+            assert isinstance(subset_repos_file, (str, Path)), (
+                f"subset_repos_file is neither string nor Path object; {type(subset_repos_file)}"
+            )
+            all_review_files_repos = [
+                f
+                for f in os.listdir(self.data_location)
+                if re.match(
+                    rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
+                )
+            ]  # this is a list comprehension, just split over 3 lines ^
+            # self.logger.info("{repolist}")
+
+            with open(subset_repos_file, "r") as f:
+                subset_repos = [txtline.strip() for txtline in f.readlines()]
+            self.logger.info(
+                f"length of subset_repos_file is: {len(subset_repos)} repos"
+            )
+            # Create a list of potential filename string starters for each repo in subset_repos_file list
+            review_globs = []
+            for reponame in subset_repos:
+                # out_filename="processed-PR-reviews" from reformat_PR_reviews.py
+                out_filename = "processed-PR-reviews"
+                sanitised_repo_name = reponame.replace("/", "-")
+                review_fileglob_main = (
+                    f"{self.data_location / out_filename}_main_{sanitised_repo_name}_"
+                )
+                review_fileglob_sub = (
+                    f"{self.data_location / out_filename}_sub_{sanitised_repo_name}_"
+                )
+                review_globs.append(review_fileglob_main)
+                review_globs.append(review_fileglob_sub)
+
+            review_files = [
+                # file for file in all_review_files_repos where file in review_globs
+                ##### START HERE
+            ]
+            print(
+                f"Currently processing {len(review_files)} repos' worth of PR Reviews data"
+            )
 
         reviews_data = pd.DataFrame()
 
