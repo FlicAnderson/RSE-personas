@@ -299,46 +299,47 @@ DO NOT allow this file to enter version control!
 This file should follow the same file and token format as above for the github `config.cfg` file. 
 
 
-#### Generating datasets (Processing) 
+#### Datasets and Data Processing: dealing with multiple versions of data files by retaining newest 
 
-The data collection processing workflow should operate roughly as follows: 
+In order to ensure that the dataset comprises of the most recent data - for example if some repositories' data collection via the GH API has been run where there was an issue in the initial data collection run - it's sometimes necessary to move the older files to retain the 'cleanest' most up to date set of data.  
 
-1) Setup  
+This means we may want to keep the most recent file, and move other older-dated copies to another folder. 
+
+This is done by running the bash script in `data/` called `filesorter.sh`.  
+
+The file is run with commandline arguments as follows: 
 ```
-# load conda environment and go to root directory of repo:  
-$ conda activate coding-smart-github
-$ cd clonezone/coding-smart
+bash filesorter.sh "filename_glob_to_match" "existing_older_files_folder_name/"
 ```
-(Do any git pulls here to get latest content, check branch etc.)
 
-
-2) Get Zenodo record IDs to query  
-![get_software_ids.py](docs/coding-smart-get_software_ids.jpg)
+In an example where we've needed to move older versions of Pull Request Code Review data (PRCR), this was done as follows: 
 
 ```
-# get N software record IDs from Zenodo:  
-$ python zenodocode/get_software_ids.py 2500   
+# from RSE-personas home / 'root' directory folder, go to data folder
+
+$ cd data/  
+
+# make folder to store 'older files' of the type desired (doing this in batches or by 'type' of data keeps things manageable and allows easier checking)  
+
+$ mkdir older_PRCR 
+
+# run the file sorting script via bash, using the name of the newly created folder as the last argument to the script, and giving the filename format string to match against for this batch of files (e.g. 'main' PRCR type first)
+
+$ bash filesorter.sh "all-PR-reviews_json_main-reviews" "older_PRCR/"
+
+# this returns no text after completion, but returns the prompt. 
+
 ```
-Input: number of software record IDs to return from Zenodo
-Output: csv file of software record IDs: `data/zenodo_ids_xN_YYYY-MM-DD.csv`
-Logging: `logs/get_software_ids_logs.txt` 
+
+You can check whether there are multiple-date versions of the file remaining or not using tab completion for a specific example. 
+
+For example where initially we had two files:   
+ - `all-PR-reviews_json_main-reviews__FlicAnderson-PR_test_2025-11-13`    
+ - `all-PR-reviews_json_main-reviews__FlicAnderson-PR_test_2025-11-16`    
+... after running the script, `ls` would show only `all-PR-reviews_json_main-reviews__FlicAnderson-PR_test_2025-11-16`.  
 
 
-3) Get metadata for Zenodo IDs, grab all GitHub URLs 
-![get_gh_urls.py](docs/coding-smart-get_gh_urls.jpg)
-```
-# get github URLs for the zenodo IDs (results in <2500 records since not all have github repos...):
-$ python zenodocode/get_gh_urls.py data/zenodo_ids_x2500_2024-02-08.csv   
-```
-Input: csv file of Zenodo software IDs  
-Output: csv file of Github URLs and their Zenodo software record IDs: `data/gh_urls_YYYY-MM-DD.csv`
-Logging: `logs/get_gh_urls_logs.txt` 
-
-NOTE: this documentation requires further development!  See issue ticket [RSE-personas/#105](https://github.com/FlicAnderson/RSE-personas/issues/105) for further information
-
-#### Generating datasets (Analysis) 
-
-NOTE: this documentation requires further development!  See issue ticket [RSE-personas/#105](https://github.com/FlicAnderson/RSE-personas/issues/105) for further information
+NOTE: Documentation supporting datasets, data processing and analysis requires further development!  See issue ticket [RSE-personas/#105](https://github.com/FlicAnderson/RSE-personas/issues/105) for further information
 
 
 #### Testing  
