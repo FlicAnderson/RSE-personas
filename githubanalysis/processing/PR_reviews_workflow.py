@@ -9,6 +9,7 @@ import itertools
 
 from githubanalysis.setup_classes import LocationSetup
 import utilities.get_default_logger as loggit
+from githubanalysis.processing.get_all_PR_code_reviews import GetCodeReviews
 from githubanalysis.processing.reformat_PR_reviews import ReviewsFormatter
 
 
@@ -37,8 +38,60 @@ class RunPRReviews(LocationSetup):
         self.repo_name = None
         self.out_filename = out_filename
 
-    # def run_get_reviews(self, ):
-    ## this would use code from get_all_PR_code_reviews.py to run on certain list of repo_names, done in main.
+    def run_get_reviews(self, filepath: Path):
+        """
+        This uses code from get_all_PR_code_reviews.py to run on a list
+        of repo_names.
+
+        NOTE:
+        For Flic's PhD work data collection was done via running
+        get_all_PR_code_reviews.py from commandline and using the main()
+        version in that script.
+        This function pulls that code across to the workflow script for
+        the convenience of future users and easier understanding of the
+        intended workflow.
+        """
+
+        get_code_reviews = GetCodeReviews(
+            repo_name="",  # empty string currently as we're providing a LIST of repos for get_code_reviews.get_repos() then iterating through!
+            config_path=self.config_path,
+            in_notebook=self.in_notebook,
+            logger=self.logger,
+        )
+
+        assert filepath is not None, (
+            "You must provide a filepath for the repo names list file, e.g. 'data/code_review_subset_2025-05-30_x16.txt'. "
+        )
+
+        filepath = Path(filepath)
+        get_code_reviews.logger.info(f"reading repo names from file: {filepath}")
+        repo_list = get_code_reviews.get_repos(repo_list_file_name=filepath)
+
+        # loop through repo_list
+        get_code_reviews.logger.info(
+            f"Attempting to run through {len(repo_list)} repositories."
+        )
+        get_code_reviews.logger.info(f"{repo_list = }")
+
+        get_code_reviews.logger.info("Getting DISCUSSION info for all repos:")
+        # for each repo in repo_list, do all the things to get DISCUSSIONS FIRST:
+        get_code_reviews.loop_over_repos(repo_list=repo_list, get_type="discussions")
+        get_code_reviews.logger.info("Completed getting DISCUSSION info for all repos.")
+
+        # then get CODE REVIEW content:
+        get_code_reviews.logger.info("Getting CODE REVIEW info for all repos:")
+        get_code_reviews.loop_over_repos(repo_list=repo_list, get_type="code-reviews")
+        get_code_reviews.logger.info(
+            "Completed getting CODE REVIEW info for all repos."
+        )
+
+        self.logger.info("Get discussions and code reviews info complete")
+
+    ## UPDATE: This^ isn't necessary currently, as all the data-collection runs
+    # were done by directly running get_all_PR_code_reviews.py as main
+    # which takes commandline input of repo names list file and loops
+    # over repos and gathered all the API content required for issue
+    # ticket discussion interactions AND PR code review interactions.
 
     # function creating filename globs to match for both main- and sub- reviews:
     def PRCR_glob_maker(
@@ -315,28 +368,54 @@ class RunPRReviews(LocationSetup):
                     f"Error handling PR reviews data from file {file} via {repofile}."
                 )
 
-
-if __name__ == "__main__":
-    logger = loggit.get_default_logger(
-        console=True,
-        set_level_to="DEBUG",
-        log_name="logs/PR_reviews_workflow_logs.txt",
-        in_notebook=False,
-    )
-
-    logger.info("Running PR review data formatting.")
-
-    runprreviews = RunPRReviews(
-        in_notebook=False,
-        config_path="githubanalysis/config.cfg",
-        logger=logger,
-        out_filename="processed-PR-reviews",
-    )
-
-    try:
-        runprreviews.format_many_repo_PR_reviews()
-    except Exception as e:
-        logger.error(
-            f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
+    def do_all_PR_reviews_handling(self):
+        runprreviews = RunPRReviews(
+            in_notebook=self.in_notebook,
+            logger=self.logger,
+            config_path=self.config_path,
+            out_filename=self.out_filename,  # "processed-PR-reviews",
         )
-        exit(1)
+
+        self.logger.info("""The data collection steps for PR Code Review
+                         interactions and Issue Ticket Discussions have 
+                         been completed already and are not implemented 
+                         in this workflow, however they can be run by 
+                         enabling the function `run_get_reviews()`
+                        """)
+        # runprreviews.run_get_reviews(filepath=TODO) ##### THIS NEEDS FIXED TO TAKE INPUT FILE.
+
+        try:
+            runprreviews.format_many_repo_PR_reviews()
+        except Exception as e:
+            self.logger.error(
+                f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
+            )
+            exit(1)
+
+
+# if __name__ == "__main__":
+#     logger = loggit.get_default_logger(
+#         console=True,
+#         set_level_to="DEBUG",
+#         log_name="logs/PR_reviews_workflow_logs.txt",
+#         in_notebook=False,
+#     )
+
+#     logger.info("Running PR review data formatting.")
+
+#     runprreviews = RunPRReviews(
+#         in_notebook=False,
+#         config_path="githubanalysis/config.cfg",
+#         logger=logger,
+#         out_filename="processed-PR-reviews",
+#     )
+
+#     logger.info("The data collection steps for PR Code Review interactions and Issue Ticket ")
+
+#     try:
+#         runprreviews.format_many_repo_PR_reviews()
+#     except Exception as e:
+#         logger.error(
+#             f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
+#         )
+#         exit(1)
