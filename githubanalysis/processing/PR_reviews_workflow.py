@@ -192,10 +192,20 @@ class RunPRReviews(LocationSetup):
 
         return matching_files
 
+    def review_sorter(
+        self,
+        file_to_sort: Path,
+    ) -> str:
+        rev_file_type = ""
+        if file_to_sort.match("all-PR-reviews_json_sub-reviews*"):
+            rev_file_type = "sub"
+        elif file_to_sort.match("all-PR-reviews_json_main-reviews*"):
+            rev_file_type = "main"
+        return rev_file_type
+
     def process_format_PR_reviews(
         self,
         reviews_json_file: Path,
-        reviews_type: str,
         writeout: bool = True,
         out_filename="processed-PR-reviews",
     ):
@@ -203,6 +213,9 @@ class RunPRReviews(LocationSetup):
         Process and format PR_reviews (ie output of
         get_all_PR_code_reviews() for a repo) into a dataframe.
         """
+        # match the type of review from the filename
+        reviews_type = self.review_sorter(file_to_sort=reviews_json_file)
+
         self.logger.info(
             f"Processing PR {reviews_type} reviews data from file {reviews_json_file}"
         )

@@ -28,17 +28,6 @@ class ReviewsFormatter(LocationSetup):
     ## THIS WOULD FORMAT THE PR NUMBERS DETAILS CONTENT JSON INTO PD.DF; TO DO LATER
     #     pass
 
-    def review_sorter(
-        self,
-        file_to_sort: Path,
-    ) -> str:
-        rev_file_type = ""
-        if file_to_sort.match("all-PR-reviews_json_sub-reviews*"):
-            rev_file_type = "sub"
-        elif file_to_sort.match("all-PR-reviews_json_main-reviews*"):
-            rev_file_type = "main"
-        return rev_file_type
-
     def reformat_PR_reviews_object(
         self, reviews_type: str, PR_reviews_json_file: Path
     ) -> pd.DataFrame:
