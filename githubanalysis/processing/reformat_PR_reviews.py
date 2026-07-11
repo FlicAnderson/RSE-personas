@@ -1,4 +1,4 @@
-"""Reformat raw PR reviews json data fom files into pd.DataFrames"""
+"""Reformat raw PR reviews json data from files into pd.DataFrames"""
 
 import pandas as pd
 import re
@@ -28,6 +28,17 @@ class ReviewsFormatter(LocationSetup):
     ## THIS WOULD FORMAT THE PR NUMBERS DETAILS CONTENT JSON INTO PD.DF; TO DO LATER
     #     pass
 
+    def review_sorter(
+        self,
+        file_to_sort: Path,
+    ) -> str:
+        rev_file_type = ""
+        if file_to_sort.match("all-PR-reviews_json_sub-reviews*"):
+            rev_file_type = "sub"
+        elif file_to_sort.match("all-PR-reviews_json_main-reviews*"):
+            rev_file_type = "main"
+        return rev_file_type
+
     def reformat_PR_reviews_object(
         self, reviews_type: str, PR_reviews_json_file: Path
     ) -> pd.DataFrame:
@@ -37,7 +48,7 @@ class ReviewsFormatter(LocationSetup):
         """
 
         assert reviews_type in ["sub", "main"], (
-            "'reviews_type' must be one of 'sub' or 'main' for correct handling."
+            f"'reviews_type' must be one of 'sub' or 'main' for correct handling but reviews_type is {reviews_type}"
         )
 
         rough_df = pd.read_json(PR_reviews_json_file)  # load in json from the file
