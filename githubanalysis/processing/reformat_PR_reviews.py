@@ -143,10 +143,10 @@ class ReviewsFormatter(LocationSetup):
         rough_df["reviewed_PR_number"] = rough_df.review_PR_url.map(
             lambda x: x.rsplit("/", 1)[1]
         )
-        rough_df["review_author_gh_username"] = rough_df.review_author_username.map(
+        rough_df["review_author_gh_username"] = rough_df.review_author_gh_username.map(
             lambda x: x.get("login", None)
         )
-        rough_df["review_author_gh_id"] = rough_df.review_author_username.map(
+        rough_df["review_author_gh_id"] = rough_df.review_author_gh_username.map(
             lambda x: x.get("id", None)
         )
 
