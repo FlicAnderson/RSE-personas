@@ -49,29 +49,30 @@ class ReviewsFormatter(LocationSetup):
         if reviews_type == "main":
             df_needs_these_colums_main = [
                 "repo_name",  # not currently present at read-in of json, added subsequently in this script.
-                "PR_review_id",
-                "reviewed_PR_number",
-                "review_PR_url",
-                "review_author_gh_username",
-                "review_author_gh_id",
-                "author_review_date",
-                "review_state",
-                "review_body",
-                "commit_id",
-                "review_type",
-                "API_links",
+                "PR_review_id",  # the main-review ID
+                "reviewed_PR_number",  # PR number which the code review item relates to
+                "review_PR_url",  # url for the PR this review item
+                "review_author_gh_username",  # GH username for user who left this review interaction
+                "review_author_gh_id",  # ID of the GH user who left this review interaction
+                "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
+                "author_review_date",  # date review was created
+                "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
+                "review_body",  # content of the main review interaction
+                "commit_id",  # latest code commit / version commented on (I believe)
+                "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
+                "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
             ]
 
             rough_df = rough_df.rename(
                 columns={
                     "id": "PR_review_id",
-                    "user": "review_author_username",
+                    "user": "review_author_gh_username",
                     "body": "review_body",
                     "state": "review_state",
                     "pull_request_url": "review_PR_url",
-                    "author_association": "review_author_association",
+                    "author_association": "review_author_repo_association",
                     "submitted_at": "author_review_date",
-                    "commit_id": "commit_id",  # keep this same
+                    "commit_id": "commit_id",
                     "_links": "API_links",
                 },
                 errors="raise",
@@ -82,38 +83,37 @@ class ReviewsFormatter(LocationSetup):
         elif reviews_type == "sub":
             df_needs_these_colums_sub = [
                 "repo_name",  # not currently present at read-in of json, added subsequently in this script.
-                "PR_review_id",
-                "reviewed_PR_number",
-                "review_PR_url",
-                "review_comment_url",
-                "review_author_gh_username",
-                "review_author_gh_id",
-                "review_author_association",
+                "PR_review_id",  # NOTE: this is the SUB-REVIEW's ID, not the main review (see main_PR_review_id)
+                "reviewed_PR_number",  # PR number which the code review item relates to
+                "review_PR_url",  #  url for the PR this review item
+                "review_comment_url",  # url for this (sub)review item comment
+                "review_author_gh_username",  # GH username for user who left this review interaction
+                "review_author_gh_id",  # ID of the GH user who left this review interaction
+                "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
                 # "review_state", # no 'state' for subreviews
-                "review_body",
-                "commit_id",
+                "review_body",  # content of this sub-review interaction
+                "commit_id",  # latest code commit / version commented on (I believe)
                 "main_PR_review_id",  # main PR CR this is a subreview to
-                "author_review_date",
-                "subsequent_author_review_date",
-                "reply_to_subreview_id",
-                "commit_id",
-                "review_type",
-                "API_links",
+                "author_review_date",  # using subreview created date, as there's no submitted_at for subreviews.
+                "subsequent_author_review_date",  # subreview updated (? future feat: consider counting this as a separate review interaction, esp if some time has passed? ?)
+                "reply_to_subreview_id",  # if this is a reply to a subreview, point to ID of it
+                "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
+                "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
             ]
 
             rough_df = rough_df.rename(
                 columns={
                     "id": "PR_review_id",  # in this case, the ID is the sub-review ID
-                    "user": "review_author_username",
+                    "user": "review_author_gh_username",
                     "body": "review_body",
-                    "url": "review_comment_url",  # url for this review item
-                    "pull_request_review_id": "main_PR_review_id",  # main PR CR this is a subreview to
-                    "pull_request_url": "review_PR_url",  # url for the PR this review item
-                    "author_association": "review_author_association",
-                    "created_at": "author_review_date",  # using subreview created date, as there's no submitted_at for subreviews.
-                    "updated_at": "subsequent_author_review_date",  # subreview updated (? future feat: consider counting this as a separate review interaction, esp if some time has passed? ?)
+                    "url": "review_comment_url",
+                    "pull_request_review_id": "main_PR_review_id",
+                    "pull_request_url": "review_PR_url",
+                    "author_association": "review_author_repo_association",
+                    "created_at": "author_review_date",
+                    "updated_at": "subsequent_author_review_date",
                     "in_reply_to_id": "reply_to_subreview_id",
-                    "path": "file_reviewed",  # where the review applies to
+                    "path": "file_reviewed",
                     "_links": "API_links",
                 },
                 errors="raise",
