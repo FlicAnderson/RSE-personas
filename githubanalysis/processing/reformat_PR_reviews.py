@@ -158,6 +158,11 @@ class ReviewsFormatter(LocationSetup):
                 f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
             )
         elif reviews_type == "sub":
+            # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
+            rough_df["reply_to_subreview_id"] = rough_df["reply_to_subreview_id"].apply(
+                "{:.0f}".format
+            )
+
             # drop columns not in list...
             rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
                 columns=[
@@ -196,7 +201,8 @@ class ReviewsFormatter(LocationSetup):
         self, reviews_type: str, out_filename="processed-PR-reviews"
     ):
         """
-        Save the reformatted PR reviews data out to csv file.
+        Saves the reformatted PR reviews data !!stored in self.reformatted_PR_reviews`!!
+        during running of reformat_PR_reviews_object() out to csv file.
         """
         assert reviews_type in ["sub", "main"], (
             "'reviews_type' must be one of 'sub' or 'main' for correct handling."
