@@ -161,7 +161,7 @@ class ReviewsFormatter(LocationSetup):
             # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
             rough_df["reply_to_subreview_id"] = (
                 rough_df["reply_to_subreview_id"]
-                .in_reply_to_id.apply(
+                .apply(
                     "{:.0f}".format  # fix number displaying as scientific numbers
                 )
                 .replace(
