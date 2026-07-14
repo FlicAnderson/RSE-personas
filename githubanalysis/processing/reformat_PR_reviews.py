@@ -175,7 +175,7 @@ class ReviewsFormatter(LocationSetup):
                     "submitted_at": "author_review_date",
                     "commit_id": "commit_id",
                     "_links": "API_links",
-                    "url": "review_item_url",
+                    "html_url": "review_item_url",
                 },
                 errors="raise",
                 inplace=False,
@@ -188,7 +188,7 @@ class ReviewsFormatter(LocationSetup):
                     "id": "PR_review_id",  # in this case, the ID is the sub-review ID
                     "user": "review_author_gh_username",
                     "body": "review_body",
-                    "url": "review_item_url",
+                    "html_url": "review_item_url",
                     "pull_request_review_id": "main_PR_review_id",
                     "pull_request_url": "review_PR_url",
                     "author_association": "review_author_repo_association",
