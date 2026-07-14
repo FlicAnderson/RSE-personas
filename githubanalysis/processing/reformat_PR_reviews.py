@@ -27,14 +27,17 @@ class ReviewsFormatter(LocationSetup):
     # def reformat_PR_nums_object(self, ):
     ## THIS WOULD FORMAT THE PR NUMBERS DETAILS CONTENT JSON INTO PD.DF; TO DO LATER
     #     pass
-
-    def reformat_PR_discussions(
-        self, reviews_type: str, PR_discussions_csv_file: Path
+    def reformat_PR_reviews_object(
+        self, reviews_type: str, PR_reviews_file: Path
     ) -> pd.DataFrame:
         """
-        Function handles the .csv files of PR-related 'discussions' (ie.
-        technically 'issue comments' as they're via the /issues/comments
-        GH API endpoint).
+        Function reads in json file for reviews_types "sub" or "main" of
+        one repo's PR reviews data and pulls out relevant data into pd.DF.
+        Does NOT save out the DF.
+
+        If reviews_type is "discussions", function instead handles the
+        .csv files of PR-related 'discussions' (ie. technically 'issue comments'
+        as they're via the /issues/comments GH API endpoint).
 
         NOTE:
         These issue comments (labelled "PR discussions" here) are treated
@@ -45,35 +48,80 @@ class ReviewsFormatter(LocationSetup):
         interactions' by following developers' intentions here rather than
         GH's arbitrary API schemas.
         """
-        rough_df = pd.read_csv(
-            PR_discussions_csv_file, header=0, low_memory=False
-        )  # load from file
+
+        assert reviews_type in [
+            "sub",
+            "main",
+            "discussions",
+        ], (
+            f"'reviews_type' must be one of 'sub' or 'main' or 'discussions' for correct handling but reviews_type is {reviews_type}"
+        )
+
+        df_needs_these_colums_main = [
+            "repo_name",  # not currently present at read-in of json, added subsequently in this script.
+            "PR_review_id",  # the main-review ID
+            "reviewed_PR_number",  # PR number which the code review item relates to
+            "review_PR_url",  # url for the PR this review item
+            "review_item_url",  # url for this review item
+            "review_author_gh_username",  # GH username for user who left this review interaction
+            "review_author_gh_id",  # ID of the GH user who left this review interaction
+            "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
+            "author_review_date",  # date review was created
+            "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
+            "review_body",  # content of the main review interaction
+            "commit_id",  # latest code commit / version commented on (I believe)
+            "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
+            "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
+        ]
+        df_needs_these_colums_sub = [
+            "repo_name",  # not currently present at read-in of json, added subsequently in this script.
+            "PR_review_id",  # NOTE: this is the SUB-REVIEW's ID, not the main review (see main_PR_review_id)
+            "reviewed_PR_number",  # PR number which the code review item relates to
+            "review_PR_url",  #  url for the PR this review item
+            "review_item_url",  # url for this (sub)review item comment/item
+            "review_author_gh_username",  # GH username for user who left this review interaction
+            "review_author_gh_id",  # ID of the GH user who left this review interaction
+            "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
+            # "review_state", # no 'state' for subreviews
+            "review_body",  # content of this sub-review interaction
+            "commit_id",  # latest code commit / version commented on (I believe)
+            "main_PR_review_id",  # main PR CR this is a subreview to
+            "author_review_date",  # using subreview created date, as there's no submitted_at for subreviews.
+            "subsequent_author_review_date",  # subreview updated (? future feat: consider counting this as a separate review interaction, esp if some time has passed? ?)
+            "reply_to_subreview_id",  # if this is a reply to a subreview, point to ID of it
+            "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
+            "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
+        ]
+        df_needs_these_columns_discussions = [
+            "repo_name",  # not currently present at read-in of json, added subsequently in this script.
+            "PR_review_id",  # the main-review ID
+            "reviewed_PR_number",  # PR number which the code review item relates to
+            "review_PR_url",  # url for the PR this review item
+            "review_item_url",  # url for this discussion review item comment/item
+            "review_author_gh_username",  # GH username for user who left this review interaction
+            "review_author_gh_id",  # ID of the GH user who left this review interaction
+            "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
+            "author_review_date",  # date review was created
+            "subsequent_author_review_date",  # date review was last revised
+            "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
+            "review_body",  # content of the main review interaction
+            # "commit_id",  # latest code commit / version commented on # NOT IN DISCUSSIONS
+        ]
+
+        if reviews_type != "discussions":
+            rough_df = pd.read_json(PR_reviews_file)  # load in JSON from the file
+        else:  # it'll be discussions, so...
+            rough_df = pd.read_csv(
+                PR_reviews_file,
+                header=0,
+                low_memory=False,  # load from CSV file
+            )
 
         assert not rough_df.empty, (
-            f"dataframe generated by loading json from file {PR_discussions_csv_file} is empty..."
+            f"dataframe generated by loading file {PR_reviews_file} is empty..."
         )
-        assert (
-            reviews_type == "discussion"
-        )  # this is vestigial, matching the pattern for sub and main review types handling
-        try:
-            df_needs_these_columns_discussion = [
-                "repo_name",  # not currently present at read-in of json, added subsequently in this script.
-                "PR_review_id",  # the main-review ID
-                "reviewed_PR_number",  # PR number which the code review item relates to
-                "review_PR_url",  # url for the PR this review item
-                "review_item_url",  # url for this discussion review item comment/item
-                "review_author_gh_username",  # GH username for user who left this review interaction
-                "review_author_gh_id",  # ID of the GH user who left this review interaction
-                "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
-                "author_review_date",  # date review was created
-                "subsequent_author_review_date",  # date review was last revised
-                "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
-                "review_body",  # content of the main review interaction
-                # "commit_id",  # latest code commit / version commented on # NOT IN DISCUSSIONS
-            ]
 
-            rough_df = pd.read_csv(PR_discussions_csv_file, header=0, low_memory=False)
-
+        if reviews_type == "discussions":
             rough_df = rough_df.rename(
                 columns={
                     "id": "PR_review_id",  # ID of this code review discussion item
@@ -91,19 +139,10 @@ class ReviewsFormatter(LocationSetup):
                 errors="raise",
                 inplace=False,
             )
-
             rough_df["review_type"] = (
-                "discussion"  # create column filled with text 'discussion'
+                "discussions"  # create column filled with text 'discussion'
             )
-
-            rough_df["repo_name"] = rough_df.review_PR_url.map(
-                lambda x: re.split(
-                    r"(\w+\/\w+)", x.replace("https://api.github.com/repos/", "")
-                )[1]
-            )
-            # NOTE: this code action perhaps ought to happen in the
-            # discussions processing before writeout to .csv files, not here?
-            # it would be good to do it in one step even if it IS here ':s
+            # handle getting user ID number here
             rough_df["user_id"] = rough_df.user.apply(
                 lambda x: re.split(
                     r"(\{\'\w+\'\: \'\w+\', \'id\'\: \w+,)",
@@ -120,65 +159,7 @@ class ReviewsFormatter(LocationSetup):
                 lambda x: x.replace(",", "")
             )  # remove the trailing comma
 
-            # if reviews_type == "discussion":
-            # drop columns not in list...
-            rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
-                columns=[
-                    col
-                    for col in rough_df
-                    if col not in df_needs_these_columns_discussion
-                ],
-                inplace=True,
-            )
-
-        except Exception as e:
-            self.logger.error(
-                f"Encountered review-formatting function error trying to handle PR issue comments (PR discussions) for PR reviews file {PR_discussions_csv_file} with error:{e}"
-            )
-            raise RuntimeError(
-                f"Error: Failed reformatting {reviews_type} PR Reviews data. Run reformat_PR_reviews*() function and investigate further..."
-            )
-
-        self.reformatted_PR_reviews = rough_df  # save processed df to reformatted_PR_reviews in class for reuse elsewhere
-
-        return self.reformatted_PR_reviews
-
-    def reformat_PR_reviews_object(
-        self, reviews_type: str, PR_reviews_json_file: Path
-    ) -> pd.DataFrame:
-        """
-        Function reads in json file of one repo's PR reviews data and pulls out relevant data into pd.DF
-        Does NOT save out the DF.
-        """
-
-        assert reviews_type in ["sub", "main"], (
-            f"'reviews_type' must be one of 'sub' or 'main' for correct handling but reviews_type is {reviews_type}"
-        )
-
-        rough_df = pd.read_json(PR_reviews_json_file)  # load in json from the file
-
-        assert not rough_df.empty, (
-            f"dataframe generated by loading json from file {PR_reviews_json_file} is empty..."
-        )
-
-        if reviews_type == "main":
-            df_needs_these_colums_main = [
-                "repo_name",  # not currently present at read-in of json, added subsequently in this script.
-                "PR_review_id",  # the main-review ID
-                "reviewed_PR_number",  # PR number which the code review item relates to
-                "review_PR_url",  # url for the PR this review item
-                "review_item_url",  # url for this review item
-                "review_author_gh_username",  # GH username for user who left this review interaction
-                "review_author_gh_id",  # ID of the GH user who left this review interaction
-                "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
-                "author_review_date",  # date review was created
-                "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
-                "review_body",  # content of the main review interaction
-                "commit_id",  # latest code commit / version commented on (I believe)
-                "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
-                "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
-            ]
-
+        elif reviews_type == "main":
             rough_df = rough_df.rename(
                 columns={
                     "id": "PR_review_id",
@@ -198,26 +179,6 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_type"] = "main"  # create column filled with text 'main'
 
         elif reviews_type == "sub":
-            df_needs_these_colums_sub = [
-                "repo_name",  # not currently present at read-in of json, added subsequently in this script.
-                "PR_review_id",  # NOTE: this is the SUB-REVIEW's ID, not the main review (see main_PR_review_id)
-                "reviewed_PR_number",  # PR number which the code review item relates to
-                "review_PR_url",  #  url for the PR this review item
-                "review_item_url",  # url for this (sub)review item comment/item
-                "review_author_gh_username",  # GH username for user who left this review interaction
-                "review_author_gh_id",  # ID of the GH user who left this review interaction
-                "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
-                # "review_state", # no 'state' for subreviews
-                "review_body",  # content of this sub-review interaction
-                "commit_id",  # latest code commit / version commented on (I believe)
-                "main_PR_review_id",  # main PR CR this is a subreview to
-                "author_review_date",  # using subreview created date, as there's no submitted_at for subreviews.
-                "subsequent_author_review_date",  # subreview updated (? future feat: consider counting this as a separate review interaction, esp if some time has passed? ?)
-                "reply_to_subreview_id",  # if this is a reply to a subreview, point to ID of it
-                "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
-                "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
-            ]
-
             rough_df = rough_df.rename(
                 columns={
                     "id": "PR_review_id",  # in this case, the ID is the sub-review ID
@@ -236,11 +197,9 @@ class ReviewsFormatter(LocationSetup):
                 errors="raise",
                 inplace=False,
             )
-
             rough_df["review_type"] = (
                 "subreview"  # create column filled with text 'subreview'
             )
-
         else:
             self.logger.error(
                 "Encountered review-formatting function error trying to handle reviews_type for PR reviews file"
@@ -256,23 +215,33 @@ class ReviewsFormatter(LocationSetup):
         self.repo_name = rough_df["repo_name"][0]
         self.sanitised_repo_name = self.repo_name.replace("/", "-")
 
-        #  reformat user column to pull out login, pull PR number off PR_url,
-        rough_df["reviewed_PR_number"] = rough_df.review_PR_url.map(
-            lambda x: x.rsplit("/", 1)[1]
-        )
-        rough_df["review_author_gh_id"] = rough_df.review_author_gh_username.map(
-            lambda x: x.get("id", None)
-        )  # this needs to go above the username abbreviation to grab ID info before it's removed
-        rough_df["review_author_gh_username"] = rough_df.review_author_gh_username.map(
-            lambda x: x.get("login", None)
-        )
+        if reviews_type == "main" or reviews_type == "sub":
+            #  reformat user column to pull out login, pull PR number off PR_url,
+            rough_df["reviewed_PR_number"] = rough_df.review_PR_url.map(
+                lambda x: x.rsplit("/", 1)[1]
+            )
+            rough_df["review_author_gh_id"] = rough_df.review_author_gh_username.map(
+                lambda x: x.get(
+                    "id", None
+                )  # this needs to go above the username abbreviation to grab ID info before it's removed
+            )
+            rough_df["review_author_gh_username"] = (
+                rough_df.review_author_gh_username.map(lambda x: x.get("login", None))
+            )
+        # discussions was handled differently above
 
         if reviews_type == "main":
             # match columns to df_needs_these_columns
+            rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
+                columns=[
+                    col for col in rough_df if col not in df_needs_these_colums_main
+                ],
+                inplace=True,
+            )
             assert len(set(df_needs_these_colums_main) & set(rough_df.columns)) == len(
                 set(df_needs_these_colums_main)
             ), (
-                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
+                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
             )
         elif reviews_type == "sub":
             # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
@@ -287,7 +256,6 @@ class ReviewsFormatter(LocationSetup):
                     }  # replace unwanted weird 'nan'-str with empty string
                 )
             )
-
             # drop columns not in list...
             rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
                 columns=[
@@ -295,12 +263,20 @@ class ReviewsFormatter(LocationSetup):
                 ],
                 inplace=True,
             )
-
             # match columns to df_needs_these_columns
             assert len(set(df_needs_these_colums_sub) & set(rough_df.columns)) == len(
                 set(df_needs_these_colums_sub)
             ), (
-                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_json_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_sub}."
+                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_sub}."
+            )
+        elif reviews_type == "discussions":
+            rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
+                columns=[
+                    col
+                    for col in rough_df
+                    if col not in df_needs_these_columns_discussions
+                ],
+                inplace=True,
             )
         else:
             self.logger.error(
@@ -329,8 +305,8 @@ class ReviewsFormatter(LocationSetup):
         Saves the reformatted PR reviews data !!stored in self.reformatted_PR_reviews`!!
         during running of reformat_PR_reviews_object() out to csv file.
         """
-        assert reviews_type in ["sub", "main", "discussion"], (
-            "'reviews_type' must be one of 'sub' or 'main' or 'discussion' for correct handling."
+        assert reviews_type in ["sub", "main", "discussions"], (
+            "'reviews_type' must be one of 'sub' or 'main' or 'discussions' for correct handling."
         )
 
         write_out = f"{self.data_location / out_filename}_{reviews_type}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
