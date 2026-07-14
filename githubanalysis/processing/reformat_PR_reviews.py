@@ -148,7 +148,9 @@ class ReviewsFormatter(LocationSetup):
                 "discussions"  # create column filled with text 'discussion'
             )
             # handle getting user ID number here
-            rough_df["review_author_gh_id"] = rough_df.user.apply(lambda x: x["id"])
+            rough_df["review_author_gh_id"] = rough_df.user.apply(
+                lambda x: literal_eval(x)["id"]
+            )
 
         elif reviews_type == "main":
             rough_df = rough_df.rename(
