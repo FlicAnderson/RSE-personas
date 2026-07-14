@@ -346,39 +346,44 @@ class RunPRReviews(LocationSetup):
                 )
             self.logger.debug(f"Running on PR reviews file {file}.")
             # gather THIS repo's data
-
-            reviews_data_next = self.process_format_PR_reviews(
-                file,
-            )
+            try:
+                reviews_data_next = self.process_format_PR_reviews(
+                    file,
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"process_format_PR_reviews failed on '{file}': {e}"
+                )
+                continue
             print(
                 f"{len(reviews_data_next) if reviews_data_next is not None else 'help'}"
             )
             # join this data to overall dataset from many repos
             reviews_data = pd.concat([reviews_data, reviews_data_next])
 
-            self.logger.info(f"Generated df of {len(reviews_data)} review data.")
+        self.logger.info(f"Generated df of {len(reviews_data)} review data.")
 
-            assert reviews_data is not None, (
-                "reviews_data type is None; something went wrong!"
+        assert reviews_data is not None, (
+            "reviews_data type is None; something went wrong!"
+        )
+
+        filestr = f"merged_reviews_data_all_types_x{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
+        writeout_path = Path(self.data_location, filestr)
+
+        try:
+            # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
+            reviews_data.to_csv(path_or_buf=writeout_path, header=True, index=False)
+            self.logger.info(
+                f"Saved reviews_data df for {len(review_files)} repos with {len(reviews_data)} devs to file: {filestr}"
             )
 
-            filestr = f"merged_reviews_data_all_types_x{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
-            writeout_path = Path(self.data_location, filestr)
+            return reviews_data
 
-            try:
-                # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
-                reviews_data.to_csv(path_or_buf=writeout_path, header=True, index=False)
-                self.logger.info(
-                    f"Saved reviews_data df for {len(review_files)} repos with {len(reviews_data)} devs to file: {filestr}"
-                )
-
-                return reviews_data
-
-            except Exception as e:
-                self.logger.error(
-                    f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
-                )
-                raise
+        except Exception as e:
+            self.logger.error(
+                f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+            )
+            raise
 
     def do_all_PR_reviews_handling(self, dataset_repos_list):
         runprreviews = RunPRReviews(
