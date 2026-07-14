@@ -269,6 +269,9 @@ class Discussions(
         discussions_df["discussion_author_gh_username"] = discussions_df["user"].map(
             lambda x: x.get("login", None)
         )
+        discussions_df["review_author_gh_id"] = discussions_df["user"].map(
+            lambda x: x.get("id", None)
+        )
 
         # print(discussions_df.columns)  # debug
         self.logger.debug(discussions_df.columns)
