@@ -239,7 +239,7 @@ class RunPRReviews(LocationSetup):
             PR_reviews_file=reviews_file, reviews_type=reviews_type
         )
         self.logger.info(
-            f"did reformat {reviews_type} PR_reviews, created df of shape {reformatted_PR_reviews.shape} for repo {reformat_PR_reviews.repo_name}."
+            f"did reformat {reviews_type} PR_reviews, created df of shape {reformatted_PR_reviews.shape if reformatted_PR_reviews is not None else 'No shape'} for repo {reformat_PR_reviews.repo_name}."
         )
 
         self.repo_name = reformat_PR_reviews.repo_name
