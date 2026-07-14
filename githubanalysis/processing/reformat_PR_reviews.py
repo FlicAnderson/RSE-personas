@@ -159,8 +159,16 @@ class ReviewsFormatter(LocationSetup):
             )
         elif reviews_type == "sub":
             # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
-            rough_df["reply_to_subreview_id"] = rough_df["reply_to_subreview_id"].apply(
-                "{:.0f}".format
+            rough_df["reply_to_subreview_id"] = (
+                rough_df["reply_to_subreview_id"]
+                .in_reply_to_id.apply(
+                    "{:.0f}".format  # fix number displaying as scientific numbers
+                )
+                .replace(
+                    {
+                        str("nan"): ""
+                    }  # replace unwanted weird 'nan'-str with empty string
+                )
             )
 
             # drop columns not in list...
