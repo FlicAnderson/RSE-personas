@@ -263,34 +263,35 @@ class RunPRReviews(LocationSetup):
         """
 
         if subset_repos_file is None:
-            self.logger.info(
-                f"No subset_repos_file provided, so will attempt formatting of ALL reviews files in {self.data_location}"
-            )
-            review_files = [
-                f
-                for f in os.listdir(self.data_location)
-                if re.match(
-                    rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
-                )
-            ]  # this is a list comprehension, just split over 3 lines ^
-            repolist = review_files
-            self.logger.info("{repolist}")
+            assert False, "TODO: handle this properly"
+            # self.logger.info(
+            #     f"No subset_repos_file provided, so will attempt formatting of ALL reviews files in {self.data_location}"
+            # )
+            # review_files = [
+            #     f
+            #     for f in os.listdir(self.data_location)
+            #     if re.match(
+            #         rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
+            #     )
+            # ]  # this is a list comprehension, just split over 3 lines ^
+            # repolist = review_files
+            # self.logger.info("{repolist}")
 
-            print(
-                f"Currently processing {len(review_files)} review files' worth of PR Reviews data"
-            )
+            # print(
+            #     f"Currently processing {len(review_files)} review files' worth of PR Reviews data"
+            # )
 
         else:
             assert isinstance(subset_repos_file, (str, Path)), (
                 f"subset_repos_file is neither string nor Path object; {type(subset_repos_file)}"
             )
-            all_review_files_repos = [
-                f
-                for f in os.listdir(self.data_location)
-                if re.match(
-                    rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
-                )
-            ]  # this is a list comprehension, just split over 3 lines ^
+            # all_review_files_repos = [
+            #     f
+            #     for f in os.listdir(self.data_location)
+            #     if re.match(
+            #         rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
+            #     )
+            # ]  # this is a list comprehension, just split over 3 lines ^
             # self.logger.info("{repolist}")
 
             with open(subset_repos_file, "r") as f:
@@ -299,7 +300,7 @@ class RunPRReviews(LocationSetup):
                 f"length of subset_repos_file is: {len(subset_repos)} repos"
             )
 
-            review_files = []
+            # review_files = []
             print(
                 f"Currently processing {len(subset_repos)} repos' worth of PR Reviews data"
             )
@@ -310,6 +311,9 @@ class RunPRReviews(LocationSetup):
                 matchstrings=[""],
                 file_extension=".csv",
             )
+            self.logger.info(
+                f"discussions_review_files item consists of {len(discussions_review_files)}."
+            )
             # gather main and sub PR CR filenames to process:
             main_sub_review_files = self.multi_repo_PRCR_file_matcher(
                 list_of_repos_to_match=subset_repos,
@@ -317,10 +321,15 @@ class RunPRReviews(LocationSetup):
                 matchstrings=["_main-reviews__", "_sub-reviews__"],
                 file_extension=".json",
             )
+            self.logger.info(
+                f"main_sub_review_files item consists of {len(main_sub_review_files)}."
+            )
 
             review_files = (
                 discussions_review_files + main_sub_review_files
             )  # important! This is the list of existing files matching subset repos which contain review info!
+
+            self.logger.info(f"review_files item consists of {len(review_files)}.")
 
         reviews_data = pd.DataFrame()
 
@@ -329,48 +338,47 @@ class RunPRReviews(LocationSetup):
         for repofile in review_files:
             self.logger.info(f"Checking {repofile} for PR code reviews.")
             # for repofile in review_files:
-            file = Path(self.data_location, repofile)
-            if file.exists():
-                self.logger.debug(f"Running on PR reviews file {file}.")
-                # gather THIS repo's data
-
-                reviews_data_next = self.process_format_PR_reviews(
-                    file,
-                )
-
-                # join this data to overall dataset from many repos
-                reviews_data = pd.concat([reviews_data, reviews_data_next])
-
-                self.logger.info(f"Generated df of {len(reviews_data)} review data.")
-
-                assert reviews_data is not None, (
-                    "reviews_data type is None; something went wrong!"
-                )
-
-                filestr = f"merged_reviews_data_all_types_x{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
-                writeout_path = Path(self.data_location, filestr)
-
-                try:
-                    # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
-                    reviews_data.to_csv(
-                        path_or_buf=writeout_path, header=True, index=False
-                    )
-                    self.logger.info(
-                        f"Saved reviews_data df for {len(review_files)} repos with {len(reviews_data)} devs to file: {filestr}"
-                    )
-
-                    return reviews_data
-
-                except Exception as e:
-                    self.logger.error(
-                        f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
-                    )
-                    raise
-
-            else:
+            file = Path(repofile)
+            # file = Path(self.data_location, repofile)
+            if not file.exists():
                 raise RuntimeError(
-                    f"Error handling PR reviews data from file {file} via {repofile}."
+                    f"Error handling PR reviews data from file {file} via {repofile}. File doesn't exist"
                 )
+            self.logger.debug(f"Running on PR reviews file {file}.")
+            # gather THIS repo's data
+
+            reviews_data_next = self.process_format_PR_reviews(
+                file,
+            )
+            print(
+                f"{len(reviews_data_next) if reviews_data_next is not None else 'help'}"
+            )
+            # join this data to overall dataset from many repos
+            reviews_data = pd.concat([reviews_data, reviews_data_next])
+
+            self.logger.info(f"Generated df of {len(reviews_data)} review data.")
+
+            assert reviews_data is not None, (
+                "reviews_data type is None; something went wrong!"
+            )
+
+            filestr = f"merged_reviews_data_all_types_x{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
+            writeout_path = Path(self.data_location, filestr)
+
+            try:
+                # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
+                reviews_data.to_csv(path_or_buf=writeout_path, header=True, index=False)
+                self.logger.info(
+                    f"Saved reviews_data df for {len(review_files)} repos with {len(reviews_data)} devs to file: {filestr}"
+                )
+
+                return reviews_data
+
+            except Exception as e:
+                self.logger.error(
+                    f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+                )
+                raise
 
     def do_all_PR_reviews_handling(self, dataset_repos_list):
         runprreviews = RunPRReviews(
