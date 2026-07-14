@@ -367,14 +367,14 @@ class RunPRReviews(LocationSetup):
             "reviews_data type is None; something went wrong!"
         )
 
-        filestr = f"merged_reviews_data_all_types_x{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
+        filestr = f"merged_reviews_data_all_types_x{len(subset_repos)}repos_{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
         writeout_path = Path(self.data_location, filestr)
 
         try:
             # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
             reviews_data.to_csv(path_or_buf=writeout_path, header=True, index=False)
             self.logger.info(
-                f"Saved reviews_data df for {len(review_files)} repos with {len(reviews_data)} devs to file: {filestr}"
+                f"Saved reviews_data df for {len(subset_repos)} repos with {len(reviews_data)} review interactions to file: {filestr}"
             )
 
             return reviews_data
