@@ -142,6 +142,7 @@ class RunPRReviews(LocationSetup):
         list_of_repos_to_match: list[str],
         out_filename: str,
         matchstrings: list[str],
+        file_extension: str,
     ) -> list[str | Path]:
         """
         This function runs through a list of repo_names and generates
@@ -153,6 +154,9 @@ class RunPRReviews(LocationSetup):
         """
         assert isinstance(list_of_repos_to_match, list)
         matching_files = []
+        assert file_extension in [".csv", ".json"], (
+            "File extension must be one of '.csv' or '.json' - please check this is correct."
+        )
 
         # run glob generator for multirepos:
         multi_glob = self.multi_repo_PRCR_glob_maker(
@@ -167,8 +171,10 @@ class RunPRReviews(LocationSetup):
 
         for fileglob in multi_glob:
             # self.logger.info(fileglob)
-            PRCR_file_glob = f"{fileglob}*.json"
-            PR_data_location = Path("../../data")  # == pathlib.Path(self.data_location)
+            PRCR_file_glob = f"{fileglob}*{file_extension}"
+            PR_data_location = (
+                self.data_location
+            )  # Path("../../data")  # == pathlib.Path(self.data_location)
             matching_files.append(
                 list(PR_data_location.glob(PRCR_file_glob))
             )  # non-recursive matching search with path objects returned.
@@ -201,34 +207,36 @@ class RunPRReviews(LocationSetup):
             rev_file_type = "sub"
         elif file_to_sort.match("all-PR-reviews_json_main-reviews*"):
             rev_file_type = "main"
+        elif file_to_sort.match("PR-issue-discussions*"):
+            rev_file_type = "discussions"
         return rev_file_type
 
     def process_format_PR_reviews(
         self,
-        reviews_json_file: Path,
+        reviews_file: Path,
         writeout: bool = True,
-        out_filename="processed-PR-reviews",
+        out_filename: str = "processed-PR-reviews",
     ):
         """
         Process and format PR_reviews (ie output of
         get_all_PR_code_reviews() for a repo) into a dataframe.
         """
         # match the type of review from the filename
-        reviews_type = self.review_sorter(file_to_sort=reviews_json_file)
+        reviews_type = self.review_sorter(file_to_sort=reviews_file)
 
         self.logger.info(
-            f"Processing PR {reviews_type} reviews data from file {reviews_json_file}"
+            f"Processing PR {reviews_type} reviews data from file {reviews_file}"
         )
 
-        assert reviews_type in ["sub", "main"], (
-            "'reviews_type' must be one of 'sub' or 'main' for correct handling."
+        assert reviews_type in ["sub", "main", "discussions"], (
+            "'reviews_type' must be one of 'sub' or 'main' or 'discussions' for correct handling."
         )
 
         reformat_PR_reviews = ReviewsFormatter(
             in_notebook=self.in_notebook,
         )
         reformatted_PR_reviews = reformat_PR_reviews.reformat_PR_reviews_object(
-            PR_reviews_json_file=reviews_json_file, reviews_type=reviews_type
+            PR_reviews_file=reviews_file, reviews_type=reviews_type
         )
         self.logger.info(
             f"did reformat {reviews_type} PR_reviews, created df of shape {reformatted_PR_reviews.shape} for repo {reformat_PR_reviews.repo_name}."
@@ -290,28 +298,29 @@ class RunPRReviews(LocationSetup):
             self.logger.info(
                 f"length of subset_repos_file is: {len(subset_repos)} repos"
             )
-            # Create a list of potential filename string starters for each repo in subset_repos_file list
-            review_globs = []
-            for reponame in subset_repos:
-                # out_filename="processed-PR-reviews" from reformat_PR_reviews.py
-                out_filename = "processed-PR-reviews"
-                sanitised_repo_name = reponame.replace("/", "-")
-                review_fileglob_main = (
-                    f"{self.data_location / out_filename}_main_{sanitised_repo_name}_"
-                )
-                review_fileglob_sub = (
-                    f"{self.data_location / out_filename}_sub_{sanitised_repo_name}_"
-                )
-                review_globs.append(review_fileglob_main)
-                review_globs.append(review_fileglob_sub)
 
-            review_files = [
-                # file for file in all_review_files_repos where file in review_globs
-                ##### START HERE
-            ]
+            review_files = []
             print(
-                f"Currently processing {len(review_files)} repos' worth of PR Reviews data"
+                f"Currently processing {len(subset_repos)} repos' worth of PR Reviews data"
             )
+            # gather PR-discussions filenames to process:
+            discussions_review_files = self.multi_repo_PRCR_file_matcher(
+                list_of_repos_to_match=subset_repos,
+                out_filename="PR-issue-discussions_",
+                matchstrings=[""],
+                file_extension=".csv",
+            )
+            # gather main and sub PR CR filenames to process:
+            main_sub_review_files = self.multi_repo_PRCR_file_matcher(
+                list_of_repos_to_match=subset_repos,
+                out_filename="all-PR-reviews_json",
+                matchstrings=["_main-reviews__", "_sub-reviews__"],
+                file_extension=".json",
+            )
+
+            review_files = (
+                discussions_review_files + main_sub_review_files
+            )  # important! This is the list of existing files matching subset repos which contain review info!
 
         reviews_data = pd.DataFrame()
 
@@ -319,32 +328,14 @@ class RunPRReviews(LocationSetup):
 
         for repofile in review_files:
             self.logger.info(f"Checking {repofile} for PR code reviews.")
-
             # for repofile in review_files:
             file = Path(self.data_location, repofile)
             if file.exists():
                 self.logger.debug(f"Running on PR reviews file {file}.")
                 # gather THIS repo's data
 
-                # check whether file is _main or _sub, then process it accordingly!
-                if "_main-" in repofile:
-                    # print("main")
-                    review_handle_type = "main"
-                elif "_sub-" in repofile:
-                    # print("sub")
-                    review_handle_type = "sub"
-                else:
-                    review_handle_type = "unknown review type"
-                    raise RuntimeError(
-                        f"Error: Failed handling {review_handle_type} PR Reviews data file {file}."
-                    )
-
-                assert review_handle_type in ["sub", "main"], (
-                    "'reviews_type' must be one of 'sub' or 'main' for correct handling."
-                )
-
                 reviews_data_next = self.process_format_PR_reviews(
-                    file, reviews_type=review_handle_type
+                    file,
                 )
 
                 # join this data to overall dataset from many repos
@@ -381,7 +372,7 @@ class RunPRReviews(LocationSetup):
                     f"Error handling PR reviews data from file {file} via {repofile}."
                 )
 
-    def do_all_PR_reviews_handling(self):
+    def do_all_PR_reviews_handling(self, dataset_repos_list):
         runprreviews = RunPRReviews(
             in_notebook=self.in_notebook,
             logger=self.logger,
@@ -398,12 +389,18 @@ class RunPRReviews(LocationSetup):
         # runprreviews.run_get_reviews(filepath=TODO) ##### THIS NEEDS FIXED TO TAKE INPUT FILE.
 
         try:
-            runprreviews.format_many_repo_PR_reviews()
+            reviews_data = runprreviews.format_many_repo_PR_reviews(
+                subset_repos_file=dataset_repos_list
+            )
         except Exception as e:
             self.logger.error(
                 f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
             )
             exit(1)
+        self.logger.info(
+            "completed processing review files, resulting in 'reviews_data' df."
+        )
+        return reviews_data
 
 
 # if __name__ == "__main__":
