@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 import logging
 from githubanalysis.setup_classes import LocationSetup
+from ast import literal_eval
 
 
 class ReviewsFormatter(LocationSetup):
@@ -147,21 +148,7 @@ class ReviewsFormatter(LocationSetup):
                 "discussions"  # create column filled with text 'discussion'
             )
             # handle getting user ID number here
-            rough_df["user_id"] = rough_df.user.apply(
-                lambda x: re.split(
-                    r"(\{\'\w+\'\: \'\w+\', \'id\'\: \w+,)",
-                    x,  # pull the login and id out of user string so 'id' value is final item
-                )[1]
-            )
-            rough_df["user_id"] = rough_df.user_id.apply(
-                lambda x: re.split(
-                    r"(\{\'\w+\'\: \'\w+\', \'id\'\: )",
-                    x,  # pull the user id number off the end of the shortened string
-                )[2]
-            )
-            rough_df["review_author_gh_id"] = rough_df.user_id.apply(
-                lambda x: x.replace(",", "")
-            )  # remove the trailing comma
+            rough_df["review_author_gh_id"] = rough_df.user.apply(lambda x: x["id"])
 
         elif reviews_type == "main":
             rough_df = rough_df.rename(
