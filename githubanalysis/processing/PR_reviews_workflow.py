@@ -350,7 +350,7 @@ class RunPRReviews(LocationSetup):
                 reviews_data_next = self.process_format_PR_reviews(
                     file,
                 )
-            except Exception as e:
+            except RuntimeError as e:
                 self.logger.warning(
                     f"process_format_PR_reviews failed on '{file}': {e}"
                 )
