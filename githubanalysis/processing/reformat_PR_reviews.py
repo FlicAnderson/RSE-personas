@@ -58,6 +58,25 @@ csv_initial_cols_discussions = [
     "issue_id_number",
     "discussion_author_gh_username",
 ]
+merged_reviews_cols_all_review_types = [
+    "review_item_url",
+    "review_PR_url",
+    "PR_review_id",
+    "author_review_date",
+    "subsequent_author_review_date",
+    "review_body",
+    "review_author_repo_association",
+    "reviewed_PR_number",
+    "review_author_gh_username",
+    "review_type",
+    "review_author_gh_id",
+    "repo_name",
+    "review_state",
+    "API_links",
+    "commit_id",
+    "main_PR_review_id",
+    "reply_to_subreview_id",
+]
 
 
 def dtype_dictionary(column_names: list[str]) -> dict[str, type[object]]:
