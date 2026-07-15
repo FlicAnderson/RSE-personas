@@ -301,7 +301,7 @@ class RunPRReviews(LocationSetup):
             )
 
             # review_files = []
-            print(
+            self.logger.info(
                 f"Currently processing {len(subset_repos)} repos' worth of PR Reviews data"
             )
             # gather PR-discussions filenames to process:
@@ -351,12 +351,12 @@ class RunPRReviews(LocationSetup):
                     file,
                 )
             except RuntimeError as e:
-                self.logger.warning(
-                    f"process_format_PR_reviews failed on '{file}': {e}"
+                self.logger.debug(
+                    f"Function process_format_PR_reviews() failed on '{file}': {e}"
                 )
                 continue
-            print(
-                f"{len(reviews_data_next) if reviews_data_next is not None else 'help'}"
+            self.logger.info(
+                f"There are {len(reviews_data_next) if reviews_data_next is not None else 'help'} review interactions in file {file}"
             )
             # join this data to overall dataset from many repos
             reviews_data = pd.concat([reviews_data, reviews_data_next])
@@ -399,7 +399,7 @@ class RunPRReviews(LocationSetup):
                          in this workflow, however they can be run by 
                          enabling the function `run_get_reviews()`
                         """)
-        # runprreviews.run_get_reviews(filepath=TODO) ##### THIS NEEDS FIXED TO TAKE INPUT FILE.
+        # runprreviews.run_get_reviews(filepath=TODO) ##### THIS NEEDS FIXED TO TAKE INPUT FILE, but not fixing now because data collection was run from commandline previously.
 
         try:
             reviews_data = runprreviews.format_many_repo_PR_reviews(
@@ -411,7 +411,7 @@ class RunPRReviews(LocationSetup):
             )
             exit(1)
         self.logger.info(
-            "completed processing review files, resulting in 'reviews_data' df."
+            "Completed processing review files, returning 'reviews_data' df"
         )
         return reviews_data
 
