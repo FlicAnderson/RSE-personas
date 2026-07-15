@@ -73,7 +73,7 @@ class ReviewsFormatter(LocationSetup):
             "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
             "review_body",  # content of the main review interaction
             "commit_id",  # latest code commit / version commented on (I believe)
-            "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
+            "review_type",  # "main" or "sub" or "discussions": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
             "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
         ]
         df_needs_these_colums_sub = [
@@ -92,7 +92,7 @@ class ReviewsFormatter(LocationSetup):
             "author_review_date",  # using subreview created date, as there's no submitted_at for subreviews.
             "subsequent_author_review_date",  # subreview updated (? future feat: consider counting this as a separate review interaction, esp if some time has passed? ?)
             "reply_to_subreview_id",  # if this is a reply to a subreview, point to ID of it
-            "review_type",  # "main" or "sub": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
+            "review_type",  # "main" or "sub" or "discussions": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
             "API_links",  # nested dictionary of links to related items (useful for tracing connections); keeping for safety but unlikely to use this as-is, could remove in future tbh
         ]
         df_needs_these_columns_discussions = [
@@ -106,6 +106,7 @@ class ReviewsFormatter(LocationSetup):
             "review_author_repo_association",  # relationship of reviewer to the repo (e.g. OWNER, COLLABORATOR, MEMBER ...)
             "author_review_date",  # date review was created
             "subsequent_author_review_date",  # date review was last revised
+            "review_type",  # "main" or "sub" or "discussions": NOTE: this difference derived from how GH API handles interactions around code review of PRs; Flic treating as equivalent 'code review interactions' for analysis.
             "review_state",  # one of: APPROVED / COMMENTED / CHANGES_REQUESTED
             "review_body",  # content of the main review interaction
             # "commit_id",  # latest code commit / version commented on # NOT IN DISCUSSIONS
