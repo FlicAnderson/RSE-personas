@@ -117,6 +117,7 @@ class ReviewsFormatter(LocationSetup):
                 PR_reviews_file,
                 dtype=object,  # type:ignore
             )  # load in JSON from the file
+            print("json:", rough_df.dtypes)  # temporary!
         else:  # it'll be discussions, so...
             rough_df = pd.read_csv(
                 PR_reviews_file,
@@ -124,6 +125,7 @@ class ReviewsFormatter(LocationSetup):
                 low_memory=False,  # load from CSV file
                 dtype=object,
             )
+            print("csv:", rough_df.dtypes)  # temporary!
         if rough_df.empty:
             raise RuntimeError(f"File '{PR_reviews_file}' is empty of content")
 
@@ -286,7 +288,7 @@ class ReviewsFormatter(LocationSetup):
                 f"Unknown reviews_type: {reviews_type}"
             )  # handle this error! oughtn't occur due to the assert at the start tho
         self.reformatted_PR_reviews = rough_df  # save processed df to reformatted_PR_reviews in class for reuse elsewhere
-
+        print(rough_df.dtypes)  # temporary!
         return self.reformatted_PR_reviews
 
     # def reformat_PR_reviews_from_file(self, PR_reviews_file: str):
