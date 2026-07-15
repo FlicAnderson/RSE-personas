@@ -325,18 +325,18 @@ class ReviewsFormatter(LocationSetup):
                 f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
             )
         elif reviews_type == "sub":
-            # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
-            rough_df["reply_to_subreview_id"] = (
-                rough_df["reply_to_subreview_id"]
-                .apply(
-                    "{:.0f}".format  # fix number displaying as scientific numbers
-                )
-                .replace(
-                    {
-                        str("nan"): ""
-                    }  # replace unwanted weird 'nan'-str with empty string
-                )
-            )
+            # # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
+            # rough_df["reply_to_subreview_id"] = (
+            #     rough_df["reply_to_subreview_id"]
+            #     .apply(
+            #         "{:.0f}".format  # fix number displaying as scientific numbers
+            #     )
+            #     .replace(
+            #         {
+            #             str("nan"): ""
+            #         }  # replace unwanted weird 'nan'-str with empty string
+            #     )
+            # )
             # drop columns not in list...
             rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
                 columns=[
