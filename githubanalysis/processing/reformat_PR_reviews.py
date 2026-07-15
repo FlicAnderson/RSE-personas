@@ -7,83 +7,6 @@ import logging
 from githubanalysis.setup_classes import LocationSetup
 from ast import literal_eval
 
-json_initial_cols_main = [
-    "id",
-    "node_id",
-    "user",
-    "body",
-    "state",
-    "html_url",
-    "pull_request_url",
-    "author_association",
-    "_links",
-    "submitted_at",
-    "commit_id",
-]
-json_initial_cols_sub = [
-    "id",
-    "node_id",
-    "url",
-    "pull_request_review_id",
-    "diff_hunk",
-    "path",
-    "position",
-    "original_position",
-    "commit_id",
-    "user",
-    "body",
-    "created_at",
-    "updated_at",
-    "html_url",
-    "pull_request_url",
-    "author_association",
-    "_links",
-    "original_commit_id",
-    "reactions",
-    "in_reply_to_id",
-]
-csv_initial_cols_discussions = [
-    "url",
-    "html_url",
-    "issue_url",
-    "id",
-    "node_id",
-    "user",
-    "created_at",
-    "updated_at",
-    "body",
-    "author_association",
-    "reactions",
-    "performed_via_github_app",
-    "issue_id_number",
-    "discussion_author_gh_username",
-]
-merged_reviews_cols_all_review_types = [
-    "review_item_url",
-    "review_PR_url",
-    "PR_review_id",
-    "author_review_date",
-    "subsequent_author_review_date",
-    "review_body",
-    "review_author_repo_association",
-    "reviewed_PR_number",
-    "review_author_gh_username",
-    "review_type",
-    "review_author_gh_id",
-    "repo_name",
-    "review_state",
-    "API_links",
-    "commit_id",
-    "main_PR_review_id",
-    "reply_to_subreview_id",
-]
-
-
-def dtype_dictionary(column_names: list[str]) -> dict[str, type[object]]:
-    return {
-        column_name: object for column_name in column_names
-    }  # 'object' here IS the type input value applied to each column name as the value
-
 
 class ReviewsFormatter(LocationSetup):
     def _log_name(self) -> str:
@@ -192,18 +115,14 @@ class ReviewsFormatter(LocationSetup):
         if reviews_type != "discussions":
             rough_df = pd.read_json(
                 PR_reviews_file,
-                dtype=dtype_dictionary(
-                    column_names=json_initial_cols_main
-                    if reviews_type == "main"
-                    else json_initial_cols_sub
-                ),
+                dtype=object,  # type:ignore
             )  # load in JSON from the file
         else:  # it'll be discussions, so...
             rough_df = pd.read_csv(
                 PR_reviews_file,
                 header=0,
                 low_memory=False,  # load from CSV file
-                dtype=dtype_dictionary(csv_initial_cols_discussions),  # type: ignore
+                dtype=object,
             )
         if rough_df.empty:
             raise RuntimeError(f"File '{PR_reviews_file}' is empty of content")
