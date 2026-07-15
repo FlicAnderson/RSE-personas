@@ -377,7 +377,13 @@ class RunPRReviews(LocationSetup):
 
         try:
             # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
-            reviews_data.to_csv(path_or_buf=writeout_path, header=True, index=False)
+            reviews_data.to_csv(
+                path_or_buf=writeout_path,
+                header=True,
+                index=False,
+                na_rep="",
+                mode="w",
+            )
             self.logger.info(
                 f"Saved reviews_data df for {len(subset_repos)} repos with {len(reviews_data)} review interactions to file: {filestr}"
             )
