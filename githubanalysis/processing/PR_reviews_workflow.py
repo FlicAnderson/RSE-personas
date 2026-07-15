@@ -367,6 +367,9 @@ class RunPRReviews(LocationSetup):
         assert reviews_data is not None, (
             "reviews_data type is None; something went wrong!"
         )
+        reviews_data.reset_index(
+            inplace=True, drop=True
+        )  # reset index to avoid multiple 0s (1 per df...)
 
         filestr = f"merged_reviews_data_all_types_x{len(subset_repos)}repos_x{len(reviews_data)}reviews_x{len(review_files)}reviewfiles_{self.current_date_info}.csv"
         writeout_path = Path(self.data_location, filestr)
