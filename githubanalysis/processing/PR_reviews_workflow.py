@@ -2,13 +2,13 @@
 
 import logging
 import pandas as pd
+import datetime
 from pathlib import Path
-import re
-import os
 import itertools
 
 from githubanalysis.setup_classes import LocationSetup
-import utilities.get_default_logger as loggit
+
+# import utilities.get_default_logger as loggit
 from githubanalysis.processing.get_all_PR_code_reviews import GetCodeReviews
 from githubanalysis.processing.reformat_PR_reviews import ReviewsFormatter
 
@@ -261,6 +261,7 @@ class RunPRReviews(LocationSetup):
         pull out all files matching out_filename prefix (default: "processed-PR-reviews_"),
         then run process_format_PR_reviews() on them.
         """
+        start_time = datetime.datetime.now()
 
         if subset_repos_file is None:
             assert False, "TODO: handle this properly"
@@ -377,11 +378,19 @@ class RunPRReviews(LocationSetup):
                 f"Saved reviews_data df for {len(subset_repos)} repos with {len(reviews_data)} review interactions to file: {filestr}"
             )
 
+            end_time = datetime.datetime.now()
+
+            self.logger.info(
+                f"Run time for {len(subset_repos)} repos with {len(reviews_data)} review interactions cumulatively: {end_time - start_time}"
+            )
             return reviews_data
 
         except Exception as e:
             self.logger.error(
                 f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+            )
+            self.logger.warning(
+                f"Run time until error for {len(subset_repos)} repos with {len(reviews_data)} review interactions cumulatively: {end_time - start_time}"
             )
             raise
 
