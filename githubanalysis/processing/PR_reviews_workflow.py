@@ -1,5 +1,6 @@
 """Workflow for running PR Code Review (PRCR) processing and analysis code for 1 repo."""
 
+import argparse
 import logging
 import pandas as pd
 import datetime
@@ -8,7 +9,7 @@ import itertools
 
 from githubanalysis.setup_classes import LocationSetup
 
-# import utilities.get_default_logger as loggit
+import utilities.get_default_logger as loggit
 from githubanalysis.processing.get_all_PR_code_reviews import GetCodeReviews
 from githubanalysis.processing.reformat_PR_reviews import ReviewsFormatter
 
@@ -411,7 +412,7 @@ class RunPRReviews(LocationSetup):
                          in this workflow, however they can be run by 
                          enabling the function `run_get_reviews()`
                         """)
-        # runprreviews.run_get_reviews(filepath=TODO) ##### THIS NEEDS FIXED TO TAKE INPUT FILE, but not fixing now because data collection was run from commandline previously.
+        # runprreviews.run_get_reviews(filepath=dataset_repos_list) # INTENTIONALLY COMMENTED OUT: data collection ALREADY RUN!
 
         try:
             reviews_data = runprreviews.format_many_repo_PR_reviews(
@@ -428,29 +429,55 @@ class RunPRReviews(LocationSetup):
         return reviews_data
 
 
-# if __name__ == "__main__":
-#     logger = loggit.get_default_logger(
-#         console=True,
-#         set_level_to="DEBUG",
-#         log_name="logs/PR_reviews_workflow_logs.txt",
-#         in_notebook=False,
-#     )
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-f",
+    "--filepath-for-repos-list",
+    metavar="PATH",
+    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
+    type=str,
+)
 
-#     logger.info("Running PR review data formatting.")
+if __name__ == "__main__":
+    args = parser.parse_args()
+    filepath: str | None = args.filepath_for_repos_list
 
-#     runprreviews = RunPRReviews(
-#         in_notebook=False,
-#         config_path="githubanalysis/config.cfg",
-#         logger=logger,
-#         out_filename="processed-PR-reviews",
-#     )
+    logger = loggit.get_default_logger(
+        console=True,
+        set_level_to="DEBUG",
+        log_name="logs/PR_reviews_workflow_logs.txt",
+        in_notebook=False,
+    )
 
-#     logger.info("The data collection steps for PR Code Review interactions and Issue Ticket ")
+    if (filepath is not None) != 1:
+        logger.error(
+            "Exactly one argument allowed; please avoid your current whole deal."
+        )
+        exit(1)
 
-#     try:
-#         runprreviews.format_many_repo_PR_reviews()
-#     except Exception as e:
-#         logger.error(
-#             f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
-#         )
-#         exit(1)
+    logger.info("Running PR review data formatting.")
+
+    runprreviews = RunPRReviews(
+        in_notebook=False,
+        config_path="githubanalysis/config.cfg",
+        logger=logger,
+        # out_filename="processed-PR-reviews",
+    )
+
+    logger.info(
+        "This workflow currently only runs data PROCESSING for PR code reviews data, "
+        "not data COLLECTION. See run_get_reviews()"
+    )
+
+    if filepath is not None:
+        logger.info(
+            f"Running multi repo PR code review interactions file processing method on repos in file: {filepath}"
+        )
+    try:
+        runprreviews.do_all_PR_reviews_handling(dataset_repos_list=filepath)
+        logger.info("PR CR processing workflow completed.")
+    except Exception as e:
+        logger.error(
+            f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
+        )
+        exit(1)
