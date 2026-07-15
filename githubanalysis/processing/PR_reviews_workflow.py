@@ -1,5 +1,6 @@
 """Workflow for running PR Code Review (PRCR) processing and analysis code for 1 repo."""
 
+import csv
 import argparse
 import logging
 import pandas as pd
@@ -383,6 +384,7 @@ class RunPRReviews(LocationSetup):
                 index=False,
                 na_rep="",
                 mode="w",
+                quoting=csv.QUOTE_ALL,  # for safety of data: forces everything to string shapes....
             )
             self.logger.info(
                 f"Saved reviews_data df for {len(subset_repos)} repos with {len(reviews_data)} review interactions to file: {filestr}"
