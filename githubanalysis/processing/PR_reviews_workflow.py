@@ -367,7 +367,7 @@ class RunPRReviews(LocationSetup):
             "reviews_data type is None; something went wrong!"
         )
 
-        filestr = f"merged_reviews_data_all_types_x{len(subset_repos)}repos_{len(review_files)}-reviewfiles_{self.current_date_info}.csv"
+        filestr = f"merged_reviews_data_all_types_x{len(subset_repos)}repos_x{len(reviews_data)}reviews_x{len(review_files)}reviewfiles_{self.current_date_info}.csv"
         writeout_path = Path(self.data_location, filestr)
 
         try:
