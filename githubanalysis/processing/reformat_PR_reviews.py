@@ -220,6 +220,8 @@ class ReviewsFormatter(LocationSetup):
         self.repo_name = rough_df["repo_name"][0]
         self.sanitised_repo_name = self.repo_name.replace("/", "-")
 
+        print("midway", PR_reviews_file, "csv:", list(rough_df.dtypes))  # temporary!
+
         if reviews_type == "main" or reviews_type == "sub":
             #  reformat user column to pull out login, pull PR number off PR_url,
             rough_df["reviewed_PR_number"] = rough_df.review_PR_url.map(
@@ -291,7 +293,7 @@ class ReviewsFormatter(LocationSetup):
                 f"Unknown reviews_type: {reviews_type}"
             )  # handle this error! oughtn't occur due to the assert at the start tho
         self.reformatted_PR_reviews = rough_df  # save processed df to reformatted_PR_reviews in class for reuse elsewhere
-        print("OUTPUT FILE", list(rough_df.dtypes))  # temporary!
+        print("PROCESSING/formatting OUTPUT FILE", list(rough_df.dtypes))  # temporary!
         return self.reformatted_PR_reviews
 
     # def reformat_PR_reviews_from_file(self, PR_reviews_file: str):
