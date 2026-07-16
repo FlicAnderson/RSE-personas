@@ -223,12 +223,15 @@ class ReviewsFormatter(LocationSetup):
                 lambda x: x.rsplit("/", 1)[1]
             )
             rough_df["review_author_gh_id"] = rough_df.review_author_gh_username.map(
-                lambda x: x.get(
-                    "id", None
-                )  # this needs to go above the username abbreviation to grab ID info before it's removed
+                # this needs to go above the username abbreviation to grab ID info before it's removed
+                lambda x: (
+                    x["id"] if x is not None else None
+                )  # this deals with x (ie url being none due to ghost (deleted) users)
             )
             rough_df["review_author_gh_username"] = (
-                rough_df.review_author_gh_username.map(lambda x: x.get("login", None))
+                rough_df.review_author_gh_username.map(
+                    lambda x: x["login"] if x is not None else None
+                )  # this deals with x (ie url being none due to ghost (deleted) users)
             )
         # discussions was handled differently above
 
