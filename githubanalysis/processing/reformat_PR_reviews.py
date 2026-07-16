@@ -157,6 +157,7 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_type"] = (
                 "discussions"  # create column filled with text 'discussion'
             )
+            print("L160", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
             # handle getting user ID number here
             rough_df["review_author_gh_id"] = rough_df.user.apply(
                 lambda x: literal_eval(x)["id"]
@@ -217,14 +218,16 @@ class ReviewsFormatter(LocationSetup):
             raise RuntimeError(
                 f"Unknown reviews_type: {reviews_type}"
             )  # handle this error! oughtn't occur due to the assert at the start tho
-
+        print("L220", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
         # add repo_name,
         rough_df["repo_name"] = rough_df.review_PR_url.map(
             lambda x: re.split(
                 r"(\w+\/\w+)", x.replace("https://api.github.com/repos/", "")
             )[1]
         )
+        print("L227", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
         self.repo_name = rough_df["repo_name"][0]
+        print("L229", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
         self.sanitised_repo_name = self.repo_name.replace("/", "-")
 
         print("end", PR_reviews_file, "csv:", list(rough_df.dtypes))  # temporary!
