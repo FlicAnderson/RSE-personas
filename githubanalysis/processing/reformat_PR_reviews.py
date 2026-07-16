@@ -160,7 +160,7 @@ class ReviewsFormatter(LocationSetup):
             print("L160", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
             # handle getting user ID number here
             rough_df["review_author_gh_id"] = rough_df.user.apply(
-                lambda x: literal_eval(x)["id"]
+                lambda x: str(literal_eval(x)["id"])
             )
             print("midway discussion", "csv:", list(rough_df.dtypes))  # temporary!
 
