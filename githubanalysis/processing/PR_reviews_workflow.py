@@ -174,9 +174,7 @@ class RunPRReviews(LocationSetup):
         for fileglob in multi_glob:
             # self.logger.info(fileglob)
             PRCR_file_glob = f"{fileglob}*{file_extension}"
-            PR_data_location = (
-                self.data_location
-            )  # Path("../../data")  # == pathlib.Path(self.data_location)
+            PR_data_location = self.data_location
             matching_files.append(
                 list(PR_data_location.glob(PRCR_file_glob))
             )  # non-recursive matching search with path objects returned.
@@ -266,36 +264,14 @@ class RunPRReviews(LocationSetup):
         start_time = datetime.datetime.now()
 
         if subset_repos_file is None:
-            assert False, "TODO: handle this properly"
-            # self.logger.info(
-            #     f"No subset_repos_file provided, so will attempt formatting of ALL reviews files in {self.data_location}"
-            # )
-            # review_files = [
-            #     f
-            #     for f in os.listdir(self.data_location)
-            #     if re.match(
-            #         rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
-            #     )
-            # ]  # this is a list comprehension, just split over 3 lines ^
-            # repolist = review_files
-            # self.logger.info("{repolist}")
-
-            # print(
-            #     f"Currently processing {len(review_files)} review files' worth of PR Reviews data"
-            # )
+            assert False, (
+                "TODO: handle this properly if not providing a subset_repos_file"
+            )
 
         else:
             assert isinstance(subset_repos_file, (str, Path)), (
                 f"subset_repos_file is neither string nor Path object; {type(subset_repos_file)}"
             )
-            # all_review_files_repos = [
-            #     f
-            #     for f in os.listdir(self.data_location)
-            #     if re.match(
-            #         rf"({re.escape(self.out_filename)}).*(.csv)", f, re.IGNORECASE
-            #     )
-            # ]  # this is a list comprehension, just split over 3 lines ^
-            # self.logger.info("{repolist}")
 
             with open(subset_repos_file, "r") as f:
                 subset_repos = [txtline.strip() for txtline in f.readlines()]
@@ -337,7 +313,6 @@ class RunPRReviews(LocationSetup):
         reviews_data = pd.DataFrame()
 
         # JOIN THE DF CONTENT OF EACH REPO's PR REVIEWS INTO ONE MASSIVE DF
-
         for repofile in review_files:
             self.logger.info(f"Checking {repofile} for PR code reviews.")
             # for repofile in review_files:
@@ -414,13 +389,12 @@ class RunPRReviews(LocationSetup):
             out_filename=self.out_filename,  # "processed-PR-reviews",
         )
 
-        self.logger.info("""The data collection steps for PR Code Review
-                         interactions and Issue Ticket Discussions have 
-                         been completed already and are not implemented 
-                         in this workflow, however they can be run by 
+        self.logger.info("""
+                         The data collection steps for PR Code Review interactions and Issue Ticket Discussions have 
+                         been completed already and are not implemented in this workflow, however they can be run by 
                          enabling the function `run_get_reviews()`
                         """)
-        # runprreviews.run_get_reviews(filepath=dataset_repos_list) # INTENTIONALLY COMMENTED OUT: data collection ALREADY RUN!
+        # runprreviews.run_get_reviews(filepath=dataset_repos_list) # << INTENTIONALLY COMMENTED OUT: data collection ALREADY RUN!
 
         try:
             reviews_data = runprreviews.format_many_repo_PR_reviews(

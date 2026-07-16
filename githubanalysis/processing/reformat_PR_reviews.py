@@ -26,9 +26,6 @@ class ReviewsFormatter(LocationSetup):
         self.repo_name = None
         self.sanitised_repo_name = None
 
-    # def reformat_PR_nums_object(self, ):
-    ## THIS WOULD FORMAT THE PR NUMBERS DETAILS CONTENT JSON INTO PD.DF; TO DO LATER
-    #     pass
     def reformat_PR_reviews_object(
         self, reviews_type: str, PR_reviews_file: Path
     ) -> pd.DataFrame | None:
@@ -118,9 +115,6 @@ class ReviewsFormatter(LocationSetup):
                 PR_reviews_file,
                 dtype=object,  # type:ignore
             )  # load in JSON from the file
-            print(
-                "input", PR_reviews_file, "json:", list(rough_df.dtypes)
-            )  # temporary!
         else:  # it'll be discussions, so...
             rough_df = pd.read_csv(
                 PR_reviews_file,
@@ -128,7 +122,6 @@ class ReviewsFormatter(LocationSetup):
                 low_memory=False,  # load from CSV file
                 dtype=object,
             )
-            print("input", PR_reviews_file, "csv:", list(rough_df.dtypes))  # temporary!
         if rough_df.empty:
             raise RuntimeError(f"File '{PR_reviews_file}' is empty of content")
 
@@ -157,12 +150,12 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_type"] = (
                 "discussions"  # create column filled with text 'discussion'
             )
-            print("L160", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
             # handle getting user ID number here
             rough_df["review_author_gh_id"] = rough_df.user.apply(
-                lambda x: str(literal_eval(x)["id"])
+                lambda x: str(
+                    literal_eval(x)["id"]
+                )  # str necessary to avoid conversion to float! :s
             )
-            print("midway discussion", "csv:", list(rough_df.dtypes))  # temporary!
 
         elif reviews_type == "main":
             rough_df = rough_df.rename(
@@ -182,9 +175,6 @@ class ReviewsFormatter(LocationSetup):
                 inplace=False,
             )
             rough_df["review_type"] = "main"  # create column filled with text 'main'
-            print(
-                "midway main", PR_reviews_file, "json:", list(rough_df.dtypes)
-            )  # temporary!
 
         elif reviews_type == "sub":
             rough_df = rough_df.rename(
@@ -208,9 +198,7 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_type"] = (
                 "subreview"  # create column filled with text 'subreview'
             )
-            print(
-                "midway sub", PR_reviews_file, "json:", list(rough_df.dtypes)
-            )  # temporary!
+
         else:
             self.logger.error(
                 "Encountered review-formatting function error trying to handle reviews_type for PR reviews file"
@@ -218,19 +206,16 @@ class ReviewsFormatter(LocationSetup):
             raise RuntimeError(
                 f"Unknown reviews_type: {reviews_type}"
             )  # handle this error! oughtn't occur due to the assert at the start tho
-        print("L220", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
+
         # add repo_name,
         rough_df["repo_name"] = rough_df.review_PR_url.map(
             lambda x: re.split(
                 r"(\w+\/\w+)", x.replace("https://api.github.com/repos/", "")
             )[1]
         )
-        print("L227", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
-        self.repo_name = rough_df["repo_name"][0]
-        print("L229", PR_reviews_file, "any:", list(rough_df.dtypes))  # temporary!
-        self.sanitised_repo_name = self.repo_name.replace("/", "-")
 
-        print("end", PR_reviews_file, "csv:", list(rough_df.dtypes))  # temporary!
+        self.repo_name = rough_df["repo_name"][0]
+        self.sanitised_repo_name = self.repo_name.replace("/", "-")
 
         if reviews_type == "main" or reviews_type == "sub":
             #  reformat user column to pull out login, pull PR number off PR_url,
@@ -261,19 +246,6 @@ class ReviewsFormatter(LocationSetup):
                 f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_main}."
             )
         elif reviews_type == "sub":
-            # # removes scientific notation of floats applied to this col due to NaNs aaro missing values...
-            # rough_df["reply_to_subreview_id"] = (
-            #     rough_df["reply_to_subreview_id"]
-            #     .apply(
-            #         "{:.0f}".format  # fix number displaying as scientific numbers
-            #     )
-            #     .replace(
-            #         {
-            #             str("nan"): ""
-            #         }  # replace unwanted weird 'nan'-str with empty string
-            #     )
-            # )
-            # drop columns not in list...
             rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
                 columns=[
                     col for col in rough_df if col not in df_needs_these_colums_sub
@@ -304,16 +276,6 @@ class ReviewsFormatter(LocationSetup):
             )  # handle this error! oughtn't occur due to the assert at the start tho
         self.reformatted_PR_reviews = rough_df  # save processed df to reformatted_PR_reviews in class for reuse elsewhere
         return self.reformatted_PR_reviews
-
-    # def reformat_PR_reviews_from_file(self, PR_reviews_file: str):
-    #     """
-    #     Reformat raw PR review data from json file into pd.DataFrame appropes format.
-    #     """
-
-    #     with open(PR_reviews_file, "r") as raw_PR_reviews_file:
-    #         raw_reviews = json.load(raw_PR_reviews_file)
-
-    #     return self.reformat_PR_reviews_object(raw_reviews)
 
     def save_formatted_PR_reviews(
         self, reviews_type: str, out_filename="processed-PR-reviews"
