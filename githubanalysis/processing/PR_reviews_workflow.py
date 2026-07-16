@@ -1,6 +1,7 @@
 """Workflow for running PR Code Review (PRCR) processing and analysis code for 1 repo."""
 
 import csv
+import sys
 import argparse
 import logging
 import pandas as pd
@@ -402,9 +403,9 @@ class RunPRReviews(LocationSetup):
             )
         except Exception as e:
             self.logger.error(
-                f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
+                f"do_all_PR_reviews_handling() try-section running format_many_repo_PR_reviews() on {dataset_repos_list}: error trying to read and process PR reviews files; error {e}"
             )
-            exit(1)
+            sys.exit(1)
         self.logger.info(
             "Completed processing review files, returning 'reviews_data' df"
         )
@@ -435,7 +436,7 @@ if __name__ == "__main__":
         logger.error(
             "Exactly one argument allowed; please avoid your current whole deal."
         )
-        exit(1)
+        sys.exit(1)
 
     logger.info("Running PR review data formatting.")
 
@@ -460,6 +461,6 @@ if __name__ == "__main__":
         logger.info("PR CR processing workflow completed.")
     except Exception as e:
         logger.error(
-            f"Encountered review-formatting workflow-borking error trying to read and process PR reviews files; error {e}"
+            f"__main__ running do_all_PR_reviews_handling() on {filepath}: Encountered review-formatting workflow-borking error; error {e}"
         )
-        exit(1)
+        sys.exit(1)
