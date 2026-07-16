@@ -350,7 +350,7 @@ class RunPRReviews(LocationSetup):
 
         filestr = f"merged_reviews_data_all_types_x{len(subset_repos)}repos_x{len(reviews_data)}reviews_x{len(review_files)}reviewfiles_{self.current_date_info}.csv"
         writeout_path = Path(self.data_location, filestr)
-        print("FINAL OUTPUT FILE", list(reviews_data.dtypes))  # temporary!
+
         try:
             # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
             reviews_data.to_csv(
