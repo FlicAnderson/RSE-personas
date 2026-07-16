@@ -161,6 +161,7 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_author_gh_id"] = rough_df.user.apply(
                 lambda x: literal_eval(x)["id"]
             )
+            print("midway discussion", "csv:", list(rough_df.dtypes))  # temporary!
 
         elif reviews_type == "main":
             rough_df = rough_df.rename(
@@ -180,6 +181,9 @@ class ReviewsFormatter(LocationSetup):
                 inplace=False,
             )
             rough_df["review_type"] = "main"  # create column filled with text 'main'
+            print(
+                "midway main", PR_reviews_file, "json:", list(rough_df.dtypes)
+            )  # temporary!
 
         elif reviews_type == "sub":
             rough_df = rough_df.rename(
@@ -203,6 +207,9 @@ class ReviewsFormatter(LocationSetup):
             rough_df["review_type"] = (
                 "subreview"  # create column filled with text 'subreview'
             )
+            print(
+                "midway sub", PR_reviews_file, "json:", list(rough_df.dtypes)
+            )  # temporary!
         else:
             self.logger.error(
                 "Encountered review-formatting function error trying to handle reviews_type for PR reviews file"
@@ -220,7 +227,7 @@ class ReviewsFormatter(LocationSetup):
         self.repo_name = rough_df["repo_name"][0]
         self.sanitised_repo_name = self.repo_name.replace("/", "-")
 
-        print("midway", PR_reviews_file, "csv:", list(rough_df.dtypes))  # temporary!
+        print("end", PR_reviews_file, "csv:", list(rough_df.dtypes))  # temporary!
 
         if reviews_type == "main" or reviews_type == "sub":
             #  reformat user column to pull out login, pull PR number off PR_url,
@@ -293,7 +300,6 @@ class ReviewsFormatter(LocationSetup):
                 f"Unknown reviews_type: {reviews_type}"
             )  # handle this error! oughtn't occur due to the assert at the start tho
         self.reformatted_PR_reviews = rough_df  # save processed df to reformatted_PR_reviews in class for reuse elsewhere
-        print("PROCESSING/formatting OUTPUT FILE", list(rough_df.dtypes))  # temporary!
         return self.reformatted_PR_reviews
 
     # def reformat_PR_reviews_from_file(self, PR_reviews_file: str):
