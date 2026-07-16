@@ -1,6 +1,7 @@
 """Workflow for running PR Code Review (PRCR) processing and analysis code for 1 repo."""
 
 import csv
+import traceback
 import sys
 import argparse
 import logging
@@ -331,9 +332,15 @@ class RunPRReviews(LocationSetup):
                 )
             except RuntimeError as e:
                 self.logger.debug(
-                    f"Function process_format_PR_reviews() failed on '{file}': {e}"
+                    f"Function process_format_PR_reviews() failed on '{file}' for repo  {self.repo_name}: {e}"
                 )
                 continue
+            except Exception:
+                self.logger.error(
+                    f"Unexpected error, traceback:\n{traceback.format_exc()}"
+                )
+                continue  # proceed to next repofile despite this error!!!
+
             self.logger.info(
                 f"There are {len(reviews_data_next) if reviews_data_next is not None else 'help'} review interactions in file {file}"
             )
@@ -405,7 +412,7 @@ class RunPRReviews(LocationSetup):
             self.logger.error(
                 f"do_all_PR_reviews_handling() try-section running format_many_repo_PR_reviews() on {dataset_repos_list}: error trying to read and process PR reviews files; error {e}"
             )
-            sys.exit(1)
+            return None
         self.logger.info(
             "Completed processing review files, returning 'reviews_data' df"
         )
