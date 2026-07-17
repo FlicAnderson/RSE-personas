@@ -188,11 +188,22 @@ class ReviewsFormatter(LocationSetup):
                     "author_association": "review_author_repo_association",
                     "created_at": "author_review_date",
                     "updated_at": "subsequent_author_review_date",
-                    "in_reply_to_id": "reply_to_subreview_id",
+                    # "in_reply_to_id": "reply_to_subreview_id", # this may not exist in all sub files.
                     "path": "file_reviewed",
                     "_links": "API_links",
+                    # original_commit_id (sub) == commit_id (main)
+                    #
                 },
                 errors="raise",
+                inplace=False,
+            )
+            rough_df = rough_df.rename(
+                columns={
+                    "in_reply_to_id": "reply_to_subreview_id",  # this may not exist in all sub files.
+                    # original_commit_id (sub) == commit_id (main)
+                    #
+                },
+                errors="ignore",
                 inplace=False,
             )
             rough_df["review_type"] = (
