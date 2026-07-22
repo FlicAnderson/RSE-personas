@@ -171,7 +171,7 @@ class RunIssues(LocationSetup):
         out_filename: str = "processed-issues",
     ):
         """
-        Save the reformatted commits data out to csv file.
+        Save the reformatted issues data out to csv file.
         """
         write_out = f"{self.data_location / out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
