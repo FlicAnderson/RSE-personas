@@ -288,7 +288,7 @@ class RunPRReviews(LocationSetup):
             # gather PR-discussions filenames to process:
             discussions_review_files = self.multi_repo_PRCR_file_matcher(
                 list_of_repos_to_match=subset_repos,
-                out_filename="PR-issue-discussions_",
+                out_filename="PR-issue-discussions_",  # this arg is more like an in_filename really, we're matching against it
                 matchstrings=[""],
                 file_extension=".csv",
             )
