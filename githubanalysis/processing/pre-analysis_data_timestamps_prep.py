@@ -84,9 +84,9 @@ class PrepDataTimes(DatasetSetup):
         pd.options.mode.copy_on_write = True
 
         rawissuesdf = pd.read_csv(datafile, index_col=0, lineterminator="\n")
-        assert (
-            len(rawissuesdf) != 0
-        ), f"File does not contain a dataframe; check input file {datafile}"
+        assert len(rawissuesdf) != 0, (
+            f"File does not contain a dataframe; check input file {datafile}"
+        )
 
         # remove unwanted columns ahead of data melt / reshape:
         rawissuesdf = rawissuesdf[
@@ -162,9 +162,11 @@ class PrepDataTimes(DatasetSetup):
 
         # update gh_username based on closer data if issue is closed
         issuesdf.loc[:, "gh_username"] = issuesdf.apply(
-            lambda row: row["closer"]
-            if pd.notna(row["closer"]) and row["interaction"] == "closed_at"
-            else row["gh_username"],
+            lambda row: (
+                row["closer"]
+                if pd.notna(row["closer"]) and row["interaction"] == "closed_at"
+                else row["gh_username"]
+            ),
             axis=1,
         )
 
@@ -529,12 +531,12 @@ class PrepDataTimes(DatasetSetup):
             f"Generated df of {len(issues_interactions)} issues interactions."
         )
 
-        assert (
-            commits_interactions is not None
-        ), "commits_interactions type is None; something went wrong!"
-        assert (
-            issues_interactions is not None
-        ), "issues_interactions type is None; something went wrong!"
+        assert commits_interactions is not None, (
+            "commits_interactions type is None; something went wrong!"
+        )
+        assert issues_interactions is not None, (
+            "issues_interactions type is None; something went wrong!"
+        )
 
         try:
             all_interactions_data = self.join_and_calculate_all_interactions(
@@ -599,7 +601,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
-        log_name="logs/pre-analysis_data_times_preps_logs.txt",
+        log_name="logs/pre-analysis_data_timestamps_prep_logs.txt",
         in_notebook=False,
     )
 
