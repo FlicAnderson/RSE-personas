@@ -200,8 +200,6 @@ class ReviewsFormatter(LocationSetup):
             rough_df = rough_df.rename(
                 columns={
                     "in_reply_to_id": "reply_to_subreview_id",  # this may not exist in all sub files.
-                    # original_commit_id (sub) == commit_id (main)
-                    #
                 },
                 errors="ignore",
                 inplace=False,
@@ -270,7 +268,7 @@ class ReviewsFormatter(LocationSetup):
             assert len(set(df_needs_these_colums_sub) & set(rough_df.columns)) == len(
                 set(df_needs_these_colums_sub)
             ), (
-                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_sub}."
+                f"Dataframe columns do not match expected list for PR reviews for {PR_reviews_file}; current columns: {rough_df.columns}; expected columns: {df_needs_these_colums_sub}; but 'in_reply_to_subreview_id is OK to be missing, so this error is not raised!"
             )
         elif reviews_type == "discussions":
             rough_df.drop(  # drop columns not in list method via: https://stackoverflow.com/a/56891565
