@@ -14,7 +14,7 @@ pd.options.mode.copy_on_write = True
 
 class PrepDataTimes(DatasetSetup):
     def _log_name(self) -> str:
-        return "pre-analysis_data_times_prep"
+        return "prep_timestamps"
 
     pd.options.mode.copy_on_write = True
 
@@ -601,7 +601,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
-        log_name="logs/pre-analysis_data_timestamps_prep_logs.txt",
+        log_name="logs/prep_timestamps_logs.txt",
         in_notebook=False,
     )
 

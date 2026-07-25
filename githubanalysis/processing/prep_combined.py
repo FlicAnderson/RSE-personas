@@ -11,7 +11,7 @@ import utilities.get_default_logger as loggit
 
 class PrepDataCombined(DatasetSetup):
     def _log_name(self) -> str:
-        return "pre-analysis_data_combined_prep"
+        return "prep_combined"
 
     def process_multi_origin_data(
         self,
@@ -24,7 +24,7 @@ class PrepDataCombined(DatasetSetup):
 
         Outputs: returns omnirepo, generates output csv file.
 
-        Example Run: python githubanalysis/processing/pre-analysis_data_combined_prep.py -c commits-data-per-dev_x2320-repos_2025-04-15.csv -i issues-data-per-dev_x2829-repos_x237715-repo-individuals_2025-04-15.csv
+        Example Run: python githubanalysis/processing/prep_combined.py -c commits-data-per-dev_x2320-repos_2025-04-15.csv -i issues-data-per-dev_x2829-repos_x237715-repo-individuals_2025-04-15.csv
         """
 
         commits_data_file = Path(self.data_read_location, commits_data_file)
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
-        log_name="logs/pre-analysis_data_combined_preps_logs.txt",
+        log_name="logs/prep_combined_logs.txt",
         in_notebook=False,
     )
 

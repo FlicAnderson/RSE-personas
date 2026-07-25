@@ -13,13 +13,13 @@ import utilities.get_default_logger as loggit
 
 class PrepDataIssues(DatasetSetup):
     def _log_name(self) -> str:
-        return "pre-analysis_data_issues_prep"
+        return "prep_issues"
 
     def process_issues(
         self,
     ) -> pd.DataFrame | None:
         """
-        (Follows format of pre-analysis_data_commits_prep.py)
+        (Follows format of prep_commits.py)
 
         Pull in processed-issues_* files from read_location folder (default: data/)
         Read in issues data per file (equivalent to per-repo).
@@ -33,7 +33,7 @@ class PrepDataIssues(DatasetSetup):
         # known issue where: n_of_issues_creators can be NaN if the gh_username is assigned to an issue, but has not created any issues in the repo
 
         EXAMPLE:
-        (coding-smart-github) flic@eidf103-vm:~/clonezone/coding-smart$(parse_git_branch)$ time python githubanalysis/processing/pre-analysis_data_issues_prep.py
+        (coding-smart-github) flic@eidf103-vm:~/clonezone/coding-smart$(parse_git_branch)$ time python githubanalysis/processing/prep_issues.py
         INFO:Currently processing 1707 repos' worth of issues
         INFO:Run time for 1707 repos with 15342 devs cumulatively: 0:00:31.781448
         INFO:Saved devs_issues_data df for 1707 repos with 15342 devs to file: data/issues-data-per-dev_x1704-repos_x15342-repo-individuals_2025-04-12.csv
@@ -240,7 +240,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
-        log_name="logs/pre-analysis_data_issues_preps_logs.txt",
+        log_name="logs/prep_issues_logs.txt",
         in_notebook=False,
     )
 

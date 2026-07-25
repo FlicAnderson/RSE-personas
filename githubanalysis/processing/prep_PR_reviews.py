@@ -8,7 +8,7 @@ from githubanalysis.setup_classes import DatasetSetup
 
 class PrepDataPRReviews(DatasetSetup):
     def _log_name(self) -> str:
-        return "pre-analysis_data_PR_reviews_prep"
+        return "prep_PR_reviews"
 
     def subset_by_dates(
         self,

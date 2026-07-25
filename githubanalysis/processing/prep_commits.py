@@ -13,7 +13,7 @@ import utilities.get_default_logger as loggit
 
 class PrepDataCommits(DatasetSetup):
     def _log_name(self) -> str:
-        return "pre-analysis_data_commits_prep"
+        return "prep_commits"
 
     def process_commits(
         self,
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
-        log_name="logs/pre-analysis_data_commits_preps_logs.txt",
+        log_name="logs/prep_commits_logs.txt",
         in_notebook=False,
     )
 
