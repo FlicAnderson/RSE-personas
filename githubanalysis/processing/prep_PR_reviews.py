@@ -1,5 +1,6 @@
 """Collate PR Code Review (PRCR) datafiles, generate dataframes ready for analysis and get timestamp and interaction types info for Pull Request Code Reviews (PRCR)."""
 
+from logging import Logger
 from pathlib import Path
 import pandas as pd
 import datetime
@@ -20,6 +21,15 @@ GH_API_AUTHOR_ASSOCIATION = [  # via https://docs.github.com/en/rest/issues/issu
 class PrepDataPRReviews(DatasetSetup):
     def _log_name(self) -> str:
         return "prep_PR_reviews"
+
+    def __init__(
+        self,
+        dataset_name: str | None,
+        in_notebook: bool,
+        exists_ok: bool = False,
+        logger: None | Logger = None,
+    ) -> None:
+        super().__init__(dataset_name, in_notebook, exists_ok, logger)
 
     def subset_by_dates(
         self,
