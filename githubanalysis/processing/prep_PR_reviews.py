@@ -261,5 +261,23 @@ class PrepDataPRReviews(DatasetSetup):
         per_repo_individual_data_with_reviews_assocs = per_repo_individual_data.merge(
             self.calc_RC_PRCR_as_association_type(reviews_df=reviews_df)
         )
+        self.logger.info(
+            f"Attempting to write out reviews (PRCR) data df with shape: {per_repo_individual_data_with_reviews_assocs.shape}"
+        )
+
+        filestr = f"per-repo-individual-reviews_data_x{per_repo_individual_data.repo_name.nunique()}repos_x{per_repo_individual_data_with_reviews_assocs.groupby(by=['repo_name', 'review_author_gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
+        writeout_path = Path(self.data_location, filestr)
+
+        try:
+            per_repo_individual_data_with_reviews_assocs.to_csv(
+                path_or_buf=writeout_path,
+                header=True,
+                index=False,
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Error in attempting to write output Reviews data-per-dev file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+            )
+            raise
 
         return per_repo_individual_data_with_reviews_assocs
