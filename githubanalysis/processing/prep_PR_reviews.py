@@ -4,7 +4,7 @@ from logging import Logger
 from pathlib import Path
 import pandas as pd
 import datetime
-from githubanalysis.setup_classes import DatasetSetup
+from githubanalysis.setup_classes import LocationSetup
 
 GH_API_AUTHOR_ASSOCIATION = [  # via https://docs.github.com/en/rest/issues/issue-dependencies?apiVersion=2022-11-28 Response Schema > "author_association"
     "COLLABORATOR",
@@ -18,7 +18,7 @@ GH_API_AUTHOR_ASSOCIATION = [  # via https://docs.github.com/en/rest/issues/issu
 ]
 
 
-class PrepDataPRReviews(DatasetSetup):
+class PrepDataPRReviews(LocationSetup):
     def _log_name(self) -> str:
         return "prep_PR_reviews"
 
@@ -26,10 +26,10 @@ class PrepDataPRReviews(DatasetSetup):
         self,
         dataset_name: str | None,
         in_notebook: bool,
-        exists_ok: bool = False,
         logger: None | Logger = None,
     ) -> None:
-        super().__init__(dataset_name, in_notebook, exists_ok, logger)
+        super().__init__(in_notebook, logger)
+        self.dataset_name = dataset_name
 
     def subset_by_dates(
         self,
