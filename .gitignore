@@ -186,6 +186,7 @@ githubanalysis/config.cfg
 zenodocode/zenodoconfig.cfg
 githubanalysis/*.cfg
 zenodocode/*.cfg
+NameFixes.py
 
 # log files 
 *_logs.txt
