@@ -289,21 +289,65 @@ class PrepDataTimes(LocationSetup):
         )  # TODO: add discussion to this when implementing
 
         # JOIN ISSUES AND COMMITS AND REVIEWS DATA TOGETHER HERE:
-        all_types_interactions = issues_interactions.merge(
-            right=commits_interactions,
-            how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-            left_on=["repo_name", "gh_username"],
-            right_on=["repo_name", "gh_username"],
-            indicator=False,
-        )
-        all_types_interactions = all_types_interactions.merge(
-            right=reviews_interactions,
-            how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-            left_on=["repo_name", "gh_username"],
-            right_on=["repo_name", "gh_username"],
-            indicator=False,
-        )
+        self.logger.info("Attempting FIRST join: issues + commits...")
+        try:
+            all_types_interactions = issues_interactions.merge(
+                right=commits_interactions,
+                how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
+                left_on=["repo_name", "gh_username"],
+                right_on=["repo_name", "gh_username"],
+                indicator=False,
+            )
+            writeout_path_tmp_ic = Path(
+                self.data_location,
+                f"tmp_interactions_merge_ic__{self.current_date_info}.csv",
+            )
+            all_types_interactions.to_csv(
+                writeout_path_tmp_ic, header=True, index=False
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Problem running data analysis workflow: {e}; arguments were: {args}."
+            )
+            self.logger.error(
+                f"Unexpected error with FIRST MERGE (issues + commits), traceback:\n{traceback.format_exc()}"
+            )
+            raise
+
+        self.logger.info("Attempting SECOND join: issues+commits + reviews...")
+        try:
+            all_types_interactions = all_types_interactions.merge(
+                right=reviews_interactions,
+                how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
+                left_on=["repo_name", "gh_username"],
+                right_on=["repo_name", "gh_username"],
+                indicator=False,
+            )
+            writeout_path_tmp_icr = Path(
+                self.data_location,
+                f"tmp_interactions_merge_icr__{self.current_date_info}.csv",
+            )
+            all_types_interactions.to_csv(
+                writeout_path_tmp_icr, header=True, index=False
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Problem running data analysis workflow: {e}; arguments were: {args}."
+            )
+            self.logger.error(
+                f"Unexpected error with SECOND MERGE (issues+commits + reviews), traceback:\n{traceback.format_exc()}"
+            )
+            raise
+        # self.logger.info("Attempting THIRD join: issues+commits+reviews + discussions...")
         # TODO: add discussions df to this when implementing
+
+        ### this is a SAFETY WRITEOUT: remove this after confident about merges! vvvvvvvvvv
+        writeout_path_tmp = Path(
+            self.data_location,
+            f"tmp_interactions_merged_{self.current_date_info}.csv",
+        )
+        all_types_interactions.to_csv(writeout_path_tmp, header=True, index=False)
+        ### this is a SAFETY WRITEOUT: remove this after confident about merges! ^^^^^^^^^
 
         self.logger.debug(
             "joined issues and commits and reviews interactions"
@@ -347,6 +391,7 @@ class PrepDataTimes(LocationSetup):
         )
         self.logger.info(f"{n_after_drop} rows remaining.")
 
+        # reasonably important writeout: combined issues + commits + reviews with missing data handled.
         all_types_interactions.to_csv(
             Path(
                 self.data_location,
