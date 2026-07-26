@@ -223,14 +223,7 @@ class PrepDataTimes(DatasetSetup):
         )
         self.logger.debug("removed missing GH_username rows")
 
-        print(all_types_interactions["datetime_day"])
-        print(all_types_interactions["datetime_day"])
-
         self.logger.debug(
-            all_types_interactions.groupby(["repo_name", "gh_username"])["datetime_day"]
-        )
-
-        print(
             all_types_interactions.groupby(["repo_name", "gh_username"])["datetime_day"]
         )
 
