@@ -50,7 +50,7 @@ class Globber(LocationSetup):
 
         output_globs = []
 
-        self.logger.info(f"{subset_repos=}")  # for clarity of what's running here:
+        self.logger.debug(f"{subset_repos=}")  # for clarity of what's running here:
 
         for reponame in subset_repos:  # (currently 2x repos)
             output_globs.extend(
@@ -60,7 +60,7 @@ class Globber(LocationSetup):
                     matchstrings=matchstrings,
                 )
             )
-        self.logger.info(
+        self.logger.debug(
             f"{output_globs=}"
         )  # return item now contains multiple repos' globs :D
 
@@ -72,7 +72,7 @@ class Globber(LocationSetup):
         out_filename: str,
         matchstrings: list[str],
         file_extension: str,
-    ) -> list[str | Path]:
+    ) -> list[Path]:
         """
         This function runs through a list of repo_names and generates
         filename globs for each repo_name, based on an intial filename
