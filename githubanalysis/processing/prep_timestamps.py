@@ -756,17 +756,17 @@ class PrepDataTimes(LocationSetup):
             "attempting to subset issues data and wrangle for column naming, interaction "
         )
         # do column name renames, adding interaction types, pull out datetime info etc
-        issues_interactions = self.get_issues_PRs_interactions(
-            rawissuesdf=issues_interactions
-        )
+        # issues_interactions = self.get_issues_PRs_interactions(
+        #     rawissuesdf=issues_interactions
+        # )
         # read commits data in from previously created file and subset to relevant repos:
         commits_interactions = self.read_interactions(
             interactions_file=commits_interactions_file, repo_list=repo_list
         )
         ## do column name renames, adding interaction types, pull out datetime info etc
-        commits_interactions = self.get_commit_interactions(
-            commitsdf=commits_interactions
-        )
+        # commits_interactions = self.get_commit_interactions(
+        #     commitsdf=commits_interactions
+        # )
         # read in and subset the large collated reviews data file to the specified repos only
         reviews_interactions = self.read_interactions(
             interactions_file=reviews_interactions_file, repo_list=repo_list
