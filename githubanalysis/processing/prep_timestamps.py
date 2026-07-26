@@ -1,13 +1,18 @@
 """Get timestamp and interaction types info for issues AND commits datasets."""
 
+import argparse
 from pathlib import Path
 import datetime
+import sys
 import os
+import csv
 import re
 from ast import literal_eval
 import pandas as pd
 from githubanalysis.setup_classes import DatasetSetup
 import utilities.get_default_logger as loggit
+from utilities.simple_read_repos_from_file import Repo_Reader
+from utilities.glob_making_matching import Globber
 
 pd.options.mode.copy_on_write = True
 
@@ -184,7 +189,10 @@ class PrepDataTimes(DatasetSetup):
         return interactions_df_issues
 
     def join_and_calculate_all_interactions(
-        self, commits_interactions: pd.DataFrame, issues_interactions: pd.DataFrame
+        self,
+        commits_interactions: pd.DataFrame,
+        issues_interactions: pd.DataFrame,
+        reviews_interactions: pd.DataFrame,
     ) -> pd.DataFrame:
         """
         Function combines issues and commits interactions and timestamp data
@@ -194,9 +202,15 @@ class PrepDataTimes(DatasetSetup):
 
         self.logger.debug(issues_interactions.info())
         self.logger.debug(commits_interactions.info())
+        self.logger.debug(reviews_interactions.info())
 
         self.logger.debug(issues_interactions.columns)
         self.logger.debug(commits_interactions.columns)
+        self.logger.debug(reviews_interactions.columns)
+
+        assert "datetime_day" in reviews_interactions.columns, (
+            "The datetime_day column is missing from reviews df; please fix, rename and retry"
+        )  # in case I forget to address this earlier.
 
         filestr_iss = f"issues_interactions_x{len(issues_interactions)}_{self.current_date_info}.csv"
         writeout_path_iss = Path(self.data_write_location, filestr_iss)
@@ -210,13 +224,16 @@ class PrepDataTimes(DatasetSetup):
         self.logger.debug(
             f"wrote out commits and issues intercations dfs to separate csv files: {writeout_path_cmt} and {writeout_path_iss}"
         )
+        self.logger.info(
+            "Reviews data is already an existing file containing interactions, so not written out again. "
+        )
 
         # JOIN ISSUES AND COMMITS DATA TOGETHER HERE:
         all_types_interactions = pd.concat(
-            [issues_interactions, commits_interactions],
+            [issues_interactions, commits_interactions, reviews_interactions],
             join="outer",
         )
-        self.logger.debug("joined issues and commits interactions")
+        self.logger.debug("joined issues and commits and reviews interactions")
         # # remove rows where gh_username is NaN/NA
         all_types_interactions = all_types_interactions.dropna(
             subset="gh_username", axis=0
@@ -449,6 +466,11 @@ class PrepDataTimes(DatasetSetup):
 
     def interactions_data_workflow(
         self,
+        repo_list: list[str],
+        issues_interactions_file: Path | str,
+        commits_interactions_file: Path | str,
+        reviews_interactions_file: Path | str,
+        # discussions_interactions_file: Path | str,
     ) -> pd.DataFrame | None:
         """
         Reads in processed data from commits and issue tickets
@@ -458,23 +480,23 @@ class PrepDataTimes(DatasetSetup):
         pd.options.mode.copy_on_write = True
 
         start_time = datetime.datetime.now()
+        self.logger.info(f"processing {len(repo_list)} repos' worth of issues data")
 
-        # commit_matches = list(
-        #     filter(
-        #         lambda x: x is not None,
-        #         (re.match(self._COMMITS_PATTERN, f) for f in os.listdir(read_location)),
-        #     )
-        # )
+        ## Issues interactions (inc PRs)
+        globber = Globber(in_notebook=self.in_notebook, logger=self.logger)
+        # list_of_fileglobs = globber.filename_glob_maker(repo_name=, out_filename=, matchstrings=)
+        issues_files_repolist = globber.multi_repo_filename_file_matcher(
+            list_of_repos_to_match=repo_list,
+            out_filename="processed-issues",
+            matchstrings=[""],
+            file_extension=".csv",
+        )
 
-        issues_files_repolist = [
-            f
-            for f in os.listdir(self.data_read_location)
-            if re.match(self._ISSUES_PATTERN, f)
-        ]
-
-        # for i in commit_matches:
-        #     assert i
-        #     name = i.group(1)
+        # issues_files_repolist = [
+        #     f
+        #     for f in os.listdir(self.data_read_location)
+        #     if re.match(self._ISSUES_PATTERN, f)
+        # ]
 
         # get all the processed-commits files from the folder:
         commits_files_repolist = [
@@ -482,12 +504,12 @@ class PrepDataTimes(DatasetSetup):
             for f in os.listdir(self.data_read_location)
             if re.match(r"(processed-commits_).*(\.csv)", f)
         ]
-        # same for issues files:
-        issues_files_repolist = [
-            f
-            for f in os.listdir(self.data_read_location)
-            if re.match(r"(processed-issues_).*(\.csv)", f)
-        ]
+        # # same for issues files:
+        # issues_files_repolist = [
+        #     f
+        #     for f in os.listdir(self.data_read_location)
+        #     if re.match(r"(processed-issues_).*(\.csv)", f)
+        # ]
 
         self.logger.info(
             f"Working on {len(commits_files_repolist)} files for commits and {len(issues_files_repolist)} issues data files"
@@ -524,6 +546,11 @@ class PrepDataTimes(DatasetSetup):
             f"Generated df of {len(issues_interactions)} issues interactions."
         )
 
+        # READ IN REVIEWS DATA as df
+        # rename columns and drop irrelevants to match formats in commits_interactions and issues_interactions
+        # assert reviews_interactions is not None, "reviews_interactions is None, this is bad. Check the file {reviews_interactions_file}"
+        # assert not reviews_interactions.empty, f"reviews_interactions df is empty. This shouldn't be true? Check the file {reviews_interactions_file}"
+
         assert commits_interactions is not None, (
             "commits_interactions type is None; something went wrong!"
         )
@@ -533,7 +560,9 @@ class PrepDataTimes(DatasetSetup):
 
         try:
             all_interactions_data = self.join_and_calculate_all_interactions(
-                commits_interactions, issues_interactions
+                commits_interactions,
+                issues_interactions,
+                reviews_interactions,  # TODO: fix this function content to include and address reviews
             )
 
             # replace misisng data with zeroes:
@@ -560,7 +589,12 @@ class PrepDataTimes(DatasetSetup):
             try:
                 # WRITE OUT THIS SUPER IMPORTANT DATA TO FILE!
                 all_interactions_data.to_csv(
-                    path_or_buf=writeout_path, header=True, index=False
+                    path_or_buf=writeout_path,
+                    index=False,
+                    header=True,
+                    na_rep="",
+                    mode="w",
+                    quoting=csv.QUOTE_ALL,  # for safety of data: forces everything to string shapes....
                 )
 
                 self.logger.info(f"Merged dataset file written out to {writeout_path}")
@@ -579,7 +613,7 @@ class PrepDataTimes(DatasetSetup):
 
             except Exception as e:
                 self.logger.error(
-                    f"Error in attempting to write output file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+                    f"Error in attempting to write output file to {writeout_path}; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
                 )
                 raise
 
@@ -590,7 +624,52 @@ class PrepDataTimes(DatasetSetup):
             raise
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-f",
+    "--filepath-for-repos-list",
+    metavar="PATH",
+    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
+    type=str,
+)
+parser.add_argument(
+    "-c",
+    "--filepath-for-commits-interactions",
+    metavar="PATH",
+    help="Path to file containing Commit interactions e.g. ",
+    type=str,
+)
+parser.add_argument(
+    "-i",
+    "--filepath-for-issues-interactions",
+    metavar="PATH",
+    help="Path to file containing Issues (and PR) interactions e.g. ",
+    type=str,
+)
+parser.add_argument(
+    "-r",
+    "--filepath-for-reviews-interactions",
+    metavar="PATH",
+    help="Path to file containing PR Code Reviews interactions e.g. ",
+    type=str,
+)
+parser.add_argument(
+    "-d",
+    "--filepath-for-discussions-interactions",
+    metavar="PATH",
+    help="Path to file containing issue ticket Discussions interactions e.g. ",
+    type=str,
+)
+
+
 if __name__ == "__main__":
+    args = parser.parse_args()
+    filepath: str | None = args.filepath_for_repos_list
+    commits_interactions_file: str = args.commits_interactions_file
+    issues_interactions_file: str = args.issues_interactions_file
+    reviews_interactions_file: str = args.reviews_inteactions_file
+    # discussions_interactions_file: str = args.discussions_interactions_file
+
     logger = loggit.get_default_logger(
         console=True,
         set_level_to="DEBUG",
@@ -598,8 +677,21 @@ if __name__ == "__main__":
         in_notebook=False,
     )
 
+    logger.info(f"\n Proceeding to prep_timestamps.py with commandline inputs: {args}")
+
+    assert filepath != None, (
+        "missing filepath for repo_names to process data for; this should be a .txt file such as 'data/code_review_subset_2025-05-30_x16.txt'. "
+    )
+
+    reporeader = Repo_Reader(
+        in_notebook=False,
+        logger=logger,
+    )
+    logger.info(f"reading repo names from file: {filepath}")
+    repo_list = reporeader.get_repos(repo_list_file_name=filepath)
+
     logger.info(
-        "Running data timestamps pre-analysis preparation methods on processed- commits and issues files."
+        f"Running data timestamps pre-analysis preparation methods on processed- commits and issues files for {len(repo_list)} repositories' data."
     )
 
     prepdatatimes = PrepDataTimes(
@@ -609,4 +701,16 @@ if __name__ == "__main__":
         exists_ok=True,
     )
 
-    times_data = prepdatatimes.interactions_data_workflow()
+    try:
+        times_data = prepdatatimes.interactions_data_workflow(
+            repo_list=repo_list,
+            issues_interactions_file=issues_interactions_file,
+            commits_interactions_file=commits_interactions_file,
+            reviews_interactions_file=reviews_interactions_file,
+            # discussions_interactions_file=discussions_interactions_file,
+        )
+    except Exception as e:
+        logger.error(
+            f"__main__ running do_all_Pinteractions_data_workflow() on {filepath}: Encountered insurmountable error; error {e}"
+        )
+        sys.exit(1)
