@@ -171,7 +171,7 @@ class PrepDataTimes(DatasetSetup):
         )
 
         # drop non-required columns
-        interactions_df_commits = issuesdf[
+        interactions_df_issues = issuesdf[
             [
                 "repo_name",
                 "gh_username",
@@ -181,7 +181,7 @@ class PrepDataTimes(DatasetSetup):
             ]
         ]
 
-        return interactions_df_commits
+        return interactions_df_issues
 
     def join_and_calculate_all_interactions(
         self, commits_interactions: pd.DataFrame, issues_interactions: pd.DataFrame
