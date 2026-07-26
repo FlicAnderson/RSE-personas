@@ -23,6 +23,103 @@ class PrepDataTimes(DatasetSetup):
 
     pd.options.mode.copy_on_write = True
 
+    # def get_discussions_interactions(self, discussions_interactions_file:Path) -> pd.DataFrame:
+    #     pass
+
+    def get_reviews_interactions(self, reviews_interactions_file: Path) -> pd.DataFrame:
+        # READ IN REVIEWS DATA as df
+        self.logger.info(
+            f"Attempting to read in: {reviews_interactions_file}; this could take some SECONDS if it's a large file"
+        )
+        try:
+            reviews_interactions = pd.read_csv(
+                filepath_or_buffer=reviews_interactions_file,
+                header=0,
+                low_memory=False,
+                dtype=object,
+            )
+            assert not reviews_interactions.empty, (
+                "Read-in reviews df is empty but should not be."
+            )
+            assert reviews_interactions is not None, (
+                "reviews_interactions is None, this is bad. Check the file {reviews_interactions_file}"
+            )
+            self.logger.info(
+                f"Columns for reviews_interactions df are: {reviews_interactions.columns}"
+            )
+        except:
+            self.logger.error(
+                f"Problem loading in reviews_interactions from file {reviews_interactions_file}"
+            )
+            raise RuntimeError(
+                f"Reviews_interactions read in not working somehow for: {reviews_interactions_file}"
+            )
+        # rename columns and drop irrelevants to match formats in commits_interactions and issues_interactions
+        reviews_interactions = reviews_interactions.rename(
+            columns={
+                "review_author_gh_username": "gh_username",
+                "author_review_date": "datetime",
+            },
+            inplace=False,
+            errors="raise",
+        )
+
+        # split subsequent_author_review_date as new interaction?
+        self.logger.info(
+            f"There are {reviews_interactions.subsequent_author_review_date.isna().sum()} empty fields for subsequent_author_review_date."
+        )  # for Set1 this is ~800K
+        self.logger.info(
+            f"There are {reviews_interactions.subsequent_author_review_date.notna().sum()} NON-empty fields for subsequent_author_review_date."
+        )  # for Set1 this is ~1.7M
+        # TODO: this is a LOT of subsequent interactions which could be pulled out as a separate interaction event
+
+        # after reading in, columns in reviews_interactions are:
+        #    ['review_item_url', 'review_PR_url', 'PR_review_id',
+        #    'author_review_date', 'subsequent_author_review_date', 'review_body',
+        #    'review_author_repo_association', 'reviewed_PR_number',
+        #    'review_author_gh_username', 'review_type', 'review_author_gh_id',
+        #    'repo_name', 'review_state', 'API_links', 'commit_id',
+        #    'main_PR_review_id', 'reply_to_subreview_id'],
+
+        # remove unwanted columns:
+        reviews_interactions = reviews_interactions[
+            [
+                "repo_name",
+                "gh_username",
+                "datetime",
+                "subsequent_author_review_date",  # re-allow this if pulling subsequent reviews into their own interactions
+                # "review_author_gh_id",  # ideally would want to keep this in and handle gh_id instead of gh_username but no time to implement that
+                "review_state",  # re-allow if pulling this as a type of review interaction
+            ]
+        ]
+
+        # add column: contribution
+        reviews_interactions.loc[:, "contribution"] = "review"
+        # add column: "interaction_type"
+        reviews_interactions.loc[:, "interaction_type"] = "code_reviewed"
+
+        # pull out only date (YYYY-MM-DD) info to allow 'unique DAYs' to be obtained
+        reviews_interactions.loc[:, "datetime_day"] = (
+            reviews_interactions.datetime.apply(lambda x: pd.Timestamp(x).date())
+        )
+
+        # TODO ? write this reiews_interactions df out to .csv in this interactions format?
+
+        interactions_df_reviews = reviews_interactions[  # save to different name
+            [
+                "repo_name",
+                "gh_username",
+                "datetime_day",
+                "contribution",
+                "interaction_type",
+            ]
+        ]
+
+        self.logger.info(
+            f"Returning processed interactions_df_reviews df of shape: {interactions_df_reviews.shape}"
+        )
+        return interactions_df_reviews
+
     def get_commit_interactions(self, datafile: str | Path) -> pd.DataFrame:
         """
         Function to read processed_commits data file for 1 repo;
@@ -231,7 +328,7 @@ class PrepDataTimes(DatasetSetup):
         # JOIN ISSUES AND COMMITS DATA TOGETHER HERE:
         all_types_interactions = pd.concat(
             [issues_interactions, commits_interactions, reviews_interactions],
-            join="outer",
+            join="outer",  # TODO: add BY info to explicitly join the right things # comment WHY OUTER for clarity
         )
         self.logger.debug("joined issues and commits and reviews interactions")
         # # remove rows where gh_username is NaN/NA
@@ -353,6 +450,8 @@ class PrepDataTimes(DatasetSetup):
             "issue_created",
             "pull_request_created",
             "pull_request_closed",
+            "code_reviewed",
+            # "discussion_added",
         ]:
             if col not in status_df.columns:
                 status_df.loc[:, col] = 0
@@ -379,6 +478,8 @@ class PrepDataTimes(DatasetSetup):
             + status_df["issue_created"]
             + status_df["pull_request_created"]
             + status_df["pull_request_closed"]
+            + status_df["code_reviewed"]
+            # + status_df["discussion_added"]
         )
 
         # mean_n_interactions_per_interaction_days: sum of interactions ()all types) divide by number of unique interaction days
@@ -441,6 +542,20 @@ class PrepDataTimes(DatasetSetup):
             * 100
         )
 
+        # RC (repo-contribution) of PR code reviews (PRCR):
+        status_df["pc_reviews_created"] = (
+            status_df["code_reviewed"]
+            / status_df.groupby("repo_name")["code_reviewed"].transform("sum")
+            * 100
+        )
+
+        # # RC (repo-contribution) of Issue Ticket Discussions (ITD):
+        # status_df["pc_discussions"] = (
+        #     status_df["discussion_added"]
+        #     / status_df.groupby("repo_name")["discussion_added"].transform("sum")
+        #     * 100
+        # )
+
         # per-repo pc of total sum of n interactions:
         status_df["pc_sum_n_interactions"] = (
             status_df["sum_n_interactions"]
@@ -457,19 +572,12 @@ class PrepDataTimes(DatasetSetup):
 
         return status_df
 
-    _COMMITS_PATTERN = re.compile(
-        r"^processed-commits_(.*)[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv$"
-    )
-    _ISSUES_PATTERN = re.compile(
-        r"^processed-issues_(.*)[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv$"
-    )
-
     def interactions_data_workflow(
         self,
         repo_list: list[str],
-        issues_interactions_file: Path | str,
-        commits_interactions_file: Path | str,
-        reviews_interactions_file: Path | str,
+        # issues_interactions_file: Path,
+        # commits_interactions_file: Path,
+        reviews_interactions_file: Path,
         # discussions_interactions_file: Path | str,
     ) -> pd.DataFrame | None:
         """
@@ -484,32 +592,27 @@ class PrepDataTimes(DatasetSetup):
 
         ## Issues interactions (inc PRs)
         globber = Globber(in_notebook=self.in_notebook, logger=self.logger)
-        # list_of_fileglobs = globber.filename_glob_maker(repo_name=, out_filename=, matchstrings=)
+
         issues_files_repolist = globber.multi_repo_filename_file_matcher(
             list_of_repos_to_match=repo_list,
-            out_filename="processed-issues",
+            out_filename="processed-issues_",
             matchstrings=[""],
             file_extension=".csv",
         )
-
-        # issues_files_repolist = [
-        #     f
-        #     for f in os.listdir(self.data_read_location)
-        #     if re.match(self._ISSUES_PATTERN, f)
-        # ]
+        self.logger.info(
+            f"List of repo_names ISSUES FILES of length {len(issues_files_repolist)} obtained via glob matcher"
+        )
 
         # get all the processed-commits files from the folder:
-        commits_files_repolist = [
-            f
-            for f in os.listdir(self.data_read_location)
-            if re.match(r"(processed-commits_).*(\.csv)", f)
-        ]
-        # # same for issues files:
-        # issues_files_repolist = [
-        #     f
-        #     for f in os.listdir(self.data_read_location)
-        #     if re.match(r"(processed-issues_).*(\.csv)", f)
-        # ]
+        commits_files_repolist = globber.multi_repo_filename_file_matcher(
+            list_of_repos_to_match=repo_list,
+            out_filename="processed-commits_",
+            matchstrings=[""],
+            file_extension=".csv",
+        )
+        self.logger.info(
+            f"List of repo_names COMMITS FILES of length {len(commits_files_repolist)} obtained via glob matcher"
+        )
 
         self.logger.info(
             f"Working on {len(commits_files_repolist)} files for commits and {len(issues_files_repolist)} issues data files"
@@ -519,43 +622,71 @@ class PrepDataTimes(DatasetSetup):
         issues_interactions = pd.DataFrame()
 
         for file in commits_files_repolist:
-            file = Path(self.data_read_location, file)
+            # print(type(file)) <class 'pathlib.PosixPath'>
             if file.exists():
-                self.logger.debug(f"Running get_commit_interactions on file {file}.")
-                commits_interactions_next = self.get_commit_interactions(file)
-                commits_interactions = pd.concat(
-                    [commits_interactions, commits_interactions_next]
-                )
+                try:
+                    self.logger.debug(
+                        f"Running get_commit_interactions on file {file}."
+                    )
+                    commits_interactions_next = self.get_commit_interactions(file)
+                    commits_interactions = pd.concat(
+                        [commits_interactions, commits_interactions_next]
+                    )
+                except:
+                    self.logger.error(
+                        "commits file read-in and/or get_commit_interactions() error for file {file}"
+                    )
+                    raise RuntimeError(
+                        f"Error reading in or handling commits interactions file {file}"
+                    )
+            else:
+                print(f"commits file read-in error for file {file}")
 
         self.logger.info(
             f"Generated df of {len(commits_interactions)} commits interactions."
         )
 
         for file in issues_files_repolist:
-            file = Path(self.data_read_location, file)
             if file.exists():
-                self.logger.debug(
-                    f"Running get_issues_PRs_interactions on file {file}."
-                )
-                issues_interactions_next = self.get_issues_PRs_interactions(file)
-                issues_interactions = pd.concat(
-                    [issues_interactions, issues_interactions_next]
-                )
+                try:
+                    self.logger.debug(
+                        f"Running get_issues_PRs_interactions on file {file}."
+                    )
+                    issues_interactions_next = self.get_issues_PRs_interactions(file)
+                    issues_interactions = pd.concat(
+                        [issues_interactions, issues_interactions_next]
+                    )
+                except:
+                    self.logger.error(
+                        "commits file read-inand/or get_commit_interactions() error for file {file}"
+                    )
+                    raise RuntimeError(
+                        f"Error reading in or handling commits interactions file {file}"
+                    )
+            else:
+                print(f"commits file read-in error for file {file}")
 
         self.logger.info(
             f"Generated df of {len(issues_interactions)} issues interactions."
         )
 
-        # READ IN REVIEWS DATA as df
-        # rename columns and drop irrelevants to match formats in commits_interactions and issues_interactions
-        # assert reviews_interactions is not None, "reviews_interactions is None, this is bad. Check the file {reviews_interactions_file}"
-        # assert not reviews_interactions.empty, f"reviews_interactions df is empty. This shouldn't be true? Check the file {reviews_interactions_file}"
-
-        assert commits_interactions is not None, (
-            "commits_interactions type is None; something went wrong!"
+        # REVIEWS INTERACTION HANDLING HERE (reads in file, sorts columns, adds interaction_type, pulls datetime info out)
+        reviews_interactions = self.get_reviews_interactions(
+            reviews_interactions_file=reviews_interactions_file
         )
-        assert issues_interactions is not None, (
-            "issues_interactions type is None; something went wrong!"
+
+        # # TODO: DISCUSSIONS INTERACTION HANDLING HERE:
+        # discussions_interactions = self.get_discussions_interactions(discussions_interactions_file = discussions_interactions_file)
+
+        assert not commits_interactions.empty, (
+            "commits_interactions type is empty; something went wrong!"
+        )
+        assert not issues_interactions.empty, (
+            "issues_interactions type is empty; something went wrong!"
+        )
+
+        assert not reviews_interactions.empty, (
+            "reviews_interactions is empty, something went wrong!"
         )
 
         try:
@@ -629,23 +760,23 @@ parser.add_argument(
     "-f",
     "--filepath-for-repos-list",
     metavar="PATH",
-    help="Path to file containing list of repo_names separated by newlines (No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
+    help="Path to file containing list of repo_names separated by newlines e.g. 'code_review_subset_2026-07-26_x17.txt' (Inside file: No commas! No quotes! Internal slash ok ie FlicAnderson/coding-smart)",
     type=str,
 )
-parser.add_argument(
-    "-c",
-    "--filepath-for-commits-interactions",
-    metavar="PATH",
-    help="Path to file containing Commit interactions e.g. ",
-    type=str,
-)
-parser.add_argument(
-    "-i",
-    "--filepath-for-issues-interactions",
-    metavar="PATH",
-    help="Path to file containing Issues (and PR) interactions e.g. ",
-    type=str,
-)
+# parser.add_argument(
+#     "-c",
+#     "--filepath-for-commits-interactions",
+#     metavar="PATH",
+#     help="Path to file containing Commit interactions e.g. ",
+#     type=str,
+# )
+# parser.add_argument(
+#     "-i",
+#     "--filepath-for-issues-interactions",
+#     metavar="PATH",
+#     help="Path to file containing Issues (and PR) interactions e.g. ",
+#     type=str,
+# )
 parser.add_argument(
     "-r",
     "--filepath-for-reviews-interactions",
@@ -665,10 +796,10 @@ parser.add_argument(
 if __name__ == "__main__":
     args = parser.parse_args()
     filepath: str | None = args.filepath_for_repos_list
-    commits_interactions_file: str = args.commits_interactions_file
-    issues_interactions_file: str = args.issues_interactions_file
-    reviews_interactions_file: str = args.reviews_inteactions_file
-    # discussions_interactions_file: str = args.discussions_interactions_file
+    # commits_interactions_file: str = args.filepath_for_commits_interactions
+    # issues_interactions_file: str = args.filepath_for_issues_interactions
+    reviews_interactions_file: str | Path = args.filepath_for_reviews_interactions
+    # discussions_interactions_file: Path = args.filepath_for_discussions_interactions
 
     logger = loggit.get_default_logger(
         console=True,
@@ -701,16 +832,18 @@ if __name__ == "__main__":
         exists_ok=True,
     )
 
+    reviews_interactions_file = Path(reviews_interactions_file)
+
     try:
         times_data = prepdatatimes.interactions_data_workflow(
             repo_list=repo_list,
-            issues_interactions_file=issues_interactions_file,
-            commits_interactions_file=commits_interactions_file,
+            # issues_interactions_file=issues_interactions_file,
+            # commits_interactions_file=commits_interactions_file,
             reviews_interactions_file=reviews_interactions_file,
             # discussions_interactions_file=discussions_interactions_file,
         )
     except Exception as e:
         logger.error(
-            f"__main__ running do_all_Pinteractions_data_workflow() on {filepath}: Encountered insurmountable error; error {e}"
+            f"__main__ running interactions_data_workflow() on {filepath}: Encountered insurmountable error; error {e}"
         )
         sys.exit(1)
