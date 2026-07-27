@@ -14,7 +14,7 @@ from utilities.check_gh_reponse import (
     RepoNotFoundError,
 )
 from githubanalysis.processing.get_all_issue_ticket_discussions import Discussions
-from utilities.simple_read_repos_from_file import simple_read_repos_from_file
+from utilities.simple_read_repos_from_file import Repo_Reader
 
 
 class GetCodeReviews(Discussions):
@@ -60,7 +60,8 @@ class GetCodeReviews(Discussions):
         Read the list of repo names from input file (commandline argument.)
         Returns list of strings (reponames)
         """
-        repo_list = simple_read_repos_from_file(
+        reporeader = Repo_Reader(in_notebook=self.in_notebook, logger=self.logger)
+        repo_list = reporeader.simple_read_repos_from_file(
             filename=self.data_location / repo_list_file_name
         )
         return repo_list
