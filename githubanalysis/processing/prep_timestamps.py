@@ -241,7 +241,7 @@ class PrepDataTimes(LocationSetup):
 
         return interactions_df_issues
 
-    def join_and_calculate_all_interactions(
+    def join_all_interactions(
         self,
         commits_interactions: pd.DataFrame,
         issues_interactions: pd.DataFrame,
@@ -382,6 +382,11 @@ class PrepDataTimes(LocationSetup):
         self.logger.debug(
             "joined issues and commits and reviews interactions"
         )  # TODO: add discussions df to this when implementing
+        return all_types_interactions
+
+    def calculate_all_interactions(
+        self, all_types_interactions: pd.DataFrame
+    ) -> pd.DataFrame:
         # # remove rows where gh_username is NaN/NA
         all_types_interactions = all_types_interactions.dropna(
             subset="gh_username", axis=0
@@ -742,9 +747,9 @@ class PrepDataTimes(LocationSetup):
         # assert not discussions_interactions.empty, (
         #     "discussions_interactions is empty, something went wrong!"
         # )
-
+        self.logger.info("Attempting joins of interaction data...")
         try:
-            all_interactions_data = self.join_and_calculate_all_interactions(
+            all_interactions_data = self.join_all_interactions(
                 commits_interactions,
                 issues_interactions,
                 reviews_interactions,
@@ -753,17 +758,29 @@ class PrepDataTimes(LocationSetup):
             self.logger.info(
                 f"all_interactions_data df has shape {all_interactions_data.shape}"
             )
-
         except Exception as e:
             self.logger.error(
-                f"Unexpected error {e}, traceback:\n{traceback.format_exc()}"
+                f"Unexpected error during JOINING of interactions {e}, traceback:\n{traceback.format_exc()}"
+            )
+            raise
+
+        self.logger.info("Attempting calculations of interaction data...")
+        try:
+            all_interactions_data = self.calculate_all_interactions(
+                all_types_interactions=all_interactions_data
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error during CALCULATIONS of interactions {e}, traceback:\n{traceback.format_exc()}"
             )
             raise
 
         # replace misisng data with zeroes:
         # this shows NO interactions if we don't have any entries for
         # that repo-individ from any of the API endpoints
-        all_interactions_data.fillna(value=0, inplace=True)
+        all_interactions_data.fillna(
+            value=0, inplace=True
+        )  # should this be done in calculate_all_interactions() instead??
 
         self.logger.info(
             f"Dataset of combined issues and commits interactions info contains {all_interactions_data.repo_name.nunique()} unique repo_names."
