@@ -836,12 +836,36 @@ if __name__ == "__main__":
     # discussions_interactions_file: Path = args.filepath_for_discussions_interactions
 
     """
-    Run from commandline as this: 
-    $ python githubanalysis/processing/prep_timestamps.py 
+    TEST REPOS: Run from commandline as this: 
+    $ time python githubanalysis/processing/prep_timestamps.py 
     -f code_review_subset_2026-07-26_x17.txt 
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
     -r data/merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-16.csv
+    """
+    """
+    SET1: Run from commandline as this: 
+    $ time python githubanalysis/processing/prep_timestamps.py 
+    -f sample_45pc_subsample_repo_names_list_2025-05-12_x1284.txt
+    -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
+    -i data/issues_interactions_x3380102_2025-04-18.csv 
+    -r data/merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-16.csv
+    """
+    """
+    SET2: Run from commandline as this: 
+    $ time python githubanalysis/processing/prep_timestamps.py 
+    -f set2_sample_55pc_subsample_repo_names_list_2026-02-05_x1697.txt
+    -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
+    -i data/issues_interactions_x3380102_2025-04-18.csv 
+    -r TODO: Not yet run.
+    """
+    """
+    SET1 + SET2: Run from commandline as this: 
+    $ time python githubanalysis/processing/prep_timestamps.py 
+    -f study-sample-repo-names_2025-05-01_x2981.txt
+    -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
+    -i data/issues_interactions_x3380102_2025-04-18.csv 
+    -r TODO: Not yet run.
     """
 
     logger = loggit.get_default_logger(
