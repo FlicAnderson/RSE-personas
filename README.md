@@ -10,16 +10,18 @@ Research software supporting @FlicAnderson's PhD research.
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/FlicAnderson/RSE-personas/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/FlicAnderson/RSE-personas)
 [![SWH](https://archive.softwareheritage.org/badge/swh:1:dir:cf8176f6f8cbb3eff513e5f2d6206621bdf0dd27/)](https://archive.softwareheritage.org/swh:1:dir:cf8176f6f8cbb3eff513e5f2d6206621bdf0dd27;origin=https://github.com/FlicAnderson/RSE-personas;visit=swh:1:snp:a478d04aa42a30409e47a356e4c0c19062a69310;anchor=swh:1:rev:786a35215b8779f78c3acae5931d1dedc961a76a)
 
-*A sentence summarising what to expect from this repository*  
+*A work in progress repository containing the research software used for research into creating and analysing Research Software Engineering Personas.*  
 
 ## Vision and Mission
 
-- **Vision:** One sentence capturing the project's overarching vision.
-- **Mission:** One sentence defining the project's goals and target audience.
+- **Vision:** Working towards a tool to calculate RSE Personas for Research Software contributors.
+- **Mission:** : Exploring RSE Personas: a novel data-driven concept for describing patterns of research software development behaviours within public active GitHub repositories to identify what data footprints can tell us about RSEs and their projects. 
 
 ## About
 
-Motivation and background in a nutshell.
+This repository supports the PhD thesis work of me (@FlicAnderson) towards creating and analysing research software development through the interactions developers or active users make with GitHub repositories via their contributions, such as commits, issue ticket engagement, pull requests, code review, and more.   
+
+The project began in 2022 and is expected to complete by the end of 2027. 
 
 ## Roadmap & Milestones
 
@@ -33,18 +35,18 @@ Motivation and background in a nutshell.
 
 ## Contributing
 
-- **Guidelines:** [Contribution Guidelines](link-to-guidelines) for contributors.
-- **Code of Conduct:** [Code of Conduct](link-to-coc) ensures a respectful project environment.
-- **Resource Plans:** Details on available resources and recommended practices for the project team.
+<!-- - **Guidelines:** [Contribution Guidelines](link-to-guidelines) for contributors. -->
+<!-- - **Code of Conduct:** [Code of Conduct](link-to-coc) ensures a respectful project environment. -->
+<!-- - **Resource Plans:** Details on available resources and recommended practices for the project team. -->
 
 ## Licensing
 
-This project uses a [](https://github.com/FlicAnderson/RSE-personas/tree/main?tab=BSD-3-Clause-1-ov-file#BSD-3-Clause-1-ov-file) License - see LICSENSE.md for details. 
+This project uses a [BSD-3-Clause](https://github.com/FlicAnderson/RSE-personas/tree/main?tab=BSD-3-Clause-1-ov-file#BSD-3-Clause-1-ov-file) License - see `LICENSE.md` for details. 
 
 ## Citing & Acknowledgement
 
-- **Citation Instructions:** How to cite the project.
-- **Acknowledgment:** Recognising contributions by different members.
+- **Citation Instructions:** You can cite this repository by using the details at the DOI (https://doi.org/10.5281/zenodo.15458393), using the information in the citation file: `CITATION.cff`, or by following the 'Cite this repository' button.
+- **Acknowledgment:** This repository has been built to support the ideas and research goals of my PhD project at The University of Edinburgh, and therefore would not exist without my patient and excellent supervisors @jsindt and @npch. It has also been vastly improved by the wisdom, advice and constructive code review efforts of @agango93, @dk949, @jjacobx and others!  
 
 
 This repository uses the template created and maintained by The Turing Way team members and shared under CC-BY 4.0 for reuse: https://github.com/alan-turing-institute/reproducible-project-template.
@@ -57,7 +59,9 @@ This repository uses the template created and maintained by The Turing Way team 
 
 ## Environment  
 
-Code was written in a Linux Ubuntu 22.04 LTS environment within [conda version `23.11.0`](https://docs.conda.io/projects/miniconda/en/latest/miniconda-other-installer-links.html) for `Python 3.10`.  A conda environment yaml file containing exact package versions required for running this code is stored within the repo within the main `coding-smart` repo folder as `coding-smart-github.yml`.   
+Code was written in a Linux Ubuntu 22.04 LTS environment within [conda version `23.11.0`](https://docs.conda.io/projects/miniconda/en/latest/miniconda-other-installer-links.html) for `Python 3.10`.  
+
+A conda environment yaml file containing exact package versions required for running this code is stored within the repo within the main `coding-smart` repo folder as `coding-smart-github.yml`.   
 
 
 ## Installation & Setup  
@@ -297,6 +301,19 @@ This token does not need `deposit:` permissions as it will only be used to read 
 DO NOT allow this file to enter version control! 
 
 This file should follow the same file and token format as above for the github `config.cfg` file. 
+
+
+#### Dataset Collection and Data Processing Architecture: 
+
+While the codebase is very much at the Work In Progress stage, with many features which have come about as a feature of Research Software time and training barriers, hopefully the following rough diagrams should act as a temporary guide to the interactions and relationships between different scripts in the repository, especially until greater documentation is added! 
+
+The key to the diagram format is as follows: 
+![Key to diagram of main RSE_personas repo scripts for data collection, processing and analysis](RSE_personas_diagram_key.pdf)
+
+The main diagram can be seen here: 
+
+![The main RSE_personas codebase flow diagram showing main GH API data collection, processing and analysis scripts](RSE_personas-codebase-flow-diagram.pdf)
+
 
 
 #### Datasets and Data Processing: dealing with multiple versions of data files by retaining newest 
