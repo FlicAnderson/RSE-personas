@@ -290,95 +290,37 @@ class PrepDataTimes(LocationSetup):
         )  # TODO: add discussion to this when implementing
 
         # JOIN ISSUES AND COMMITS AND REVIEWS DATA TOGETHER HERE:
-        self.logger.info("Attempting FIRST join: issues + commits...")
+        self.logger.info("Attempting THE JOIN: issues + commits + reviews...")
         try:
-            all_types_interactions = issues_interactions.merge(
-                right=commits_interactions,
-                how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-                left_on=[
+            all_types_interactions = pd.concat(  # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
+                objs=[issues_interactions, commits_interactions, reviews_interactions],
+                join="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
+                keys=[
                     "repo_name",
                     "gh_username",
                     "datetime_day",
                     "contribution",
                     "interaction_type",
                 ],
-                right_on=[
-                    "repo_name",
-                    "gh_username",
-                    "datetime_day",
-                    "contribution",
-                    "interaction_type",
-                ],
-                indicator=False,
             )
-            writeout_path_tmp_ic = Path(
+            writeout_path_tmp = Path(
                 self.data_location,
-                f"tmp_interactions_merge_ic__{self.current_date_info}.csv",
+                f"tmp_interactions_merge_{self.current_date_info}.csv",
             )
-            all_types_interactions.to_csv(
-                writeout_path_tmp_ic, header=True, index=False
-            )
+            all_types_interactions.to_csv(writeout_path_tmp, header=True, index=False)
             self.logger.info(
-                f"Intermediate output of FIRST join written out to {writeout_path_tmp_ic}"
+                f"Intermediate output of JOIN written out to {writeout_path_tmp}"
             )
         except Exception as e:
             self.logger.error(
                 f"Problem running data analysis workflow: {e}; arguments were: {args}."
             )
             self.logger.error(
-                f"Unexpected error with FIRST MERGE (issues + commits), traceback:\n{traceback.format_exc()}"
+                f"Unexpected error with THE JOIN (issues + commits + reviews) via concat(), traceback:\n{traceback.format_exc()}"
             )
             raise
 
-        self.logger.info("Attempting SECOND join: issues+commits + reviews...")
-        try:
-            all_types_interactions = all_types_interactions.merge(
-                right=reviews_interactions,
-                how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-                left_on=[
-                    "repo_name",
-                    "gh_username",
-                    "datetime_day",
-                    "contribution",
-                    "interaction_type",
-                ],
-                right_on=[
-                    "repo_name",
-                    "gh_username",
-                    "datetime_day",
-                    "contribution",
-                    "interaction_type",
-                ],
-                indicator=False,
-            )
-            writeout_path_tmp_icr = Path(
-                self.data_location,
-                f"tmp_interactions_merge_icr__{self.current_date_info}.csv",
-            )
-            all_types_interactions.to_csv(
-                writeout_path_tmp_icr, header=True, index=False
-            )
-            self.logger.info(
-                f"Intermediate output of SECOND join written out to {writeout_path_tmp_icr}"
-            )
-        except Exception as e:
-            self.logger.error(
-                f"Problem running data analysis workflow: {e}; arguments were: {args}."
-            )
-            self.logger.error(
-                f"Unexpected error with SECOND MERGE (issues+commits + reviews), traceback:\n{traceback.format_exc()}"
-            )
-            raise
-        # self.logger.info("Attempting THIRD join: issues+commits+reviews + discussions...")
-        # TODO: add discussions df to this when implementing
-
-        # ### this is a SAFETY WRITEOUT: remove this after confident about merges! vvvvvvvvvv
-        # writeout_path_tmp = Path(
-        #     self.data_location,
-        #     f"tmp_interactions_merged_{self.current_date_info}.csv",
-        # )
-        # all_types_interactions.to_csv(writeout_path_tmp, header=True, index=False)
-        # ### this is a SAFETY WRITEOUT: remove this after confident about merges! ^^^^^^^^^
+        self.logger.info("Attempting join: issues + commits + reviews...")
 
         self.logger.debug(
             "joined issues and commits and reviews interactions"
@@ -649,7 +591,7 @@ class PrepDataTimes(LocationSetup):
         )
 
         self.logger.info(
-            f"status_df being returned by join_and_calculate_all_interactions() has shape {status_df.shape} and columns: {status_df.columns}"
+            f"status_df being returned by calculate_all_interactions() has shape {status_df.shape} and columns: {status_df.columns}"
         )
         return status_df
 
