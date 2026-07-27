@@ -305,6 +305,9 @@ class PrepDataTimes(LocationSetup):
             all_types_interactions.to_csv(
                 writeout_path_tmp_ic, header=True, index=False
             )
+            self.logger.info(
+                f"Intermediate output of FIRST join written out to {writeout_path_tmp_ic}"
+            )
         except Exception as e:
             self.logger.error(
                 f"Problem running data analysis workflow: {e}; arguments were: {args}."
@@ -330,6 +333,9 @@ class PrepDataTimes(LocationSetup):
             all_types_interactions.to_csv(
                 writeout_path_tmp_icr, header=True, index=False
             )
+            self.logger.info(
+                f"Intermediate output of SECOND join written out to {writeout_path_tmp_icr}"
+            )
         except Exception as e:
             self.logger.error(
                 f"Problem running data analysis workflow: {e}; arguments were: {args}."
@@ -341,13 +347,13 @@ class PrepDataTimes(LocationSetup):
         # self.logger.info("Attempting THIRD join: issues+commits+reviews + discussions...")
         # TODO: add discussions df to this when implementing
 
-        ### this is a SAFETY WRITEOUT: remove this after confident about merges! vvvvvvvvvv
-        writeout_path_tmp = Path(
-            self.data_location,
-            f"tmp_interactions_merged_{self.current_date_info}.csv",
-        )
-        all_types_interactions.to_csv(writeout_path_tmp, header=True, index=False)
-        ### this is a SAFETY WRITEOUT: remove this after confident about merges! ^^^^^^^^^
+        # ### this is a SAFETY WRITEOUT: remove this after confident about merges! vvvvvvvvvv
+        # writeout_path_tmp = Path(
+        #     self.data_location,
+        #     f"tmp_interactions_merged_{self.current_date_info}.csv",
+        # )
+        # all_types_interactions.to_csv(writeout_path_tmp, header=True, index=False)
+        # ### this is a SAFETY WRITEOUT: remove this after confident about merges! ^^^^^^^^^
 
         self.logger.debug(
             "joined issues and commits and reviews interactions"
