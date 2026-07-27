@@ -72,7 +72,7 @@ class DataAnalyser(DatasetSetup):
         self,
         data: pd.DataFrame,
         subset_repos_file: str | Path | None,
-        subset_pc: int,
+        subset_pc: int = 100,
     ) -> pd.DataFrame:
         """
         Subset a sample dataframe down to only include repositories from a specific file
@@ -753,7 +753,7 @@ class DataAnalyser(DatasetSetup):
                 data = self.subset_sample_to_repos(
                     data,
                     subset_repos_file=subset_repos_file,
-                    subset_pc=pc_subset,
+                    subset_pc=pc_subset,  # default = 100pc, no subsetting
                 )
             # read in file of repos
             # subset data df to include only repo_names from file
