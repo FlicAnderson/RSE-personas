@@ -11,6 +11,7 @@ import csv
 import re
 from ast import literal_eval
 import pandas as pd
+import pandas.api.types as ptypes
 from githubanalysis.setup_classes import LocationSetup
 import utilities.get_default_logger as loggit
 from utilities.simple_read_repos_from_file import Repo_Reader
@@ -439,8 +440,20 @@ class PrepDataTimes(LocationSetup):
             header=True,
             index=False,
         )
-
+        self.logger.debug(f"wrote out combined interactions file {writeout_combined}.")
+        self.logger.info(
+            "Now attempting calculation of timediffs to help calculate interaction_period."
+        )
         try:
+            all_types_interactions["datetime_day"] = pd.to_datetime(
+                all_types_interactions["datetime_day"],
+                # utc = False: this is the default, "inputs will not be coerced to UTC. Timezone-naive inputs will remain naive, while timezone-aware ones will keep their time offsets." Think this is best because we only have DAY not times as well
+            )
+
+            assert ptypes.is_datetime64_any_dtype(
+                all_types_interactions["datetime_day"]
+            ), "The column datetime_day is NOT a date type! This is BAD"
+
             # pull out the number of days timediff between 1st and latest interactions
             timediff = (
                 all_types_interactions.groupby(["repo_name", "gh_username"])[
@@ -454,9 +467,11 @@ class PrepDataTimes(LocationSetup):
         except Exception as e:
             tmp_errors = all_types_interactions["datetime_day"].isna()
             tmp_errors = all_types_interactions[tmp_errors]
-            self.logger.error(f"Unexpected error, traceback:\n{traceback.format_exc()}")
             self.logger.error(
-                f"error {e}: value_counts of types for datetime_day are: {all_types_interactions['datetime_day'].apply(lambda x: str(type(x))).value_counts(dropna=False)}"
+                f"Unexpected error during TIMEDIFF calculations, ({e}) traceback:\n{traceback.format_exc()}"
+            )
+            self.logger.error(
+                f"error {e}: \n value_counts of types for datetime_day are: \n {all_types_interactions['datetime_day'].apply(lambda x: str(type(x))).value_counts(dropna=False)} \n"
             )
             self.logger.error(f"tmp_errors is: {tmp_errors}")
             tmp_errors.to_csv(
