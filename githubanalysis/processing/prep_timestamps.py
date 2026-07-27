@@ -295,13 +295,6 @@ class PrepDataTimes(LocationSetup):
             all_types_interactions = pd.concat(  # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
                 objs=[issues_interactions, commits_interactions, reviews_interactions],
                 join="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-                keys=[
-                    "repo_name",
-                    "gh_username",
-                    "datetime_day",
-                    "contribution",
-                    "interaction_type",
-                ],
             )
             writeout_path_tmp = Path(
                 self.data_location,
