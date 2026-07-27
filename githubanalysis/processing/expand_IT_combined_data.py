@@ -6,7 +6,7 @@ import sys
 import argparse
 import pandas as pd
 import utilities.get_default_logger as loggit
-from setup_classes import LocationSetup
+from githubanalysis.setup_classes import LocationSetup
 
 
 class ExpandData(LocationSetup):
@@ -22,7 +22,6 @@ class ExpandData(LocationSetup):
         reviews_data: str,
         # discussions_data: str,
     ):
-
         # check files exist
         assert existing_data is not None, f"existing data file missing: {existing_data}"
         assert reviews_data is not None, f"reviews data file missing: {reviews_data}"
@@ -108,7 +107,7 @@ class ExpandData(LocationSetup):
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-e",
-    "--existing-interaction-types-data-per-dev-file",
+    "--existing-data-per-dev-file",
     metavar="EXISTING_DATA_PER_DEV_FILE",
     help="Path to .csv file containing commits data (line per repo-individual), eg 'merged-data-per-dev_x2868-repos_2025-05-10.csv'.",
     type=str,
