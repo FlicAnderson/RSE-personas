@@ -374,9 +374,7 @@ class PrepDataTimes(LocationSetup):
             self.data_location,
             f"combined_interactions_data_x{all_types_interactions.groupby('repo_name').ngroups}repos_x{all_types_interactions.groupby(['repo_name', 'gh_username']).ngroups}repo-indivds_{self.current_date_info}.csv",
         )
-        self.logger.info(
-            f"Writing out combined interactions as: {writeout_combined}: this file will be a CHONKY BOI."
-        )
+        self.logger.info(f"Writing out combined interactions as: {writeout_combined}.")
         all_types_interactions.to_csv(
             writeout_combined,
             header=True,
