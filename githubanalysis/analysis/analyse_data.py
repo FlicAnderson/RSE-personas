@@ -15,6 +15,7 @@ from typing import cast
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import calinski_harabasz_score
 from sklearn.decomposition import PCA
+import utilities.get_default_logger as loggit
 from githubanalysis.setup_classes import DatasetSetup
 from utilities.repo_names_write_out import RepoNamesListCreator
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
@@ -204,8 +205,8 @@ class DataAnalyser(DatasetSetup):
 
         ## pull CBRI and contribution type category values across to cleaned_data dataset
 
-        data.loc[:, "CBRI"] = tmpdf_bool["CBRI"]
-        data.loc[:, "contribution_types"] = tmpdf["contribution_types"]
+        data.loc[:, "CBRI"] = tmpdf_bool.loc[:, "CBRI"]
+        data.loc[:, "contribution_types"] = tmpdf.loc[:, "contribution_types"]
 
         data.loc[:, "contributions_by_user"] = data.apply(
             lambda x: contribution_types_editor(
@@ -215,15 +216,6 @@ class DataAnalyser(DatasetSetup):
         )
 
         data = data.drop(columns=["contribution_types"])
-
-        # # add AVERAGE Percentage Repo-Contributions' Depth by Contributor (pcCDC):
-        # # each user's percentage of a repo's contributions in each contribution category are added together,
-        # # ... then divided by number of contribution-types summed (e.g. 3 if combining commits, issue creation, issue assignment)
-        data.loc[:, "pcCDC"] = (
-            (data["pc_repo_commits"])
-            + (data["pc_repo_issues"])
-            + (data["pc_issues_assigned_of_assigned"])
-        ) / 3
 
         pd.options.mode.copy_on_write = True
 
@@ -380,7 +372,6 @@ class DataAnalyser(DatasetSetup):
                 "pc_repo_issues",
                 "CBRI",
                 "contributions_by_user",
-                "pcCDC",
                 # "n_commits",  # dropping the older column, keeping commits_created as probably later
                 "_merge",
                 "issue_username",
@@ -398,7 +389,8 @@ class DataAnalyser(DatasetSetup):
             + (cleaned_data_with_interactions["pc_issue_closed"])
             + (cleaned_data_with_interactions["pc_issues_assigned_of_assigned"])
             + (cleaned_data_with_interactions["pc_pull_request_created"])
-        ) / 5
+            + (cleaned_data_with_interactions["pc_reviews_created"])
+        ) / 6
         return cleaned_data_with_interactions
         # cleaned_data_with_interactions.rename(columns={"breadth_interactions": "CBRI"}) # probably clearer if I don't rename it :C
 
@@ -729,9 +721,12 @@ class DataAnalyser(DatasetSetup):
         repo_stats_file: str | Path,
         max_clusters_to_eval: int = 10,
         n_clusters_to_use: int | None = None,
-        skip_cleaning: bool = False,  # this should be filepath of the appropriately subset data for clustering.
+        skip_cleaning: bool = False,
     ):
         if skip_cleaning is False:
+            assert skip_cleaning is False, (
+                "problem encountered: skip_cleaning is not False, processing happening anyway?!?"
+            )
             # if data is file:
 
             # if data is df:
@@ -815,7 +810,10 @@ class DataAnalyser(DatasetSetup):
 
             self.logger.info(f"Column names from cleaned_df: {cleaned_data.columns}")
             self.logger.info(f"Column names from interactions file: {interact.columns}")
+
             # add interaction data, merge onto cleaned_data.
+            self.logger.info("next: combine_cleaned_data_with_interactions()")
+
             cleaned_data_with_interactions = (
                 self.combine_cleaned_data_with_interactions(
                     cleaned_data=cleaned_data,
@@ -850,8 +848,14 @@ class DataAnalyser(DatasetSetup):
                     header=0,
                     low_memory=False,
                 )
+                self.logger.debug(
+                    f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+                )
             else:
                 cleaned_data_with_interactions = data
+                self.logger.debug(
+                    f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+                )
 
             self.logger.info(
                 f"Number of repositories in sample is: {cleaned_data_with_interactions.groupby('repo_name').ngroups}."
@@ -912,7 +916,9 @@ class DataAnalyser(DatasetSetup):
         self.logger.info(
             "Sample repos languages info collected and written out and plotted."
         )
-
+        self.logger.debug(
+            f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+        )
         # save out pre-processing dataset
         n_repos = cleaned_data_with_interactions.groupby("repo_name").ngroups
         n_users = len(cleaned_data_with_interactions)
@@ -931,6 +937,7 @@ class DataAnalyser(DatasetSetup):
             "pc_issues_assigned_of_assigned",
             "pc_pull_request_created",
             "pc_pull_request_closed",
+            "pc_reviews_created",
             "pc_DC",
             "pc_sum_n_interactions",
             "pc_interaction_days",
@@ -938,6 +945,9 @@ class DataAnalyser(DatasetSetup):
         ]
         self.logger.info(
             f"Data will be clustered on the following {len(clustering_variables)} variables: {clustering_variables}."
+        )
+        self.logger.debug(
+            f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
         )
 
         clustering_data = self.create_clustering_data_from_sample(
@@ -1128,19 +1138,17 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
+    "-k",
+    "--skip-cleaning",
+    help="ONLY IF YOU SET THIS ARGUMENT will the script skip subsetting, data cleaning and etc; ASSUMES INTERACTIONS DATA IS JOINED AND COLUMN NAMES ARE AS EXPECTED SUBSEQUENT TO CLEANING (e.g. matches format of pre-processing_dataset_xNrepos_xNproject-individuals__2025-05-12.csv )",
+    action="store_true",
+)
+parser.add_argument(
     "-f",
     "--force-reuse-folder",
     help="Don't enter anything; use this if you want to use folder if it already exists",
     action="store_true",
     default=False,
-)
-parser.add_argument(
-    "-k",
-    "--skip-cleaning",
-    help="This argument will skip subsetting, data cleaning and etc; ASSUMES INTERACTIONS DATA IS JOINED AND COLUMN NAMES ARE AS EXPECTED SUBSEQUENT TO CLEANING (e.g. matches format of pre-processing_dataset_xNrepos_xNproject-individuals__2025-05-12.csv )",
-    type=bool,
-    default=False,
-    required=True,
 )
 
 
@@ -1155,12 +1163,23 @@ def main():
     n_clusters_arg: int | None = args.n_clusters
     run_name_arg: str = args.dataset_run_name
     force_exists_ok: bool = args.force_reuse_folder
-    skip_cleaning_arg: bool = args.skip_cleaning
+    skip_cleaning_arg: bool = args.skip_cleaning  # Do NOT use this -k arg if you want to run WHOLE pipeline, including subsetting steps!
+
+    """
+    $ time python githubanalysis/analysis/analyse_data.py -d per-repo-individual-existing-and-reviews-data_x2868repos_x244143repo-individs_2026-07-27.csv -s sample_45pc_subsample_repo_names_list_2025-05-12_x1284.txt -p 10 -i merged-interactions-data-per-dev_x1284repos_x119492_2026-07-27.csv -r summarised_repo_stats_2025-05-01.csv -m 5 -z test_set1_revs_10pc -k False
+    """
+    logger = loggit.get_default_logger(
+        console=True,
+        set_level_to="DEBUG",
+        log_name="logs/analyse_data.txt",
+        in_notebook=False,
+    )
 
     dataanalyser = DataAnalyser(
         in_notebook=False,
         dataset_name=run_name_arg,
         exists_ok=force_exists_ok,
+        logger=logger,
     )
 
     dataanalyser.logger.info(
@@ -1175,9 +1194,19 @@ def main():
         repo_stats summary data: {repo_stats_arg}; 
         max number of clusters to eval: {max_clusters_arg}; 
         number of clusters to use: {n_clusters_arg};
+        forcing overwrite if folder exists: {force_exists_ok};
         skip_cleaning: {skip_cleaning_arg}.
         """
     )
+
+    if skip_cleaning_arg:
+        dataanalyser.logger.info(
+            f"skip_cleaning is {skip_cleaning_arg}; therefore cleaning WILL be skipped."
+        )
+    else:
+        dataanalyser.logger.info(
+            "Cleaning stage WILL NOT be skipped, ie. the whole pipeline will be run."
+        )
 
     # dataanalyser.read_location
     data_df = pd.read_csv(
