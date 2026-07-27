@@ -19,7 +19,7 @@ Research software supporting @FlicAnderson's PhD research.
 
 ## About
 
-This repository supports the PhD thesis work of me (@FlicAnderson) towards creating and analysing research software development through the interactions developers or active users make with GitHub repositories via their contributions, such as commits, issue ticket engagement, pull requests, code review, and more.   
+This repository supports the PhD thesis work of me ([@FlicAnderson](https://github.com/FlicAnderson)) towards creating and analysing research software development through the interactions developers or active users make with GitHub repositories via their contributions, such as commits, issue ticket engagement, pull requests, code review, and more.   
 
 The project began in 2022 and is expected to complete by the end of 2027. 
 
@@ -30,10 +30,14 @@ The project began in 2022 and is expected to complete by the end of 2027.
 
 ## The Team
 
-- **Members:** List of team members and their roles in the project.
-- **Roles & Responsibilities:** [Team Directory](link-to-directory) outlines roles, responsibilities and their ways of working.
+Currently just me, but I hope that anyone who finds my research helpful will be able to make use of some of the ideas, code or data I've produced on this project. 
+
+<!-- - **Members:** List of team members and their roles in the project. -->>
+<!-- - **Roles & Responsibilities:** [Team Directory](link-to-directory) outlines roles, responsibilities and their ways of working. -->
 
 ## Contributing
+
+I'm super open to collaborators in future (particularly post-thesis!) and hope to write up some guidelines for future or potential collaborators to encourage any improvements!
 
 <!-- - **Guidelines:** [Contribution Guidelines](link-to-guidelines) for contributors. -->
 <!-- - **Code of Conduct:** [Code of Conduct](link-to-coc) ensures a respectful project environment. -->
@@ -46,8 +50,18 @@ This project uses a [BSD-3-Clause](https://github.com/FlicAnderson/RSE-personas/
 ## Citing & Acknowledgement
 
 - **Citation Instructions:** You can cite this repository by using the details at the DOI (https://doi.org/10.5281/zenodo.15458393), using the information in the citation file: `CITATION.cff`, or by following the 'Cite this repository' button.
-- **Acknowledgment:** This repository has been built to support the ideas and research goals of my PhD project at The University of Edinburgh, and therefore would not exist without my patient and excellent supervisors @jsindt and @npch. It has also been vastly improved by the wisdom, advice and constructive code review efforts of @agango93, @dk949, @jjacobx and others!  
 
+- **Acknowledgment:** 
+
+This repository has been built to support the ideas and research goals of my PhD project at [EPCC](https://www.epcc.ed.ac.uk/) at [The University of Edinburgh](https://www.ed.ac.uk/), and therefore would not exist without my patient and excellent supervisors Dr Julien Sindt [@jsindt](https://github.com/jsindt) and Professor Neil Chue Hong [@npch](https://github.com/npch).  
+
+It has also been vastly improved by the wisdom, advice and constructive code review efforts of [@agango93](https://github.com/agango93), [@dk949](https://github.com/dk949), [@jjacobx](https://github.com/jjacobx) and others!  
+
+Supported by a **UKRI-EPSRC Doctoral Training Partnership award** for project number 2662705, through grant EP/T517884/1. 
+
+This work was supported by the [Edinburgh International Data Facility (EIDF)](https://edinburgh-international-data-facility.ed.ac.uk/) and the Data-Driven Innovation Programme at the University of Edinburgh through use of EIDF Virtual Machines.
+    
+This work used the [Cirrus UK National Tier-2 HPC Service](http://www.cirrus.ac.uk) at EPCC funded by The University of Edinburgh, the Edinburgh and South East Scotland City Region Deal, and UKRI via EPSRC.
 
 This repository uses the template created and maintained by The Turing Way team members and shared under CC-BY 4.0 for reuse: https://github.com/alan-turing-institute/reproducible-project-template.
 
