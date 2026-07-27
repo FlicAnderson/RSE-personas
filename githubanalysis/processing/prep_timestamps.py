@@ -294,8 +294,20 @@ class PrepDataTimes(LocationSetup):
             all_types_interactions = issues_interactions.merge(
                 right=commits_interactions,
                 how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-                left_on=["repo_name", "gh_username"],
-                right_on=["repo_name", "gh_username"],
+                left_on=[
+                    "repo_name",
+                    "gh_username",
+                    "datetime_day",
+                    "contribution",
+                    "interaction_type",
+                ],
+                right_on=[
+                    "repo_name",
+                    "gh_username",
+                    "datetime_day",
+                    "contribution",
+                    "interaction_type",
+                ],
                 indicator=False,
             )
             writeout_path_tmp_ic = Path(
@@ -322,8 +334,20 @@ class PrepDataTimes(LocationSetup):
             all_types_interactions = all_types_interactions.merge(
                 right=reviews_interactions,
                 how="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
-                left_on=["repo_name", "gh_username"],
-                right_on=["repo_name", "gh_username"],
+                left_on=[
+                    "repo_name",
+                    "gh_username",
+                    "datetime_day",
+                    "contribution",
+                    "interaction_type",
+                ],
+                right_on=[
+                    "repo_name",
+                    "gh_username",
+                    "datetime_day",
+                    "contribution",
+                    "interaction_type",
+                ],
                 indicator=False,
             )
             writeout_path_tmp_icr = Path(
@@ -398,11 +422,15 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(f"{n_after_drop} rows remaining.")
 
         # reasonably important writeout: combined issues + commits + reviews with missing data handled.
+        writeout_combined = Path(
+            self.data_location,
+            f"combined_interactions_data_x{all_types_interactions.groupby('repo_name').ngroups}repos_x{all_types_interactions.groupby(['repo_name', 'gh_username']).ngroups}repo-indivds_{self.current_date_info}.csv",
+        )
+        self.logger.info(
+            f"Writing out combined interactions as: {writeout_combined}: this file will be a CHONKY BOI."
+        )
         all_types_interactions.to_csv(
-            Path(
-                self.data_location,
-                f"combined_interactions_data_x{all_types_interactions.groupby('repo_name').ngroups}repos_x{all_types_interactions.groupby(['repo_name', 'gh_username']).ngroups}repo-indivds_{self.current_date_info}.csv",
-            ),
+            writeout_combined,
             header=True,
             index=False,
         )
