@@ -138,6 +138,9 @@ class DataAnalyser(DatasetSetup):
         self.logger.debug(
             f"data df fed into clean_and_contributors() has the following columns: {data.columns}"
         )
+        assert "pc_repo_issues" in data.columns, (
+            f"required column 'pc_repo_issues' seems to be missing from data; data has columns: {data.columns}"
+        )
 
         tmp_iss = data["pc_repo_issues"].apply(
             contribution_in_category, category="creates issues"
