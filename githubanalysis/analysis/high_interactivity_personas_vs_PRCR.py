@@ -81,7 +81,7 @@ if __name__ == "__main__":
     high_data = pd.merge(
         high_interactivity_devs,
         combined_data,
-        how="left",
+        how="inner",
         on=["repo_name", "gh_username"],
     )
 
@@ -94,6 +94,7 @@ if __name__ == "__main__":
             header=True,
             index=False,
         )
+        print(f"successfully wrote out combined data for 700; {writeout_path}")
     except Exception as e:
         print(
             f"Error in attempting to write combined data-per-dev file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
