@@ -33,7 +33,7 @@ if __name__ == "__main__":
     current_date_info = datetime.datetime.now().strftime("%Y-%m-%d")
     print(current_date_info)
 
-    data_location = "../../data/"
+    data_location = "data/"
 
     # interactions_file = Path(data_location, datafiles.interactns_file_set1)
 
