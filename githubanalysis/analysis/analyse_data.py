@@ -135,6 +135,10 @@ class DataAnalyser(DatasetSetup):
     def clean_and_contributors(self, data: pd.DataFrame) -> pd.DataFrame:
         ## gather category text info about what types of contributions users are contributing
 
+        self.logger.debug(
+            f"data df fed into clean_and_contributors() has the following columns: {data.columns}"
+        )
+
         tmp_iss = data["pc_repo_issues"].apply(
             contribution_in_category, category="creates issues"
         )
@@ -172,6 +176,9 @@ class DataAnalyser(DatasetSetup):
 
         ## gather bool -> numeric info about what types of contributions users are contributing
 
+        self.logger.debug(
+            f"This is the step before pc_repo_issues is created; data df used has the following columns: {data.columns}"
+        )
         tmp_iss_bool = data["pc_repo_issues"].apply(
             bool_contribution_in_category, category="creates issues"
         )
@@ -793,14 +800,19 @@ class DataAnalyser(DatasetSetup):
             # number of repo-individuals who come from issues API, or commits API, or appear in both APIs.
 
             # clean data and rename columns as req
-
-            cleaned_data = self.clean_and_contributors(
-                data,
-            )
-            self.writeout_data_to_csv(
-                cleaned_data,
-                filename="sample_cleaned_data_",
-            )
+            try:
+                cleaned_data = self.clean_and_contributors(
+                    data,
+                )
+                self.writeout_data_to_csv(
+                    cleaned_data,
+                    filename="sample_cleaned_data_",
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"Error encountered attempting clean_and_contributors() function operation on data df with shape {data.shape}: {e}"
+                )
+                raise
 
             interact = pd.read_csv(
                 interactions_data_file,
