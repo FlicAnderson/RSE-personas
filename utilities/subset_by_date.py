@@ -38,9 +38,9 @@ def subset_by_dates(
         to_datestamp = pd.Timestamp(to_datestamp).date()
 
     assert isinstance(to_datestamp, pd.Timestamp) or isinstance(
-        to_datestamp, datetime.datetime
+        to_datestamp, datetime.date
     ), (
-        f"to_datestamp is not an instance of pd.Timestamp, instead it's {type(to_datestamp)}."
+        f"to_datestamp is not an instance of pd.Timestamp or datetime.date, instead it's {type(to_datestamp)}."
     )
 
     output = df[
