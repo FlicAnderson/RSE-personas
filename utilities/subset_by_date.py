@@ -6,7 +6,7 @@ import datetime
 
 def subset_by_dates(
     df: pd.DataFrame,
-    datestamp_column: datetime.date | str,
+    datestamp_column,
     from_datestamp: datetime.date
     | str = pd.Timestamp.min.date(),  # default to earliest possible year - not sensible, but doesn't change behaviour :C
     to_datestamp: datetime.date | str = pd.Timestamp(
@@ -36,9 +36,6 @@ def subset_by_dates(
     print(f"orig_len = {len(df)}")
 
     print(f"{df.datestamp_column.dtype}")
-    print(
-        isinstance(df.datestamp_column.dtype, datetime.date)
-    )  # or isinstance(df.datestamp_column)
 
     if isinstance(to_datestamp, str):
         to_datestamp = pd.Timestamp(to_datestamp).date()

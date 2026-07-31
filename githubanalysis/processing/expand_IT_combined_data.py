@@ -29,6 +29,7 @@ class ExpandData(LocationSetup):
         # assert discussions_data is not None, f"discussions data file missing: {discussions_data}"
 
         # load csv files
+        self.logger.info("loading existing data file {}")
         existing_df = pd.read_csv(
             filepath_or_buffer=Path(existing_data),
             header=0,
@@ -58,6 +59,9 @@ class ExpandData(LocationSetup):
         reviews_df["review_date_only"] = reviews_df["review_date_only"].apply(
             lambda x: pd.Timestamp.date(x)
         )
+        assert "review_date_only" in reviews_df.columns, (
+            "missing column 'review_date_only', this will be needed in a sec"
+        )
         try:
             reviews_df = subsetter.subset_by_dates(
                 df=reviews_df,
@@ -66,7 +70,7 @@ class ExpandData(LocationSetup):
             )
         except Exception as e:
             self.logger.error(
-                "Something awful has happened while attempting to subset the reviews data to match the latest collection date within the initial collection period: {e}"
+                f"Something awful has happened while attempting to subset the reviews data to match the latest collection date within the initial collection period: {e}"
             )
             raise
         self.logger.info(
@@ -174,7 +178,9 @@ if __name__ == "__main__":
         in_notebook=False,
         logger=logger,
     )
-
+    logger.info(
+        f"attempting to combine pre-existing interaction-types data file {existing_data} and reviews data file {reviews_data}"
+    )
     try:
         expanddata.combine_existing_reviews_discussions(
             existing_data=existing_data, reviews_data=reviews_data
