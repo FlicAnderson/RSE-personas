@@ -6,6 +6,7 @@ import sys
 import argparse
 import pandas as pd
 import utilities.get_default_logger as loggit
+import utilities.subset_by_date as subsetter
 from githubanalysis.setup_classes import LocationSetup
 
 
@@ -49,6 +50,29 @@ class ExpandData(LocationSetup):
         #         dtype=object,
         #     )
 
+        # SUBSET REVIEWS_DF BY TIME TO REMOVE ANY DATA SINCE cutoff date.
+        self.logger.info(
+            f"length of reviews data BEFORE research data collection cutoff date (2025-04-23) is: {len(reviews_df)}"
+        )
+        reviews_df["review_date_only"] = pd.to_datetime(reviews_df.author_review_date)
+        reviews_df["review_date_only"] = reviews_df["review_date_only"].apply(
+            lambda x: pd.Timestamp.date(x)
+        )
+        try:
+            reviews_df = subsetter.subset_by_dates(
+                df=reviews_df,
+                datestamp_column="review_date_only",
+                to_datestamp="2025-04-23",
+            )
+        except Exception as e:
+            self.logger.error(
+                "Something awful has happened while attempting to subset the reviews data to match the latest collection date within the initial collection period: {e}"
+            )
+            raise
+        self.logger.info(
+            f"length of reviews data AFTER research data collection cutoff date (2025-04-23) is: {len(reviews_df)}"
+        )
+
         if not existing_df.empty and not reviews_df.empty:
             # merge existing and reviews and discussions dfs
             # first merge on REVIEWS (PRCR)
@@ -56,7 +80,7 @@ class ExpandData(LocationSetup):
                 per_individual_data = pd.merge(
                     existing_df,
                     reviews_df,
-                    how="left",
+                    how="outer",  # outer join to avoid losing any in y not in x; prep_combined uses outer join between commits and issues dfs.
                     left_on=["repo_name", "gh_username"],
                     right_on=[
                         "repo_name",
@@ -74,7 +98,7 @@ class ExpandData(LocationSetup):
             # complete_per_individual_data = pd.merge(
             #     per_individual_data,
             #     discussions_df,
-            #     how="left",
+            #     how="outer", # outer join to avoid losing any in y not in x; prep_combined uses outer join between commits and issues dfs.
             #     left_on=["repo_name", "gh_username"],
             #     right_on=[
             #         "repo_name",

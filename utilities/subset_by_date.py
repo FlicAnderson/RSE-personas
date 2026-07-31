@@ -6,9 +6,10 @@ import datetime
 
 def subset_by_dates(
     df: pd.DataFrame,
-    datestamp_column=pd.Timestamp,
-    from_datestamp=pd.Timestamp.min.date(),  # default to earliest possible year - not sensible, but doesn't change behaviour :C
-    to_datestamp=pd.Timestamp(
+    datestamp_column: datetime.date | str,
+    from_datestamp: datetime.date
+    | str = pd.Timestamp.min.date(),  # default to earliest possible year - not sensible, but doesn't change behaviour :C
+    to_datestamp: datetime.date | str = pd.Timestamp(
         "today"
     ).date(),  # defaults to today, which is the latest possible date, no behaviour changed. Set to "2025-04-23" for latest GH data collection date from FIRST collection (commits).
 ):
@@ -33,6 +34,11 @@ def subset_by_dates(
     """
     orig_len = len(df)
     print(f"orig_len = {len(df)}")
+
+    print(f"{df.datestamp_column.dtype}")
+    print(
+        isinstance(df.datestamp_column.dtype, datetime.date)
+    )  # or isinstance(df.datestamp_column)
 
     if isinstance(to_datestamp, str):
         to_datestamp = pd.Timestamp(to_datestamp).date()
