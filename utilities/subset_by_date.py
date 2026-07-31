@@ -1,6 +1,7 @@
 """This (set of) function(s) are to help subset the dataset via dates for valid RSE Persona calculations."""
 
 import pandas as pd
+import datetime
 
 
 def subset_by_dates(
@@ -36,7 +37,9 @@ def subset_by_dates(
     if isinstance(to_datestamp, str):
         to_datestamp = pd.Timestamp(to_datestamp).date()
 
-    assert isinstance(to_datestamp, pd.Timestamp), (
+    assert isinstance(to_datestamp, pd.Timestamp) or isinstance(
+        to_datestamp, datetime.datetime
+    ), (
         f"to_datestamp is not an instance of pd.Timestamp, instead it's {type(to_datestamp)}."
     )
 
