@@ -33,7 +33,7 @@ def subset_by_dates(
     orig_len = len(df)
     print(f"orig_len = {len(df)}")
 
-    if isinstance(to_datestamp, "str"):
+    if isinstance(to_datestamp, str):
         to_datestamp = pd.Timestamp(to_datestamp).date()
 
     assert isinstance(to_datestamp, pd.Timestamp), (
