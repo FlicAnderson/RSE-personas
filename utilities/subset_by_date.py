@@ -6,7 +6,7 @@ import datetime
 
 def subset_by_dates(
     df: pd.DataFrame,
-    datestamp_column,
+    datestamp_column,  # name of column to subset by (WILL NOT BE EDITED)
     from_datestamp: datetime.date
     | str = pd.Timestamp.min.date(),  # default to earliest possible year - not sensible, but doesn't change behaviour :C
     to_datestamp: datetime.date | str = pd.Timestamp(
@@ -35,7 +35,22 @@ def subset_by_dates(
     orig_len = len(df)
     print(f"orig_len = {len(df)}")
 
-    print(f"{df.datestamp_column.dtype}")
+    print(f"data type of datestamp_column is {df[datestamp_column].dtype}")
+
+    df["datestamp_column_temp"] = pd.to_datetime(  # make new column
+        df[datestamp_column]
+    )  # change type from string to datetime
+
+    print(
+        f"type of df['datestamp_column_temp'] is {type(df['datestamp_column_temp'])} ; dtypes of df are: {df.dtypes}"
+    )
+    print(f"df['datestamp_column_temp'][0:5] is: {df['datestamp_column_temp'][0:5]}")
+
+    df["datestamp_column_temp"] = df["datestamp_column_temp"].apply(
+        lambda x: pd.Timestamp.date(
+            x
+        )  # drop the times, keep the date for date comparisons and subsetting
+    )
 
     if isinstance(to_datestamp, str):
         to_datestamp = pd.Timestamp(to_datestamp).date()
@@ -47,11 +62,14 @@ def subset_by_dates(
     )
 
     output = df[
-        (df[datestamp_column] > from_datestamp)
+        (df["datestamp_column_temp"] > from_datestamp)
         & (
-            df[datestamp_column] < to_datestamp
+            df["datestamp_column_temp"] < to_datestamp
         )  # df retains only rows AFTER from_datestamp AND BEFORE to_datestamp!
     ]
+
+    # drop extra column created for subsetting with
+    output = output.drop(columns=["datestamp_column_temp"], errors="raise")
 
     print(f"post_subset_len = {len(output)}")
     output_len = len(output)
