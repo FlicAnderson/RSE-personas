@@ -29,14 +29,14 @@ class ExpandData(LocationSetup):
         # assert discussions_data is not None, f"discussions data file missing: {discussions_data}"
 
         # load csv files
-        self.logger.info("loading existing data file {}")
+        self.logger.info(f"loading existing data file {existing_data}")
         existing_df = pd.read_csv(
             filepath_or_buffer=Path(existing_data),
             header=0,
             low_memory=False,
             dtype=object,
         )
-
+        self.logger.info(f"loading reviews data file {reviews_data}")
         reviews_df = pd.read_csv(
             filepath_or_buffer=Path(reviews_data),
             header=0,
@@ -55,10 +55,11 @@ class ExpandData(LocationSetup):
         self.logger.info(
             f"length of reviews data BEFORE research data collection cutoff date (2025-04-23) is: {len(reviews_df)}"
         )
-        reviews_df["review_date_only"] = pd.to_datetime(reviews_df.author_review_date)
-        reviews_df["review_date_only"] = reviews_df["review_date_only"].apply(
-            lambda x: pd.Timestamp.date(x)
-        )
+
+        reviews_df["review_date_only"] = pd.to_datetime(
+            reviews_df.author_review_date
+        )  # change type from string to datetime
+
         assert "review_date_only" in reviews_df.columns, (
             "missing column 'review_date_only', this will be needed in a sec"
         )
@@ -66,7 +67,7 @@ class ExpandData(LocationSetup):
             reviews_df = subsetter.subset_by_dates(
                 df=reviews_df,
                 datestamp_column="review_date_only",
-                to_datestamp="2025-04-23",
+                to_datestamp="2025-04-23",  # date of 'first' GH API data collection.
             )
         except Exception as e:
             self.logger.error(
