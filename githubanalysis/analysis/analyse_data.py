@@ -342,7 +342,7 @@ class DataAnalyser(DatasetSetup):
         cleaned_data_with_interactions = pd.merge(
             cleaned_data,
             all_interaction_data,
-            how="inner",
+            how="inner",  # INNER JOIN HERE (c.f. outer join used in prep_combined/expand_IT_combined_data: is this what is needed?)
             on=["repo_name", "gh_username"],
         )  # join on repo-individual as key
         self.logger.info(f"{cleaned_data_with_interactions.shape = }")
