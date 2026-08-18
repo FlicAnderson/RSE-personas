@@ -22,11 +22,61 @@ class PrepDataCombined(DatasetSetup):
         Combines per-dev (per repo-individual) data from commits and issue tickets
         into single dataframe for analysis.
 
-        Outputs: returns omnirepo, generates output csv file.
+        Outputs: returns omnirepo, generates output .csv file: merged-data-per-dev_x2868-repos_2025-05-10.csv
 
         Example Run: python githubanalysis/processing/prep_combined.py -c commits-data-per-dev_x2320-repos_2025-04-15.csv -i issues-data-per-dev_x2829-repos_x237715-repo-individuals_2025-04-15.csv
-        """
 
+        Columns of omnirepo df:
+            repo_name,  # IMP
+            author_username,
+            n_of_commit_creators,
+            n_commits,
+            pc_repo_commits,  # IMP
+            n_changes,
+            mean_n_changes,
+            median_n_changes_changed,
+            std_n_changes_changed,
+            n_files_changed,
+            mean_n_files,
+            median_n_files_changed,
+            std_n_files_changed,
+            hattori_lanza_size_cat_tiny,
+            hattori_lanza_size_cat_small,
+            hattori_lanza_size_cat_medium,
+            hattori_lanza_size_cat_large,
+            hattori_lanza_content_cat_forward_engineering,
+            hattori_lanza_content_cat_reengineering,
+            hattori_lanza_content_cat_corrective_engineering,
+            hattori_lanza_content_cat_management,
+            hattori_lanza_content_cat_empty_message,
+            hattori_lanza_content_cat_no_categorisation,
+            vasilescu_category_doc,
+            vasilescu_category_img,
+            vasilescu_category_l10n,
+            vasilescu_category_ui,
+            vasilescu_category_media,
+            vasilescu_category_code,
+            vasilescu_category_meta,
+            vasilescu_category_config,
+            vasilescu_category_build,
+            vasilescu_category_devdoc,
+            vasilescu_category_db,
+            vasilescu_category_test,
+            vasilescu_category_unknown,
+            issue_author_username,
+            n_issues,
+            pc_repo_issues,  # IMP
+            n_of_issues_creators,
+            assigned_devs,
+            n_issues_assigned,
+            pc_issues_assigned_of_assigned,  # IMP
+            _merge,
+            issue_username,
+            commiss_merge,
+            gh_username,  # IMP
+            _dataset_source,
+
+        """
         commits_data_file = Path(self.data_read_location, commits_data_file)
         issues_data_file = Path(self.data_read_location, issues_data_file)
         self.logger.info(f"Commits data file: {commits_data_file}")
