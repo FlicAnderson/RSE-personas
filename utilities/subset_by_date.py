@@ -11,7 +11,7 @@ def subset_by_dates(
     | str = pd.Timestamp.min.date(),  # default to earliest possible year - not sensible, but doesn't change behaviour :C
     to_datestamp: datetime.date | str = pd.Timestamp(
         "today"
-    ).date(),  # defaults to today, which is the latest possible date, no behaviour changed. Set to "2025-04-23" for latest GH data collection date from FIRST collection (commits).
+    ).date(),  # defaults to today, which is the latest possible date, no behaviour changed. Set to "2024-11-21" for earliest GH data collection date from FIRST collection (commits).
 ):
     """
     There should be a function that subsets repository interactions data
