@@ -23,6 +23,19 @@ class ExpandData(LocationSetup):
         reviews_data: str,
         # discussions_data: str,
     ):
+        """
+        Combines per-dev (per repo-individual) data from existing file (already combined commits and issue tickets => merged-data-per-dev_x*.csv)
+        AND reviews data in a per-dev (per-repo-individual) format (TODO)
+        into single dataframe for analysis.
+
+        Outputs: returns omnirepo df, generates output .csv file: per-repo-individual-existing-and-reviews-data_x*.csv
+
+        Example Run: python githubanalysis/processing/expand_combined_data.py -e merged-data-per-dev_x2868-repos_2025-05-10.csv -r reviews-data-per-dev_x*.csv
+
+        Columns of omnirepo df:
+        TODO
+        """
+
         # check files exist
         assert existing_data is not None, f"existing data file missing: {existing_data}"
         assert reviews_data is not None, f"reviews data file missing: {reviews_data}"
@@ -53,7 +66,7 @@ class ExpandData(LocationSetup):
 
         # SUBSET REVIEWS_DF BY TIME TO REMOVE ANY DATA SINCE cutoff date.
         self.logger.info(
-            f"length of reviews data BEFORE research data collection cutoff date (2025-04-23) is: {len(reviews_df)}"
+            f"length of reviews data BEFORE research data collection cutoff date (2024-11-21) is: {len(reviews_df)}"
         )
 
         reviews_df["review_date_only"] = pd.to_datetime(
@@ -67,7 +80,24 @@ class ExpandData(LocationSetup):
             reviews_df = subsetter.subset_by_dates(
                 df=reviews_df,
                 datestamp_column="review_date_only",
-                to_datestamp="2025-04-23",  # date of 'first' GH API data collection.
+                to_datestamp="2024-11-21",  # date of 'first' GH API data collection (commits all branches, earliest date).
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Something awful has happened while attempting to subset the reviews data to match the latest collection date within the initial collection period: {e}"
+            )
+            raise
+        self.logger.info(
+            f"length of reviews data AFTER research data collection cutoff date (2025-04-23) is: {len(reviews_df)}"
+        )
+
+        # SUBSET EXISTING DATA by cutoff date.
+        # TODO
+        try:
+            existing_df = subsetter.subset_by_dates(
+                df=existing_df,
+                datestamp_column="review_date_only",
+                to_datestamp="2024-11-21",  # date of 'first' GH API data collection (commits all branches, earliest date).
             )
         except Exception as e:
             self.logger.error(
@@ -125,6 +155,9 @@ class ExpandData(LocationSetup):
                     path_or_buf=writeout_path,
                     header=True,
                     index=False,
+                )
+                self.logger.info(
+                    f"Combined data-per-dev file {writeout_path} created successfully"
                 )
             except Exception as e:
                 self.logger.error(
