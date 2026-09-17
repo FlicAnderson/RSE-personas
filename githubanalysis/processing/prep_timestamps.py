@@ -1,5 +1,11 @@
 """Get timestamp and interaction types info for issues AND commits datasets."""
 
+"""
+NOTE: THIS SCRIPT DOES > not < HANDLE ASSIGNMENT TO ISSUES. 
+This is partly because 'being assigned' is not an interaction of that repo-individual, but instead (often) by someone else. 
+That is done in analyse_data.py. 
+"""
+
 import argparse
 import traceback
 from logging import Logger
@@ -830,6 +836,7 @@ if __name__ == "__main__":
 
     """
     TEST REPOS: Run from commandline as this: 
+    # NOTE: DO NOT RUN THIS LOCALLY!!!! (insufficient memory, will break your terminal.)
     $ time python githubanalysis/processing/prep_timestamps.py 
     -f code_review_subset_2026-07-26_x17.txt 
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
