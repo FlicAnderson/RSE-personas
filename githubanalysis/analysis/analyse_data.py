@@ -118,10 +118,23 @@ class DataAnalyser(DatasetSetup):
 
         return `data`: row-per-repo-individual format with columns:
 
-
+        repo_name, gh_username, author_username, n_of_commit_creators, n_commits, n_changes,
+        mean_n_changes, median_n_changes_changed, std_n_changes_changed, n_files_changed,
+        mean_n_files, median_n_files_changed, std_n_files_changed,
+        hattori_lanza_size_cat_*, (x4)
+        hattori_lanza_content_cat_*, (x6)
+        vasilescu_category_*, (x13)
+        issue_author_username, n_issues, n_of_issues_creators,
+        assigned_devs, n_issues_assigned, pc_issues_assigned_of_assigned,
+        issue_username, _dataset_source, review_item_url, review_PR_url, PR_review_id,
+        author_review_date, subsequent_author_review_date, review_body,
+        review_author_repo_association, reviewed_PR_number, review_author_gh_username,
+        review_type, review_author_gh_id, review_state, API_links, commit_id,
+        main_PR_review_id, reply_to_subreview_id, origin,
+        pc_HLs-*, (x4)
+        pc_HL-*, (x6)
+        pc_V-*, (x13)
         """
-        ## gather category text info about what types of contributions users are contributing
-
         self.logger.debug(
             f"data df fed into calc_commit_cats_pcs() has the following columns: {data.columns}"
         )
@@ -229,7 +242,7 @@ class DataAnalyser(DatasetSetup):
 
         return data
 
-    def combine_cleaned_data_with_interactions(
+    def combine_cats_data_with_interactions(
         self,
         commits_cats_data: pd.DataFrame,
         all_interaction_data: pd.DataFrame,
@@ -247,11 +260,11 @@ class DataAnalyser(DatasetSetup):
         )  # join on repo-individual as key
         self.logger.info(f"{data_with_interactions.shape = }")
         self.logger.info(
-            f"Number of unique cols in cleaned_data_with_interactions is: {data_with_interactions.columns.nunique()}."
+            f"Number of unique cols in cats_data_with_interactions is: {data_with_interactions.columns.nunique()}."
         )
         self.writeout_data_to_csv(
             data_with_interactions,
-            filename="sample_cleaned_data_with_interactions_",
+            filename="sample_cats_data_with_interactions_",
         )
 
         assert "pc_issues_assigned_of_assigned" in data_with_interactions.columns
@@ -269,7 +282,7 @@ class DataAnalyser(DatasetSetup):
             axis=1,
         )
 
-        # cleaned_data_with_interactions =
+        # cats_data_with_interactions =
         data_with_interactions.drop(  # all of these are created BEFORE the data is read-in, correctly dropped as unused.
             columns=[
                 # "n_commits",  # dropping the older column, keeping commits_created as probably later
@@ -290,7 +303,7 @@ class DataAnalyser(DatasetSetup):
             + (data_with_interactions["pc_reviews_created"])
         ) / 6
         return data_with_interactions
-        # cleaned_data_with_interactions.rename(columns={"breadth_interactions": "CBRI"}) # probably clearer if I don't rename it :C
+        # cats_data_with_interactions.rename(columns={"breadth_interactions": "CBRI"}) # probably clearer if I don't rename it :C
 
     def writeout_data_to_csv(self, df: pd.DataFrame, filename: str | Path):
         filestr = f"{self.dataset_name}_{filename}_{self.current_date_info}.csv"
@@ -367,12 +380,12 @@ class DataAnalyser(DatasetSetup):
     def create_clustering_data_from_sample(
         self,
         clustering_variables: list[str],
-        cleaned_data_with_interactions: pd.DataFrame,
+        cats_data_with_interactions: pd.DataFrame,
     ):
         assert isinstance(clustering_variables, list), (
             f"clustering variables must be a list: please check input variables: {clustering_variables} which are of type {type(clustering_variables)}."
         )
-        clustering_data = cleaned_data_with_interactions[clustering_variables]
+        clustering_data = cats_data_with_interactions[clustering_variables]
         return clustering_data
 
     def evaluate_n_clusters(
@@ -494,16 +507,14 @@ class DataAnalyser(DatasetSetup):
     def label_clustering_data(
         self,
         cluster_labels: np.ndarray,
-        cleaned_data_with_interactions: pd.DataFrame,
+        cats_data_with_interactions: pd.DataFrame,
     ) -> pd.DataFrame:
-        cleaned_data_with_interactions = cleaned_data_with_interactions.reset_index(
-            drop=True
-        )
+        cats_data_with_interactions = cats_data_with_interactions.reset_index(drop=True)
 
         labelled_data = pd.concat(
             [
                 pd.DataFrame({"cluster_labels": cluster_labels}),
-                cleaned_data_with_interactions,
+                cats_data_with_interactions,
             ],
             axis=1,
         )
@@ -717,24 +728,22 @@ class DataAnalyser(DatasetSetup):
             self.logger.info(f"Column names from interactions file: {interact.columns}")
 
             # add interaction data, merge onto cleaned_data.
-            self.logger.info("next: combine_cleaned_data_with_interactions()")
+            self.logger.info("next: combine_cats_data_with_interactions()")
 
-            cleaned_data_with_interactions = (
-                self.combine_cleaned_data_with_interactions(
-                    commits_cats_data=commits_cats_data,
-                    all_interaction_data=interact,
-                )
+            cats_data_with_interactions = self.combine_cats_data_with_interactions(
+                commits_cats_data=commits_cats_data,
+                all_interaction_data=interact,
             )
             self.logger.info(
-                f"Combined cleaned_data_with_interaction_data df has shape: {cleaned_data_with_interactions.shape}."
+                f"Combined cleaned_data_with_interaction_data df has shape: {cats_data_with_interactions.shape}."
             )
 
             write_out_to_combined = self.writeout_data_to_csv(
-                df=cleaned_data_with_interactions,
-                filename="cleaned_data_with_interaction-data-per-dev_",
+                df=cats_data_with_interactions,
+                filename="data_with_interaction-data-per-dev_",
             )
             self.logger.info(
-                f"Combined cleaned_data and interaction_data written out to {write_out_to_combined}"
+                f"Combined commits_cats_data and interaction_data written out to {write_out_to_combined}"
             )
         else:  # skip the cleaning and jump ahead to rest of analysis, reading in the file:
             self.logger.info(
@@ -748,37 +757,37 @@ class DataAnalyser(DatasetSetup):
 
             if not isinstance(data, pd.DataFrame):
                 data = Path(self.data_read_location, data)
-                cleaned_data_with_interactions = pd.read_csv(
+                cats_data_with_interactions = pd.read_csv(
                     skip_cleaning,
                     header=0,
                     low_memory=False,
                 )
                 self.logger.debug(
-                    f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+                    f"cats_data_with_interactions columns: {cats_data_with_interactions.columns}"
                 )
             else:
-                cleaned_data_with_interactions = data
+                cats_data_with_interactions = data
                 self.logger.debug(
-                    f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+                    f"cats_data_with_interactions columns: {cats_data_with_interactions.columns}"
                 )
 
             self.logger.info(
-                f"Number of repositories in sample is: {cleaned_data_with_interactions.groupby('repo_name').ngroups}."
+                f"Number of repositories in sample is: {cats_data_with_interactions.groupby('repo_name').ngroups}."
             )
 
             self.logger.info(
-                f"Number of unique gh_usernames in sample is: {cleaned_data_with_interactions.groupby('gh_username').ngroups}."
+                f"Number of unique gh_usernames in sample is: {cats_data_with_interactions.groupby('gh_username').ngroups}."
             )
             self.logger.info(
-                f"Number of gh_usernames appearing in more than one repository in this sample is: {len(cleaned_data_with_interactions.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
+                f"Number of gh_usernames appearing in more than one repository in this sample is: {len(cats_data_with_interactions.groupby('gh_username')[['repo_name']].count().reset_index(names=['gh_username', 'count']).query('repo_name > 1'))}."
             )
 
             self.logger.info(
-                f"Number of repo-individuals (repo_name plus gh_username combos) in sample is: {cleaned_data_with_interactions.groupby(['repo_name', 'gh_username']).ngroups}."
+                f"Number of repo-individuals (repo_name plus gh_username combos) in sample is: {cats_data_with_interactions.groupby(['repo_name', 'gh_username']).ngroups}."
             )
 
         # write out sample repos to file:
-        sample_repo_names = list(cleaned_data_with_interactions.repo_name.unique())
+        sample_repo_names = list(cats_data_with_interactions.repo_name.unique())
         reponameslistcreator = RepoNamesListCreator(
             in_notebook=self.in_notebook,
             logger=self.logger,
@@ -809,8 +818,8 @@ class DataAnalyser(DatasetSetup):
             f"Relevant repo_stats subset written out to {write_out_to_repo_stats}"
         )
 
-        n_repos = cleaned_data_with_interactions.groupby("repo_name").ngroups
-        n_users = len(cleaned_data_with_interactions)
+        n_repos = cats_data_with_interactions.groupby("repo_name").ngroups
+        n_users = len(cats_data_with_interactions)
 
         # analyse & write out languages from sample
         # plot languages data from sample
@@ -822,13 +831,13 @@ class DataAnalyser(DatasetSetup):
             "Sample repos languages info collected and written out and plotted."
         )
         self.logger.debug(
-            f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+            f"cats_data_with_interactions columns: {cats_data_with_interactions.columns}"
         )
         # save out pre-processing dataset
-        n_repos = cleaned_data_with_interactions.groupby("repo_name").ngroups
-        n_users = len(cleaned_data_with_interactions)
+        n_repos = cats_data_with_interactions.groupby("repo_name").ngroups
+        n_users = len(cats_data_with_interactions)
         write_out_to_preprocessed = self.writeout_data_to_csv(
-            cleaned_data_with_interactions,
+            cats_data_with_interactions,
             f"pre-clustering_dataset_x{n_repos}repos_x{n_users}project-individuals_",
         )
         self.logger.info(
@@ -852,12 +861,12 @@ class DataAnalyser(DatasetSetup):
             f"Data will be clustered on the following {len(clustering_variables)} variables: {clustering_variables}."
         )
         self.logger.debug(
-            f"cleaned_data_with_interactions columns: {cleaned_data_with_interactions.columns}"
+            f"cats_data_with_interactions columns: {cats_data_with_interactions.columns}"
         )
 
         clustering_data = self.create_clustering_data_from_sample(
             clustering_variables=clustering_variables,
-            cleaned_data_with_interactions=cleaned_data_with_interactions,
+            cats_data_with_interactions=cats_data_with_interactions,
         )
 
         self.writeout_data_to_csv(clustering_data, filename="sample_clustering_data")
@@ -905,7 +914,7 @@ class DataAnalyser(DatasetSetup):
 
         # run actual clustering with best N of clusters
         # write out clustering data
-        # apply cluster_labels to original data (cleaned_data_with_interactions)
+        # apply cluster_labels to original data (cats_data_with_interactions)
         cluster_labels = self.do_clustering(
             clustering_data=clustering_data,
             best_n_clusters=int(best_n_clusters),
@@ -914,7 +923,7 @@ class DataAnalyser(DatasetSetup):
 
         labelled_data = self.label_clustering_data(
             cluster_labels=cluster_labels,
-            cleaned_data_with_interactions=cleaned_data_with_interactions,
+            cats_data_with_interactions=cats_data_with_interactions,
         )
 
         # log cluster number, sizes of n_repo_individuals, n_repos, distribution, etc.
