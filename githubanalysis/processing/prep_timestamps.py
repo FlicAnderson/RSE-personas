@@ -1,9 +1,15 @@
-"""Get timestamp and interaction types info for issues AND commits datasets."""
+"""
+Get per-repo-individual summary data (including RC: repository contribution %s)
+info for commits, issues (and PRs), and review interactions data.
+Write out this important info as: "merged-interactions-data-per-dev_xNrepos_xNrepoIndivds_YYYY-MM-DD.csv"
+"""
 
 """
-NOTE: THIS SCRIPT DOES > not < HANDLE ASSIGNMENT TO ISSUES. 
-This is partly because 'being assigned' is not an interaction of that repo-individual, but instead (often) by someone else. 
-That is done in analyse_data.py. 
+NOTE: THIS SCRIPT DOES >>not<< HANDLE ASSIGNMENT TO ISSUES. 
+This is partly because 'being assigned' is not an interaction of that 
+repo-individual, but instead (often) by someone else. 
+
+That is done in prep_issues.py, and fed into analyse_data.py via prep_combine.py. 
 """
 
 import argparse
@@ -12,9 +18,7 @@ from logging import Logger
 from pathlib import Path
 import datetime
 import sys
-import os
 import csv
-import re
 from ast import literal_eval
 import pandas as pd
 import pandas.api.types as ptypes
@@ -679,6 +683,11 @@ class PrepDataTimes(LocationSetup):
     def read_interactions(
         self, interactions_file: Path, repo_list: list[str]
     ) -> pd.DataFrame:
+        """
+        READS in .csv file of interactions of specific type (commits | issues (inc PRs) | code reviews)
+        then SUBSETS these to discard any rows from repos NOT in the repo_list;
+        returns the remaining in-list repos' interactions data of this type.
+        """
         # READ IN DATA as df
         self.logger.info(
             f"Attempting to read in: {interactions_file}; this could take some SECONDS if it's a large file"
@@ -735,15 +744,21 @@ class PrepDataTimes(LocationSetup):
         # discussions_interactions_file: Path | str,
     ) -> pd.DataFrame | None:
         """
-        Reads in processed data from commits, issue tickets and pull
-        request code review interactions-per-line files created in
-        *_workflow.py scripts, gathers timestamp information and
-        processes it, then combines all into single dataframe for analysis.
+        Reads in processed data via read_interactions() from commits,
+        issue tickets and pull request code review interactions-per-line
+        files created in *_workflow.py scripts, gathers timestamp information
+        and processes it, then combines all into single dataframe for analysis.
 
         Processing done includes:
-         - read each file (commits, issue tickets, PR Code Reviews, ... ) in read_interactions()
-         - join dfs via concat 'outer' to create TALL df in join_all_interactions()
-         -
+         - READ each file (commits, issue tickets, PR Code Reviews, ... ) in read_interactions()
+         - JOIN dfs via concat 'outer' to create TALL df in join_all_interactions()
+         - fill any missing data with 0s as interactions NOT present
+         - write out joined (vertically stacked) data df as file "merged-interactions-data-per-dev... .csv"
+         - log various stats
+
+        Return `all_interactions_data`:
+        a df of line-per-interactions data for multiple repo-individuals
+        across multiple repos, with ALL included interaction types in single df.
         """
         pd.options.mode.copy_on_write = True
 
@@ -845,7 +860,7 @@ class PrepDataTimes(LocationSetup):
         n_repo_indivds = int(
             all_interactions_data.groupby(["repo_name", "gh_username"]).ngroups
         )
-        filestr = f"merged-interactions-data-per-dev_x{n_repos_all_interactions_data}repos_x{n_repo_indivds}_{self.current_date_info}.csv"
+        filestr = f"merged-interactions-data-per-dev_x{n_repos_all_interactions_data}repos_x{n_repo_indivds}repoIndivds_{self.current_date_info}.csv"
         writeout_path = Path(self.data_location, filestr)
 
         try:
@@ -920,6 +935,23 @@ parser.add_argument(
 
 
 if __name__ == "__main__":
+    """
+    This script will run at commandline with 4 flagged files as arguments. 
+
+    Files for: commits interactions (-c), issues and pull request interactions (-i), and code review interactions (-r) 
+    are READ and SUBSET against a file listing repositories to INCLUDE (-f), therefore any data rows for repos NOT included in file -f are excluded. 
+
+    There are then calculations made generating summary information for the interactions contributed by each "repo-individual": 
+    a repo-individual is the combined grouping of a unique repository name and a gh-username, and is used as the 'grouping index' for all calculations. 
+
+    Calculations give details of interactions of each studied/included type made by each repo-individual. 
+
+    These are returned as all_interactions_data df 
+    (per-repo-individual contributions data as raw Ns and RC values of each interaction types, 
+    NOT INCLUDING ASSIGNMENT TO ISSUES (yet))
+    all_interactions_data is WRITTEN OUT as: "merged-interactions-data-per-dev_xNrepos_xNrepoIndivds_YYYY-MM-DD.csv"
+    
+    """
     args = parser.parse_args()
     filepath: str | None = args.filepath_for_repos_list
     commits_interactions_file: str | Path = args.filepath_for_commits_interactions
@@ -995,7 +1027,7 @@ if __name__ == "__main__":
     reviews_interactions_file = Path(reviews_interactions_file)
 
     try:
-        times_data = prepdatatimes.interactions_data_workflow(
+        all_interactions_data = prepdatatimes.interactions_data_workflow(
             repo_list=repo_list,
             issues_interactions_file=issues_interactions_file,
             commits_interactions_file=commits_interactions_file,
