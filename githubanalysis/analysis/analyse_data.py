@@ -218,13 +218,6 @@ class DataAnalyser(DatasetSetup):
         data.loc[:, "CBRI"] = tmpdf_bool.loc[:, "CBRI"]
         data.loc[:, "contribution_types"] = tmpdf.loc[:, "contribution_types"]
 
-        data.loc[:, "contributions_by_user"] = data.apply(
-            lambda x: contribution_types_editor(
-                CBRI=x.CBRI, rough_type_cat=x.contribution_types
-            ),
-            axis=1,
-        )
-
         data = data.drop(columns=["contribution_types"])
 
         pd.options.mode.copy_on_write = True
@@ -381,7 +374,6 @@ class DataAnalyser(DatasetSetup):
                 "pc_repo_commits",
                 "pc_repo_issues",
                 "CBRI",
-                "contributions_by_user",
                 # "n_commits",  # dropping the older column, keeping commits_created as probably later
                 "_merge",
                 "issue_username",
