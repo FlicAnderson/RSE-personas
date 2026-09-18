@@ -632,6 +632,34 @@ class DataAnalyser(DatasetSetup):
         n_clusters_to_use: int | None = None,
         skip_cleaning: bool = False,
     ):
+        """
+        This function is the main RSE Persona analysis workflow runner.
+
+        **FILES:**
+        Main data files used in this analysis workflow are:
+         a) a ?misc data? file of per-repo-individual summary details from commits, issues (and PRs), and PR code reviews (-d: merged-data-per-dev*.csv)
+         This file's length == N of repo-individuals within.
+
+         b) an INTERACTIONS file of per-repo-individual summary details from commits, issues (and PRs), and PR code reviews (-i: merged-interactions-data-per-dev_*.csv)
+         Again, the length of this file == N of repo-individuals contained.
+
+        These files' data are SUBSET to retain only repos (and repo-individuals) listed in subset file -s (study-sample-repo-names_*.txt for example)
+
+        Some additional details from a summarised_repo_stats_*.csv file (-r) are joined to give context for the dataset during analysis.
+
+        **PROCESSING:**
+        TODO
+
+        **CALCULATIONS/ANALYSIS:**
+        TODO
+
+        **VISUALISATION:**
+        TODO
+
+        **OUTPUTS:**
+        TODO
+
+        """
         if skip_cleaning is False:
             assert skip_cleaning is False, (
                 "problem encountered: skip_cleaning is not False, processing happening anyway?!?"
@@ -651,10 +679,10 @@ class DataAnalyser(DatasetSetup):
             )
 
             self.logger.info(
-                f"Before subsetting: Number of repo-individuals (repo_name plus gh_username combos) in sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
+                f"Before subsetting: Number of repo-individuals (repo_name plus gh_username combos) in (prep_combined_data) sample is: {data.groupby(['repo_name', 'gh_username']).ngroups}."
             )
             self.logger.info(
-                f"Before subsetting: Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
+                f"Before subsetting: Number of repositories in (prep_combined_data) sample is: {data.groupby('repo_name').ngroups}."
             )
 
             # if subset_repos_file is not None:
@@ -679,7 +707,7 @@ class DataAnalyser(DatasetSetup):
             repo_stats_file = Path(self.data_read_location, repo_stats_file)
 
             self.logger.info(
-                f"Number of repositories in sample is: {data.groupby('repo_name').ngroups}."
+                f"Number of repositories in (prep_combined_data) sample is: {data.groupby('repo_name').ngroups}."
             )
 
             # self.logger.info("Team size of repositories in sample is: TODO.")
@@ -1016,8 +1044,8 @@ parser.add_argument(
     "--interactions-file",
     metavar="INTERACTIONS",
     type=str,
-    help="File containing interaction data; e.g. merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv",
-    default="merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv",
+    help="File containing interaction data; e.g. OUTDATED FILE: merged-interactions-data-per-dev_x2946-repos_2025-05-12.csv",
+    default="merged-interactions-data-per-dev_x1284repos_x119492repoIndivds_2026-09-18.csv",  # SET1 only!
 )
 parser.add_argument(
     "-r",
@@ -1080,7 +1108,7 @@ def main():
     skip_cleaning_arg: bool = args.skip_cleaning  # Do NOT use this -k arg if you want to run WHOLE pipeline, including subsetting steps!
 
     """
-    $ time python githubanalysis/analysis/analyse_data.py -d per-repo-individual-existing-and-reviews-data_x2868repos_x244143repo-individs_2026-07-27.csv -s sample_45pc_subsample_repo_names_list_2025-05-12_x1284.txt -p 10 -i merged-interactions-data-per-dev_x1284repos_x119492_2026-07-27.csv -r summarised_repo_stats_2025-05-01.csv -m 5 -z test_set1_revs_10pc -k False
+    $ time python githubanalysis/analysis/analyse_data.py -d merged-data-per-dev_x2868-repos_2025-05-10.csv -s sample_45pc_subsample_repo_names_list_2025-05-12_x1284.txt -p 10 -i merged-interactions-data-per-dev_x1284repos_x119492repoIndivds_2026-09-18.csv -r summarised_repo_stats_2025-05-01.csv -m 5 -z test_set1_revs_10pc
     """
     logger = loggit.get_default_logger(
         console=True,
