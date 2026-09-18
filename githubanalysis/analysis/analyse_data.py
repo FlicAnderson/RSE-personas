@@ -114,35 +114,26 @@ class DataAnalyser(DatasetSetup):
 
             return subset_data
 
-    def clean_and_contributors(self, data: pd.DataFrame) -> pd.DataFrame:
+    def calc_commit_cats_pcs(self, data: pd.DataFrame) -> pd.DataFrame:
         ## gather category text info about what types of contributions users are contributing
 
         self.logger.debug(
-            f"data df fed into clean_and_contributors() has the following columns: {data.columns}"
+            f"data df fed into calc_commit_cats_pcs() has the following columns: {data.columns}"
         )
         data = data.drop(
             columns=[
                 "pc_repo_issues",
                 "pc_repo_commits",
+                "commiss_merge",
+                "_merge",
             ],
             errors="ignore",
         )  # "pc_repo_issues" and "pc_repo_commits" aren't used subsequently, but are read in, so drop for clarity.
         self.logger.debug(
-            f"data df fed into clean_and_contributors() NOW has the following columns: {data.columns}"
+            f"data df fed into calc_commit_cats_pcs() NOW has the following columns: {data.columns}"
         )
 
         pd.options.mode.copy_on_write = True
-
-        data.loc[:, "n_commits"] = data["n_commits"]  # THIS DOES NOTHING?
-        data.loc[:, "pc_n_commits"] = (
-            (
-                data[["n_commits"]]
-                / data[
-                    ["n_commits"]
-                ].sum()  # calc repo-individual's total N commits as pc of sum of repo's commits.
-            )
-            * 100
-        )
 
         # create percentage of users' commits which fall into each category:
         # this creates human-readble version of these variables
@@ -235,57 +226,49 @@ class DataAnalyser(DatasetSetup):
 
     def combine_cleaned_data_with_interactions(
         self,
-        cleaned_data: pd.DataFrame,
+        commits_cats_data: pd.DataFrame,
         all_interaction_data: pd.DataFrame,
     ):
-        self.logger.info(f"{cleaned_data.shape =}")
+        self.logger.info(f"{commits_cats_data.shape =}")
 
         self.logger.info(f"{all_interaction_data.shape =}")
 
         # merge interaction data onto main analysis dataset:
-        cleaned_data_with_interactions = pd.merge(
-            cleaned_data,
+        data_with_interactions = pd.merge(
+            commits_cats_data,
             all_interaction_data,
             how="inner",  # INNER JOIN HERE (c.f. outer join used in prep_combined/expand_IT_combined_data: is this what is needed?)
             on=["repo_name", "gh_username"],
         )  # join on repo-individual as key
-        self.logger.info(f"{cleaned_data_with_interactions.shape = }")
+        self.logger.info(f"{data_with_interactions.shape = }")
         self.logger.info(
-            f"Number of unique cols in cleaned_data_with_interactions is: {cleaned_data_with_interactions.columns.nunique()}."
+            f"Number of unique cols in cleaned_data_with_interactions is: {data_with_interactions.columns.nunique()}."
         )
         self.writeout_data_to_csv(
-            cleaned_data_with_interactions,
+            data_with_interactions,
             filename="sample_cleaned_data_with_interactions_",
         )
 
-        assert (
-            "pc_issues_assigned_of_assigned" in cleaned_data_with_interactions.columns
-        )
+        assert "pc_issues_assigned_of_assigned" in data_with_interactions.columns
         # recalculate some columns to add assignment info
-        cleaned_data_with_interactions["breadth_interactions"] = (
-            cleaned_data_with_interactions.apply(
-                lambda row: (row["breadth_interactions"] + 1)
-                if row["pc_issues_assigned_of_assigned"] > 0
-                else row["breadth_interactions"],
-                axis=1,
-            )
+        data_with_interactions["breadth_interactions"] = data_with_interactions.apply(
+            lambda row: (row["breadth_interactions"] + 1)
+            if row["pc_issues_assigned_of_assigned"] > 0
+            else row["breadth_interactions"],
+            axis=1,
         )
-        cleaned_data_with_interactions["which_interactions"] = (
-            cleaned_data_with_interactions.apply(
-                lambda row: (f"{row['which_interactions']}, assigned_issue")
-                if row["pc_issues_assigned_of_assigned"] > 0
-                else row["which_interactions"],
-                axis=1,
-            )
+        data_with_interactions["which_interactions"] = data_with_interactions.apply(
+            lambda row: (f"{row['which_interactions']}, assigned_issue")
+            if row["pc_issues_assigned_of_assigned"] > 0
+            else row["which_interactions"],
+            axis=1,
         )
 
         # cleaned_data_with_interactions =
-        cleaned_data_with_interactions.drop(
+        data_with_interactions.drop(  # all of these are created BEFORE the data is read-in, correctly dropped as unused.
             columns=[
                 # "n_commits",  # dropping the older column, keeping commits_created as probably later
-                "_merge",
                 "issue_username",
-                "commiss_merge",
                 "_dataset_source",
                 "issue_author_username",
             ],
@@ -293,15 +276,15 @@ class DataAnalyser(DatasetSetup):
         )  # remove old columns
 
         # regenerate pcCDC from interactions columns but rename to pc_DC (percent Depth of Contributions):
-        cleaned_data_with_interactions.loc[:, "pc_DC"] = (
-            (cleaned_data_with_interactions["pc_commit_created"])
-            + (cleaned_data_with_interactions["pc_issue_created"])
-            + (cleaned_data_with_interactions["pc_issue_closed"])
-            + (cleaned_data_with_interactions["pc_issues_assigned_of_assigned"])
-            + (cleaned_data_with_interactions["pc_pull_request_created"])
-            + (cleaned_data_with_interactions["pc_reviews_created"])
+        data_with_interactions.loc[:, "pc_DC"] = (
+            (data_with_interactions["pc_commit_created"])
+            + (data_with_interactions["pc_issue_created"])
+            + (data_with_interactions["pc_issue_closed"])
+            + (data_with_interactions["pc_issues_assigned_of_assigned"])
+            + (data_with_interactions["pc_pull_request_created"])
+            + (data_with_interactions["pc_reviews_created"])
         ) / 6
-        return cleaned_data_with_interactions
+        return data_with_interactions
         # cleaned_data_with_interactions.rename(columns={"breadth_interactions": "CBRI"}) # probably clearer if I don't rename it :C
 
     def writeout_data_to_csv(self, df: pd.DataFrame, filename: str | Path):
@@ -702,18 +685,18 @@ class DataAnalyser(DatasetSetup):
             # number of 'ghost' users
             # number of repo-individuals who come from issues API, or commits API, or appear in both APIs.
 
-            # clean data and rename columns as req
+            # calculate pc values for commit categories values
             try:
-                cleaned_data = self.clean_and_contributors(
+                commits_cats_data = self.calc_commit_cats_pcs(
                     data,
                 )
                 self.writeout_data_to_csv(
-                    cleaned_data,
-                    filename="sample_cleaned_data_",
+                    commits_cats_data,
+                    filename="sample_commits_cats_data_",  # this was renamed from sample_cleaned_data_
                 )
             except Exception as e:
                 self.logger.error(
-                    f"Error encountered attempting clean_and_contributors() function operation on data df with shape {data.shape}: {e}"
+                    f"Error encountered attempting calc_commit_cats_pcs() function operation on data df with shape {data.shape}: {e}"
                 )
                 raise
 
@@ -723,7 +706,9 @@ class DataAnalyser(DatasetSetup):
                 low_memory=False,
             )
 
-            self.logger.info(f"Column names from cleaned_df: {cleaned_data.columns}")
+            self.logger.info(
+                f"Column names from commit cat calc'd: {commits_cats_data.columns}"
+            )
             self.logger.info(f"Column names from interactions file: {interact.columns}")
 
             # add interaction data, merge onto cleaned_data.
@@ -731,7 +716,7 @@ class DataAnalyser(DatasetSetup):
 
             cleaned_data_with_interactions = (
                 self.combine_cleaned_data_with_interactions(
-                    cleaned_data=cleaned_data,
+                    commits_cats_data=commits_cats_data,
                     all_interaction_data=interact,
                 )
             )
