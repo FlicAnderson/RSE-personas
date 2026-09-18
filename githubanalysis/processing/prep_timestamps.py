@@ -950,6 +950,8 @@ if __name__ == "__main__":
     NOT INCLUDING ASSIGNMENT TO ISSUES (yet))
     all_interactions_data is WRITTEN OUT as: "merged-interactions-data-per-dev_xNrepos_xNrepoIndivds_YYYY-MM-DD.csv"
     
+    Example output for Set1: "data/merged-interactions-data-per-dev_x1284repos_x119492repoIndivds_2026-09-18.csv"
+
     """
     args = parser.parse_args()
     filepath: str | None = args.filepath_for_repos_list
