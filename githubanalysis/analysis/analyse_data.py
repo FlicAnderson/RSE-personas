@@ -36,24 +36,6 @@ def bool_contribution_in_category(contribution: float, category: str) -> bool:
         return False
 
 
-def contribution_types_editor(CBRI: int, rough_type_cat: str) -> str:
-    assert CBRI is not None, "CBRI is None; check this."
-    assert rough_type_cat is not None, "rough_type_cat is None; check this."
-    rough_type_cat = rough_type_cat.strip()
-    rough_type_cat = re.sub("    ", "  ", rough_type_cat)
-
-    if CBRI == 1:
-        return f"ONLY {rough_type_cat}"
-    elif CBRI == 2:
-        return re.sub("(  )", " and ", rough_type_cat)
-    elif CBRI == 3:
-        return "creates commits and creates issues and assigned issues"
-    else:
-        raise RuntimeError(
-            f"This needs to be checked: currently workflow adds CBRI > 3 at subsequent stages, not here; CBRI currently {CBRI}."
-        )
-
-
 class DataAnalyser(DatasetSetup):
     def _log_name(self) -> str:
         return "analyse_data"
@@ -142,83 +124,11 @@ class DataAnalyser(DatasetSetup):
             f"required column 'pc_repo_issues' seems to be missing from data; data has columns: {data.columns}"
         )
 
-        tmp_iss = data["pc_repo_issues"].apply(
-            contribution_in_category, category="creates issues"
-        )
-
-        tmp_cmt = data["pc_repo_commits"].apply(
-            contribution_in_category, category="creates commits"
-        )
-
-        tmp_ast = data["pc_issues_assigned_of_assigned"].apply(
-            contribution_in_category, category="assigned issues"
-        )
-
-        tmpdf = pd.concat(
-            {
-                "gh_username": data["gh_username"],
-                "contributes_creates_commits": tmp_cmt,
-                "contributes_creates_issues": tmp_iss,
-                "contributes_assigned_issues": tmp_ast,
-            },
-            axis=1,
-        )
-
-        contribution_categories = tmpdf.agg(
-            lambda x: f"{x['contributes_creates_commits']}  {x['contributes_creates_issues']}  {x['contributes_assigned_issues']}",
-            axis=1,
-        )
-
-        tmpdf = pd.concat(
-            {
-                "gh_username": data["gh_username"],
-                "contribution_types": contribution_categories,
-            },
-            axis=1,
-        )
-
         ## gather bool -> numeric info about what types of contributions users are contributing
 
         self.logger.debug(
             f"This is the step before pc_repo_issues is created; data df used has the following columns: {data.columns}"
         )
-        tmp_iss_bool = data["pc_repo_issues"].apply(
-            bool_contribution_in_category, category="creates issues"
-        )
-
-        tmp_cmt_bool = data["pc_repo_commits"].apply(
-            bool_contribution_in_category, category="creates commits"
-        )
-
-        tmp_ast_bool = data["pc_issues_assigned_of_assigned"].apply(
-            bool_contribution_in_category, category="assigned issues"
-        )
-
-        tmpdf_bool = pd.concat(
-            {
-                "contributes_creates_commits": tmp_cmt_bool,
-                "contributes_creates_issues": tmp_iss_bool,
-                "contributes_assigned_issues": tmp_ast_bool,
-            },
-            axis=1,
-        )
-
-        contribution_categories_bool = tmpdf_bool.sum(axis=1)
-
-        tmpdf_bool = pd.concat(
-            {
-                "gh_username": data["gh_username"],
-                "CBRI": contribution_categories_bool,
-            },
-            axis=1,
-        )
-
-        ## pull CBRI and contribution type category values across to cleaned_data dataset
-
-        data.loc[:, "CBRI"] = tmpdf_bool.loc[:, "CBRI"]
-        data.loc[:, "contribution_types"] = tmpdf.loc[:, "contribution_types"]
-
-        data = data.drop(columns=["contribution_types"])
 
         pd.options.mode.copy_on_write = True
 
@@ -373,7 +283,6 @@ class DataAnalyser(DatasetSetup):
             columns=[
                 "pc_repo_commits",
                 "pc_repo_issues",
-                "CBRI",
                 # "n_commits",  # dropping the older column, keeping commits_created as probably later
                 "_merge",
                 "issue_username",
