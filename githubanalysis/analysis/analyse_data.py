@@ -5,7 +5,6 @@ from logging import Logger
 from pathlib import Path
 import gc
 import argparse
-import re
 import random
 import pandas as pd
 import numpy as np
@@ -20,20 +19,6 @@ from githubanalysis.setup_classes import DatasetSetup
 from utilities.repo_names_write_out import RepoNamesListCreator
 from githubanalysis.visualization.plot_dendrogram import Dendrogrammer
 from githubanalysis.visualization.plot_multidim_PCA import PlotPCA
-
-
-def contribution_in_category(contribution: float, category: str) -> str:
-    if contribution > 0.0:
-        return category
-    else:
-        return ""
-
-
-def bool_contribution_in_category(contribution: float, category: str) -> bool:
-    if contribution > 0.0:
-        return True
-    else:
-        return False
 
 
 class DataAnalyser(DatasetSetup):
@@ -58,6 +43,7 @@ class DataAnalyser(DatasetSetup):
     ) -> pd.DataFrame:
         """
         Subset a sample dataframe down to only include repositories from a specific file
+        (Exclude/drop all rows of data from repos NOT in subset_repos_file)
         """
         # subset data df to include only repo_names from file
         # otherwise use complete data df.
@@ -115,6 +101,25 @@ class DataAnalyser(DatasetSetup):
             return subset_data
 
     def calc_commit_cats_pcs(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Handles data in row-PER-REPO-INDIVIDUAL format.
+
+        DROP COLUMNS from data (-d file: 'merged-data-per-dev-*.csv')
+        which are handled BETTER / more reliably by prep_timestamps.py.
+
+        CALCULATE percentages of commits in each category of Hattori-Lanza size
+        classification (tiny, small, medium, large); add as columns
+
+        CALCULATE % of commits in Hattori-Lanza engineering type classification
+        (forward-, re-, corrective-, management-, empty-); add as columns
+
+        CALCULATE %s of Vasilescu et al. commit (file-types-changed)
+        classification (e.g. docs, code, test...); add as columns.
+
+        return `data`: row-per-repo-individual format with columns:
+
+
+        """
         ## gather category text info about what types of contributions users are contributing
 
         self.logger.debug(
