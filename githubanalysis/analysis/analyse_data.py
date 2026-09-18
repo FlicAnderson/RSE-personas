@@ -120,14 +120,15 @@ class DataAnalyser(DatasetSetup):
         self.logger.debug(
             f"data df fed into clean_and_contributors() has the following columns: {data.columns}"
         )
-        assert "pc_repo_issues" in data.columns, (
-            f"required column 'pc_repo_issues' seems to be missing from data; data has columns: {data.columns}"
-        )
-
-        ## gather bool -> numeric info about what types of contributions users are contributing
-
+        data = data.drop(
+            columns=[
+                "pc_repo_issues",
+                "pc_repo_commits",
+            ],
+            errors="ignore",
+        )  # "pc_repo_issues" and "pc_repo_commits" aren't used subsequently, but are read in, so drop for clarity.
         self.logger.debug(
-            f"This is the step before pc_repo_issues is created; data df used has the following columns: {data.columns}"
+            f"data df fed into clean_and_contributors() NOW has the following columns: {data.columns}"
         )
 
         pd.options.mode.copy_on_write = True
@@ -281,8 +282,6 @@ class DataAnalyser(DatasetSetup):
         # cleaned_data_with_interactions =
         cleaned_data_with_interactions.drop(
             columns=[
-                "pc_repo_commits",
-                "pc_repo_issues",
                 # "n_commits",  # dropping the older column, keeping commits_created as probably later
                 "_merge",
                 "issue_username",
