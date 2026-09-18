@@ -16,7 +16,7 @@ class Datafiles:
         "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv"
     )
     interactns_file_set1 = (
-        "merged-interactions-data-per-dev_x1284repos_x119492_2026-07-27.csv"
+        "merged-interactions-data-per-dev_x1284repos_x119492repoIndivds_2026-09-18.csv"
     )
     high_interactivity_repo_individuals_file_set1 = "analysis_run_sample_45pc_cluster1_2025-05-13/sample_45pc_cluster1_personas_named_dataset_2025-05-30.csv"
     # WRONG #combined_data_set1_w_revs = "per-repo-individual-existing-and-reviews-data_x2868repos_x244143repo-individs_2026-07-27.csv"
@@ -90,6 +90,9 @@ if __name__ == "__main__":
     assert len(high_data) == 700, (
         "There's something wrong, we expect only 700 rows to remain."
     )
+    assert data_via_combined.columns == high_data.columns, (
+        "The column names don't match."
+    )
 
     filestr = f"per-repo-individual-data_x{high_data.repo_name.nunique()}repos_x{high_data.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_2026-07-29.csv"
     writeout_path = Path(data_location, filestr)
@@ -108,3 +111,28 @@ if __name__ == "__main__":
             f"Error in attempting to write high interactivity data-per-dev file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
         )
         raise
+
+    # now subset interactions data file down to only include repo-individuals from the 700...
+    interactions_all = pd.read_csv(
+        Path(data_location, datafiles.interactns_file_set1),
+        header=0,
+        dtype="object",
+        low_memory=False,
+        # import ALL columns
+    )
+
+    print(len(interactions_all))
+
+    high_interactions = pd.merge(
+        high_interactivity_devs,
+        data_via_combined,
+        how="inner",
+        on=["repo_name", "gh_username"],
+    )
+    print(len(high_interactions))
+    assert len(high_interactions) == 700, (
+        "There's something wrong, we expect only 700 rows to remain."
+    )
+    assert interactions_all.columns == high_interactions.columns, (
+        "The column names don't match."
+    )
