@@ -47,6 +47,16 @@ class PrepDataTimes(LocationSetup):
         self,
         reviews_interactions: pd.DataFrame,
     ) -> pd.DataFrame:
+        """
+        This function takes the reviews_interactions df
+        (stacked per-interaction review data, NOT a per-repo-individual summary of review interactions)
+        and:
+         - adds "contribution" column (sets each value to "review")
+         - adds "interaction type" column (sets each value to "code_reviewed")
+         - creates additional column "datetime_day" which allows for 'unique interaction days' calculation subsequently
+        Returns the processed df with columns:
+        [ repo_name, gh_username, datetime_day, contribution, interaction_type ]
+        """
         self.logger.info(
             f"Generated collated df of {len(reviews_interactions)} reviews interactions."
         )
@@ -110,11 +120,14 @@ class PrepDataTimes(LocationSetup):
 
     def get_commit_interactions(self, commitsdf: pd.DataFrame) -> pd.DataFrame:
         """
-        Function to read processed_commits data file for 1 repo;
-        pulls in timestamp data for each commit, labelling interaction type;
-        transforms and reshapes dataset;
-        returns df of commits including datetime_day, contribution, and
-        interaction_type information.
+        This function takes the commitsdf df
+        (stacked per-interaction commits data, NOT a per-repo-individual summary of commits)
+        and:
+         - adds "contribution" column (sets each value to "commit")
+         - adds "interaction type" column (sets each value to "commit_created")
+         - creates additional column "datetime_day" which allows for 'unique interaction days' calculation subsequently
+        Returns the processed df with columns:
+        [ repo_name, gh_username, datetime_day, contribution, interaction_type ]
         """
         pd.options.mode.copy_on_write = True
         # remove unwanted columns:
@@ -162,11 +175,19 @@ class PrepDataTimes(LocationSetup):
 
     def get_issues_PRs_interactions(self, rawissuesdf: pd.DataFrame) -> pd.DataFrame:
         """
-        Take multi-repo processed_issues data df;
+        Processes ISSUE OR PR data!
+        Take multi-repo interaction-per-line processed_issues data df;
         pulls in timestamp data for each issue and pull request;
-        transforms and reshapes dataset;
-        returns df of issues including datetime_day, contribution, and
-        interaction_type information.
+
+        Transforms and reshapes dataset;
+         - gathers data on whether issue interaction is 'creation' (opening) or 'closure' (closed)
+         - adds "contribution" column (sets each value to "issue" OR "pull request")
+         - adds "interaction type" column (sets each value to "issue_created" or "issue_closed" or "pull_request_created" or "pull_request_closed")
+         - creates additional column "datetime_day" which allows for 'unique interaction days' calculation subsequently
+
+        Returns the processed df with columns:
+        [ repo_name, gh_username, datetime_day, contribution, interaction_type ]
+
         """
         pd.options.mode.copy_on_write = True
 
@@ -256,8 +277,13 @@ class PrepDataTimes(LocationSetup):
         # discussions_interactions: pd.DataFrame,
     ) -> pd.DataFrame:
         """
-        Function combines issues and commits interactions and timestamp data
-        returns df of this, including various calculated values of interaction data.
+        Function combines issues (+ PRs) and commits and reviews
+        interactions and abridged timestamp data; returns df of this.
+
+        Returned df is interaction-per-line with many lines per repo-individual and includes multiple repos.
+
+        Returned df has columns:
+        ['repo_name', 'gh_username', 'datetime_day', 'contribution', 'interaction_type']
         """
         pd.options.mode.copy_on_write = True
 
@@ -329,6 +355,71 @@ class PrepDataTimes(LocationSetup):
     def calculate_all_interactions(
         self, all_types_interactions: pd.DataFrame
     ) -> pd.DataFrame:
+        """
+        MAIN INTERACTIONS CALCULATION AND SUMMARISING FUNCTION!
+
+        This takes df of 'stacked' interactions data: all_types_interactions
+        (interaction-per-line, multi lines per repo-individuial, multi repos)
+
+        then:
+         - drops rows with missing data (e.g. where gh_username value is missing as cannot calculate with missing repo-individuals ; missing repo_name; missing datetime_day' etc)
+         - debugging / logging checks and reporting of Ns of rows deducted for missing data, date data types, etc
+         - pre-calculation write-out as: combined_interactions_data_x....csv
+         - create 'status_df': line-per-repo-individual summary df to hold calc'd data
+         and in status_df:
+         - calculation FOR EACH REPO-INDIVIDUAL: difference between earliest interaction date and latest interaction date in dataset; add to status_df as 'interaction_period_days'
+         - calculation of number (count) of interactions PER INTERACTION TYPE PER REPO-INDIVIDUAL (e.g. commits 5, issue_creation 4, code_reviewed 2, etc); added to status_df
+         - calculation of "interaction_days" (unique different days of interactions contributed of all sorts) PER REPO-INDIVIDUAL, added to status_df;
+         - set any non-filled values in status_df to 0 as no interactions of those types were recorded
+         - calculates net (raw N, and %) difference in issues (e.g. N created minus N closed and pc(%) created minus % closed)
+         - (same as net difference in issues, but for pull requests)
+         - calc total N of interactions of all sorts as "sum_n_interactions"
+         - calc average N of interactions per interaction day as "mean_n_interactions_per_interaction_day" (= sum_N_interactions / N of interaction days)
+         - generate "which_interactions": join strings of interaction_type together for all present interactions by repo_individual
+         - calc "breadth_interactions" (Unique Interaction Types; N of different interaction types present for repo-individual)
+         - calcs repo-individual's RC (% Repository Contribution) values for each CONTRIBUTION TYPE:
+             - PR creation ("pc_pull_request_created")
+             - PR closure ("pc_pull_request_closed")
+             - commit creation ("pc_commit_created")
+             - issue creation ("pc_issue_created")
+             - issue closure ("pc_issue_closed")
+             - reviews created ("pc_reviews_created")
+            TODO: ??? ASSIGNMENT SHOULD GO HERE!!! ???
+         - calcs repo-individual's RC (% Repository Contribution) of META INFO:
+             - total number of interactions of ALL TYPES as "pc_sum_n_interactions"
+             - calcs RC of all repository's unique interaction days as "pc_interaction_days"
+
+        THEN returns status_df: a line-per-repo-individual summary df
+        of each repo-individuals' contributions of all types!
+
+        status_df has columns:
+        [
+            "repo_name",
+            "gh_username",
+            "code_reviewed",
+            "commit_created",
+            "issue_closed",
+            "issue_created",
+            "pull_request_closed",
+            "pull_request_created",
+            "interaction_days",
+            "interaction_period_days",
+            "created-closed_issues",
+            "pc_created-closed_issues",
+            "sum_n_interactions",
+            "mean_n_interactions_per_interaction_day",
+            "which_interactions",
+            "breadth_interactions",
+            "pc_pull_request_created",
+            "pc_pull_request_closed",
+            "pc_commit_created",
+            "pc_issue_created",
+            "pc_issue_closed",
+            "pc_reviews_created",
+            "pc_sum_n_interactions",
+            "pc_interaction_days",
+        ]
+        """
         # # remove rows where gh_username is NaN/NA
         all_types_interactions = all_types_interactions.dropna(
             subset="gh_username", axis=0
@@ -552,13 +643,6 @@ class PrepDataTimes(LocationSetup):
             * 100
         )
 
-        # per-repo pc(closed issues):
-        status_df["pc_issue_closed"] = (
-            status_df["issue_closed"]
-            / status_df.groupby("repo_name")["issue_closed"].transform("sum")
-            * 100
-        )
-
         # RC (repo-contribution) of PR code reviews (PRCR):
         status_df["pc_reviews_created"] = (
             status_df["code_reviewed"]
@@ -651,9 +735,15 @@ class PrepDataTimes(LocationSetup):
         # discussions_interactions_file: Path | str,
     ) -> pd.DataFrame | None:
         """
-        Reads in processed data from commits and issue tickets
-        gathers timestamp information and processes it, then combines all
-        into single dataframe for analysis.
+        Reads in processed data from commits, issue tickets and pull
+        request code review interactions-per-line files created in
+        *_workflow.py scripts, gathers timestamp information and
+        processes it, then combines all into single dataframe for analysis.
+
+        Processing done includes:
+         - read each file (commits, issue tickets, PR Code Reviews, ... ) in read_interactions()
+         - join dfs via concat 'outer' to create TALL df in join_all_interactions()
+         -
         """
         pd.options.mode.copy_on_write = True
 
@@ -712,6 +802,9 @@ class PrepDataTimes(LocationSetup):
             self.logger.info(
                 f"all_interactions_data df has shape {all_interactions_data.shape}"
             )
+            # all_interactions_data will now have columns:
+            # ['repo_name', 'gh_username', 'datetime_day', 'contribution', 'interaction_type']
+            # interactions will now be:
         except Exception as e:
             self.logger.error(
                 f"Unexpected error during JOINING of interactions {e}, traceback:\n{traceback.format_exc()}"
