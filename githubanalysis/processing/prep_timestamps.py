@@ -1,15 +1,14 @@
 """
 Get per-repo-individual summary data (including RC: repository contribution %s)
 info for commits, issues (and PRs), and review interactions data.
+
 Write out this important info as: "merged-interactions-data-per-dev_xNrepos_xNrepoIndivds_YYYY-MM-DD.csv"
-"""
 
-"""
-NOTE: THIS SCRIPT DOES >>not<< HANDLE ASSIGNMENT TO ISSUES. 
-This is partly because 'being assigned' is not an interaction of that 
-repo-individual, but instead (often) by someone else. 
+NOTE: THIS SCRIPT DOES >>not<< HANDLE ASSIGNMENT TO ISSUES.
+This is partly because 'being assigned' is not an interaction of that
+repo-individual, but instead (often) by someone else.
 
-That is done in prep_issues.py, and fed into analyse_data.py via prep_combine.py. 
+That is done in prep_issues.py, and fed into analyse_data.py via prep_combine.py.
 """
 
 import argparse
