@@ -11,7 +11,7 @@ import utilities.get_default_logger as loggit
 
 @dataclass
 class Datafiles:
-    reviews_file_set1 = "merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-17.csv"
+    # reviews_file_set1 = "merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-17.csv"
     personas_file_set1 = (
         "sample_45pc_all_subclusters_named_personas_dataset_2025-09-16.csv"
     )
@@ -19,7 +19,8 @@ class Datafiles:
         "merged-interactions-data-per-dev_x1284repos_x119492_2026-07-27.csv"
     )
     high_interactivity_repo_individuals_file_set1 = "analysis_run_sample_45pc_cluster1_2025-05-13/sample_45pc_cluster1_personas_named_dataset_2025-05-30.csv"
-    combined_data_set1_w_revs = "per-repo-individual-existing-and-reviews-data_x2868repos_x244143repo-individs_2026-07-27.csv"
+    # WRONG #combined_data_set1_w_revs = "per-repo-individual-existing-and-reviews-data_x2868repos_x244143repo-individs_2026-07-27.csv"
+    data_all = "merged-data-per-dev_x2868-repos_2025-05-10.csv"
 
 
 if __name__ == "__main__":
@@ -69,23 +70,28 @@ if __name__ == "__main__":
             "Error, this persona is not expected in Set1 A1B1 dataset (high interactivity personas)"
         )
 
-    # subset combined_data_set1_w_revs:
-    combined_data = pd.read_csv(
-        Path(data_location, datafiles.combined_data_set1_w_revs),
+    # subset data_via_combined to the 700 high interactivity repo-individs only:
+    data_via_combined = pd.read_csv(
+        Path(data_location, datafiles.data_all),
         header=0,
         dtype="object",
         low_memory=False,
         # import ALL columns
     )
+    print(len(data_via_combined))
 
     high_data = pd.merge(
         high_interactivity_devs,
-        combined_data,
+        data_via_combined,
         how="inner",
         on=["repo_name", "gh_username"],
     )
+    print(len(high_data))
+    assert len(high_data) == 700, (
+        "There's something wrong, we expect only 700 rows to remain."
+    )
 
-    filestr = f"per-repo-individual-existing-and-reviews-data_x{high_data.repo_name.nunique()}repos_x{high_data.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_2026-07-29.csv"
+    filestr = f"per-repo-individual-data_x{high_data.repo_name.nunique()}repos_x{high_data.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_2026-07-29.csv"
     writeout_path = Path(data_location, filestr)
 
     try:
@@ -94,9 +100,11 @@ if __name__ == "__main__":
             header=True,
             index=False,
         )
-        print(f"successfully wrote out combined data for 700; {writeout_path}")
+        print(
+            f"successfully wrote out high interactivity dev data for 700; {writeout_path}"
+        )
     except Exception as e:
         print(
-            f"Error in attempting to write combined data-per-dev file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
+            f"Error in attempting to write high interactivity data-per-dev file; {e}; error type: {type(e)}; writeout path attempted was: {writeout_path}"
         )
         raise
