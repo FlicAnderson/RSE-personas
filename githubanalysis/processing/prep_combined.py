@@ -100,7 +100,7 @@ class PrepDataCombined(DatasetSetup):
         omnirepo = pd.merge(
             left=commits_multirepo,
             right=issues_multirepo,
-            how="outer",
+            how="outer",  ### OUTER JOIN!
             left_on=["author_username", "repo_name"],
             right_on=["issue_username", "repo_name"],
             # validate="one_to_one",
