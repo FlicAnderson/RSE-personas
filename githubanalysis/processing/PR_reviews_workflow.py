@@ -120,7 +120,6 @@ class RunPRReviews(LocationSetup):
     def multi_repo_PRCR_glob_maker(
         self, subset_repos: list[str], out_filename: str, matchstrings: list[str]
     ) -> list[str]:
-
         # for multiple repos:
 
         output_globs = []
@@ -429,6 +428,17 @@ parser.add_argument(
 )
 
 if __name__ == "__main__":
+    """
+    This function is the runner function for PR review data processing (not collection). 
+
+    It takes 1 argument at commandline: -f (data/file_name_of_repos_list_to_process_reviews_for.txt).  
+
+    $ time python githubanalysis/processing/PR_reviews_workflow.py -f data/study-sample-repo-names_2025-05-01_x2981.txt
+
+    This will process data for ALL of SET 1 AND SET 2 repos. 
+    (e.g. 1284 + 1697 = 2981 repos maximum, likely fewer as not all repos have reviews.
+    """
+
     args = parser.parse_args()
     filepath: str | None = args.filepath_for_repos_list
 
