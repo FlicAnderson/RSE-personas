@@ -25,6 +25,7 @@ from githubanalysis.setup_classes import LocationSetup
 import utilities.get_default_logger as loggit
 from utilities.simple_read_repos_from_file import Repo_Reader
 from utilities.glob_making_matching import Globber
+import utilities.subset_by_date as subset_by_date
 
 pd.options.mode.copy_on_write = True
 
@@ -578,7 +579,7 @@ class PrepDataTimes(LocationSetup):
         status_df = pd.merge(
             status_df,
             timediff,
-            how="inner",  # JOIN TYPE: INNER: we assert both dfs are the same length so keys should match precisely.
+            how="inner",  # JOIN TYPE: INNER: we assert both dfs are the same length so keys WILL match precisely.
             on=["repo_name", "gh_username"],
         )
         self.logger.info(f"AFTER joining timediff and status_df: {status_df.shape}.")
@@ -771,6 +772,7 @@ class PrepDataTimes(LocationSetup):
         issues_interactions_file: Path,
         commits_interactions_file: Path,
         reviews_interactions_file: Path,
+        cutoff_date: pd.Timestamp,
         # discussions_interactions_file: Path | str,
     ) -> pd.DataFrame | None:
         """
@@ -792,6 +794,10 @@ class PrepDataTimes(LocationSetup):
         """
         pd.options.mode.copy_on_write = True
 
+        assert isinstance(cutoff_date, pd.Timestamp), (
+            f"cutoff_date is not of correct timestamp type: {type(cutoff_date)}"
+        )
+
         start_time = datetime.datetime.now()
         self.logger.info(f"processing {len(repo_list)} repos' worth of issues data")
 
@@ -800,17 +806,56 @@ class PrepDataTimes(LocationSetup):
         issues_interactions = self.read_interactions(
             interactions_file=issues_interactions_file, repo_list=repo_list
         )
+        assert "datetime_day" in issues_interactions.columns, (
+            f"issues_interactions df from file {issues_interactions_file} is missing column 'datetime_day'; columns are: {issues_interactions.columns}."
+        )
+        self.logger.info(
+            f"Subsetting ISSUES interactions to within research cutoff dates (earliest to {cutoff_date})."
+        )
+        issues_interactions = subset_by_date.subset_by_dates(
+            df=issues_interactions,
+            datestamp_column="datetime_day",
+            # from_datestamp, not supplied, therefore 'earliest' used.
+            to_datestamp=cutoff_date.date(),
+            logger=self.logger,
+        )
 
         self.logger.info("attempting to read COMMITS data from file")
         # read commits data in from previously created file and subset to relevant repos:
         commits_interactions = self.read_interactions(
             interactions_file=commits_interactions_file, repo_list=repo_list
         )
+        assert "datetime_day" in commits_interactions.columns, (
+            f"commits_interactions df from file {commits_interactions_file} is missing column 'datetime_day'; columns are: {commits_interactions.columns}."
+        )
+        self.logger.info(
+            f"Subsetting COMMITS interactions to within research cutoff dates (earliest to {cutoff_date})."
+        )
+        commits_interactions = subset_by_date.subset_by_dates(
+            df=commits_interactions,
+            datestamp_column="datetime_day",
+            # from_datestamp, not supplied, therefore 'earliest' used.
+            to_datestamp=cutoff_date.date(),
+            logger=self.logger,
+        )
 
         self.logger.info("attempting to read REVIEWS data from file")
         # read in and subset the large collated reviews data file to the specified repos only
         reviews_interactions = self.read_interactions(
             interactions_file=reviews_interactions_file, repo_list=repo_list
+        )
+        assert "author_review_date" in reviews_interactions.columns, (
+            f"reviews_interactions df from file {reviews_interactions_file} is missing column 'author_review_date'; columns are: {reviews_interactions.columns}."
+        )
+        self.logger.info(
+            f"Subsetting REVIEWS interactions to within research cutoff dates (earliest to {cutoff_date})."
+        )
+        reviews_interactions = subset_by_date.subset_by_dates(
+            df=reviews_interactions,
+            datestamp_column="author_review_date",
+            # from_datestamp, not supplied, therefore 'earliest' used.
+            to_datestamp=cutoff_date.date(),
+            logger=self.logger,
         )
         self.logger.info(
             "column name renames, sorting interaction types, pull datetime data from df"
@@ -823,6 +868,17 @@ class PrepDataTimes(LocationSetup):
         # # TODO: DISCUSSIONS INTERACTION HANDLING HERE:
         # self.logger.info("attempting to read DISCUSSIONS data from file")
         # discussions_interactions = self.get_discussions_interactions(discussions_interactions_file = discussions_interactions_file)
+        # assert "?????" in discussions_interactions.columns, (
+        #     f"discussions_interactions df from file {discussions_interactions_file} is missing column '?????'; columns are: {discussions_interactions.columns}."
+        # )
+        # subset discussions to within specific research cutoff dates.
+        # discussions_interactions = subset_by_date.subset_by_dates(
+        #     df=discussions_interactions,
+        #     datestamp_column="?????",
+        #     # from_datestamp, not supplied, therefore 'earliest' used.
+        #     to_datestamp=cutoff_date.date(),
+        #     logger=self.logger,
+        # )
 
         assert not commits_interactions.empty, (
             "commits_interactions type is empty; something went wrong!"
@@ -999,6 +1055,8 @@ if __name__ == "__main__":
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
     -r data/merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-16.csv
+
+    (45 sec to run)
     """
     """
     SET1: Run from commandline as this: 
@@ -1007,6 +1065,8 @@ if __name__ == "__main__":
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
     -r data/merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-16.csv
+    
+    (?? sec to run)
     """
     """
     SET2: Run from commandline as this: 
@@ -1015,6 +1075,8 @@ if __name__ == "__main__":
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
     -r data/merged_reviews_data_all_types_x1697repos_x3288083reviews_x4768reviewfiles_2026-07-27.csv
+
+    (?? sec to run)
     """
     """
     SET1 + SET2: Run from commandline as this: 
@@ -1022,7 +1084,9 @@ if __name__ == "__main__":
     -f study-sample-repo-names_2025-05-01_x2981.txt
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
-    -r TODO: Not yet run.
+    -r TODO: Not yet run (Currently running at 2026-09-21 1400.)
+
+    (?? sec to run)
     """
 
     logger = loggit.get_default_logger(
@@ -1065,6 +1129,7 @@ if __name__ == "__main__":
             commits_interactions_file=commits_interactions_file,
             reviews_interactions_file=reviews_interactions_file,
             # discussions_interactions_file=discussions_interactions_file,
+            cutoff_date=pd.Timestamp("2024-11-21"),  # HARDCODING THIS FOR REPLICATION
         )
     except Exception as e:
         logger.error(
