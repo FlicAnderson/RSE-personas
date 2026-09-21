@@ -327,9 +327,10 @@ class PrepDataTimes(LocationSetup):
         # JOIN ISSUES AND COMMITS AND REVIEWS DATA TOGETHER HERE:
         self.logger.info("Attempting THE JOIN: issues + commits + reviews...")
         try:
-            all_types_interactions = pd.concat(  # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
+            all_types_interactions = pd.concat(
+                # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
                 objs=[issues_interactions, commits_interactions, reviews_interactions],
-                join="outer",  # outer join returning ALL rows, matching where possible, applying NaNs if not
+                join="outer",  # outer join returns ALL rows, matching where possible, applying NaNs if not; KEEPS non-shared columns (V. IMP!)
             )
             writeout_path_tmp = Path(
                 self.data_location,
@@ -524,7 +525,7 @@ class PrepDataTimes(LocationSetup):
         )  # add 1 day so the time difference is inclusive of both first and last days (ie no zeroes!)
         timediff = timediff.apply(lambda x: x.days).reset_index()
         timediff = timediff.rename(columns={"datetime_day": "interaction_period_days"})
-        self.logger.debug("rename timediff as interaction_period_days")
+        self.logger.debug("rename timediff column as interaction_period_days")
 
         # pull interaction_types into separate columns, and add counts of each category into them
         status_df = (
@@ -550,10 +551,37 @@ class PrepDataTimes(LocationSetup):
             .reset_index()["datetime_day"]
         )
 
-        # join on 'interaction_period_days' column from timediff
-        status_df = pd.merge(
-            status_df, timediff, how="inner", on=["repo_name", "gh_username"]
+        # to avoid unexpected behaviour, pre-drop rows where keys are null value:
+        self.logger.info(
+            f"Shape BEFORE dropping rows with missing values for repo_name or gh_username from status_df: {status_df.shape}"
         )
+        status_df = status_df.dropna(subset=["repo_name", "gh_username"])
+        self.logger.info(
+            f"Shape AFTER dropping rows with missing values for repo_name or gh_username from status_df: {status_df.shape}"
+        )
+
+        self.logger.info(
+            f"Shape BEFORE dropping rows with missing values for repo_name or gh_username from timediff: {timediff.shape}"
+        )
+        timediff = timediff.dropna(subset=["repo_name", "gh_username"])
+        self.logger.info(
+            f"Shape AFTER dropping rows with missing values for repo_name or gh_username from timediff: {timediff.shape}"
+        )
+
+        # join on 'interaction_period_days' column from timediff
+        self.logger.info(
+            f"INNER join status_df and timediff on repo-individuals to obtain 'interaction_period_days' column from timediff; shape of status_df:{status_df.shape} shape of timediff: {timediff.shape}."
+        )
+        assert len(status_df) == len(timediff), (
+            f"ERROR: lengths of statusdf and timediff are DIFFERENT, but this is not what we'd expect! status_df: {len(status_df)}, timediff: {len(timediff)}"
+        )
+        status_df = pd.merge(
+            status_df,
+            timediff,
+            how="inner",  # JOIN TYPE: INNER: we assert both dfs are the same length so keys should match precisely.
+            on=["repo_name", "gh_username"],
+        )
+        self.logger.info(f"AFTER joining timediff and status_df: {status_df.shape}.")
 
         for col in [
             "commit_created",
@@ -677,6 +705,9 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(
             f"status_df being returned by calculate_all_interactions() has shape {status_df.shape} and columns: {status_df.columns}"
         )
+        self.logger.info(
+            f"status_df has {status_df.groupby(by=['repo_name', 'gh_username']).ngroups} repo-individuals from {status_df.groupby(by=['repo_name']).ngroups} repos."
+        )
         return status_df
 
     def read_interactions(
@@ -718,7 +749,7 @@ class PrepDataTimes(LocationSetup):
         # subset df from file into the following repos' data only:
         # repo_name column value in repo_list e.g. df[df['A'].isin([3, 6])]
         self.logger.info(
-            f"Length of interactions_df BEFORE subsetting is: {len(interactions_df)}"
+            f"Length of interactions_df BEFORE subsetting to only repos in repo_list is: {len(interactions_df)}"
         )
         self.logger.info(
             f"Number of unique repos in interactions_df BEFORE subsetting is: {interactions_df.repo_name.nunique()}"
@@ -983,7 +1014,7 @@ if __name__ == "__main__":
     -f set2_sample_55pc_subsample_repo_names_list_2026-02-05_x1697.txt
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
-    -r TODO: Not yet run.
+    -r data/merged_reviews_data_all_types_x1697repos_x3288083reviews_x4768reviewfiles_2026-07-27.csv
     """
     """
     SET1 + SET2: Run from commandline as this: 
