@@ -45,6 +45,9 @@ class PrepDataPRReviews(LocationSetup):
 
         Assumes UTC timezone as this is the default GH timezone.
         """
+        self.logger.debug(
+            "This function (subset_by_dates() within prep_PR_reviews.py) IS NOT CURRENTLY SUBSETTING BY DATES BEYOND 'EARLIEST' TO 'NOW'."
+        )
         return df[
             (df[datestamp_column] > from_datestamp)
             & (df[datestamp_column] < to_datestamp)
