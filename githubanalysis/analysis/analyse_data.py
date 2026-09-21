@@ -247,20 +247,72 @@ class DataAnalyser(DatasetSetup):
         commits_cats_data: pd.DataFrame,
         all_interaction_data: pd.DataFrame,
     ):
+        self.logger.info(
+            "Combining data from commits_cats_data and all_interaction_data to generate 'data_with_interactions' now."
+        )
         self.logger.info(f"{commits_cats_data.shape =}")
+        self.logger.info(
+            f"commits_cats_data has {
+                commits_cats_data.groupby(
+                    [
+                        'repo_name',
+                        'gh_username',
+                    ]
+                ).ngroups
+            } repo-individuals, and {
+                commits_cats_data.groupby(['repo_name']).ngroups
+            } repos"
+        )
 
         self.logger.info(f"{all_interaction_data.shape =}")
+        self.logger.info(
+            f"all_interaction_data has {
+                all_interaction_data.groupby(
+                    [
+                        'repo_name',
+                        'gh_username',
+                    ]
+                ).ngroups
+            } repo-individuals, and {
+                all_interaction_data.groupby(['repo_name']).ngroups
+            } repos"
+        )
 
         # merge interaction data onto main analysis dataset:
         data_with_interactions = pd.merge(
             commits_cats_data,
             all_interaction_data,
-            how="inner",  # INNER JOIN HERE (c.f. outer join used in prep_combined/expand_IT_combined_data: is this what is needed?)
+            how="right",  # RIGHT JOIN HERE (c.f. was inner join, but interactions data is more systematically calc'd, and only assignment data comes from cats-data without duplication)
             on=["repo_name", "gh_username"],
         )  # join on repo-individual as key
-        self.logger.info(f"{data_with_interactions.shape = }")
+        self.logger.info(
+            f"AFTER JOINING: data_with_interactions has shape {data_with_interactions.shape = }"
+        )
+        self.logger.info(
+            f"data_with_interactions has {
+                data_with_interactions.groupby(
+                    [
+                        'repo_name',
+                        'gh_username',
+                    ]
+                ).ngroups
+            } repo-individuals, and {
+                data_with_interactions.groupby(['repo_name']).ngroups
+            } repos"
+        )
         self.logger.info(
             f"Number of unique cols in cats_data_with_interactions is: {data_with_interactions.columns.nunique()}."
+        )
+        assert (
+            len(data_with_interactions)
+            == data_with_interactions.groupby(
+                [
+                    "repo_name",
+                    "gh_username",
+                ]
+            ).ngroups
+        ), (
+            "ERROR: length of data_with_interactions DOES NOT EQUAL the number of repo-individuals. This should match after the join of commits_cats_data and all_interaction_data."
         )
         self.writeout_data_to_csv(
             data_with_interactions,
@@ -856,20 +908,31 @@ class DataAnalyser(DatasetSetup):
             n_repos=n_repos,
         )
         self.logger.info(
-            "Sample repos languages info collected and written out and plotted."
+            f"Sample repos languages info for {n_repos} repos collected and written out and plotted."
         )
         self.logger.debug(
             f"cats_data_with_interactions columns: {cats_data_with_interactions.columns}"
         )
         # save out pre-processing dataset
         n_repos = cats_data_with_interactions.groupby("repo_name").ngroups
+        n_repo_individs = cats_data_with_interactions.groupby(
+            ["repo_name", "gh_username"]
+        ).ngroups
         n_users = len(cats_data_with_interactions)
+
+        assert n_repo_individs == n_users, (
+            f"ERROR: for pre-processing dataset 'cats_data_with_interactions', length of df ({n_users}) != n_repo_individuals ({n_repo_individs})! "
+        )
+        assert n_repos == sample_repo_names, (
+            f"ERROR: number of repos in pre-processing dataset ({n_repos}) != length of sample_repo_names ({len(sample_repo_names)})"
+        )
+
         write_out_to_preprocessed = self.writeout_data_to_csv(
             cats_data_with_interactions,
             f"pre-clustering_dataset_x{n_repos}repos_x{n_users}project-individuals_",
         )
         self.logger.info(
-            f"Pre-clustering sample data written out to {write_out_to_preprocessed}"
+            f"Pre-clustering sample data for {n_repos} repos and {n_repo_individs} repo-individuals written out to {write_out_to_preprocessed}"
         )
 
         clustering_variables = [  # THIS IS IMPORTANT: THESE WILL BE USED FOR CLUSTERING AND PCA VARIABLE FEATURE RANKING
@@ -890,6 +953,9 @@ class DataAnalyser(DatasetSetup):
         )
         self.logger.debug(
             f"cats_data_with_interactions columns: {cats_data_with_interactions.columns}"
+        )
+        self.logger.debug(
+            f"cats_data_with_interactions data for clustering is length {len(cats_data_with_interactions)}; this should match expected number of repo-individuals {n_repo_individs}."
         )
 
         clustering_data = self.create_clustering_data_from_sample(
@@ -957,7 +1023,7 @@ class DataAnalyser(DatasetSetup):
         # log cluster number, sizes of n_repo_individuals, n_repos, distribution, etc.
         n_clusters = labelled_data.groupby("cluster_labels").ngroups
         self.logger.info(
-            f"Applied {n_clusters} cluster labels to dataset to create labelled dataset of shape: {labelled_data.shape}."
+            f"Applied {n_clusters} cluster labels to dataset of length {len(clustering_data)} to create labelled dataset of shape: {labelled_data.shape}."
         )
         # means for key variables by cluster
 
