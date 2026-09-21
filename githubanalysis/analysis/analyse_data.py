@@ -664,6 +664,7 @@ class DataAnalyser(DatasetSetup):
         self.logger.info(
             f"PCA3 mainly on {top_PCA3_var} with importance value {top_PCA3_value}."
         )
+        self.logger.info(f"PCA Importance Values: \n {PCA_features.head(n=3)}")
 
         # write out PCA importance rankings to csv:
         self.writeout_data_to_csv(
