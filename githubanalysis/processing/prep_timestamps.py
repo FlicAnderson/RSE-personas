@@ -64,6 +64,10 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(
             f"Generated collated df of {len(reviews_interactions)} reviews interactions."
         )
+        self.logger.debug(f"{reviews_interactions.columns = }")
+        self.logger.info(
+            f"NAs counted in review_author_gh_username col: {reviews_interactions['review_author_gh_username'].isna().sum()}"
+        )
         # rename columns and drop irrelevants to match formats in commits_interactions and issues_interactions
         reviews_interactions = reviews_interactions.rename(
             columns={
@@ -72,6 +76,10 @@ class PrepDataTimes(LocationSetup):
             },
             inplace=False,
             errors="raise",
+        )
+        self.logger.debug(f"{reviews_interactions.columns = }")
+        self.logger.info(
+            f"NAs counted in gh_username col: {reviews_interactions['gh_username'].isna().sum()}"
         )
 
         # split subsequent_author_review_date as new interaction?
@@ -118,6 +126,9 @@ class PrepDataTimes(LocationSetup):
             ]
         ]
         self.logger.info(
+            f"NAs counted in gh_username col: {reviews_interactions['gh_username'].isna().sum()}"
+        )
+        self.logger.info(
             f"Returning processed reviews_interactions df of shape: {reviews_interactions.shape}"
         )
         return reviews_interactions
@@ -149,7 +160,9 @@ class PrepDataTimes(LocationSetup):
 
         # deal with issue data (NOT pull request) only:
         interactions_df_commits = commitsdf
-
+        self.logger.info(
+            f"NAs counted in author_username col: {interactions_df_commits['author_username'].isna().sum()}"
+        )
         # rename columns, including commits usernames field to 'gh_username' to allow concats without stress.
         interactions_df_commits.rename(
             columns={"author_username": "gh_username"}, inplace=True
@@ -174,7 +187,9 @@ class PrepDataTimes(LocationSetup):
                 "interaction_type",
             ]
         ]
-
+        self.logger.info(
+            f"NAs counted in gh_username col: {interactions_df_commits['gh_username'].isna().sum()}"
+        )
         return interactions_df_commits
 
     def get_issues_PRs_interactions(self, rawissuesdf: pd.DataFrame) -> pd.DataFrame:
@@ -195,6 +210,9 @@ class PrepDataTimes(LocationSetup):
         """
         pd.options.mode.copy_on_write = True
 
+        self.logger.info(
+            f"NAs counted in issue_author_username col: {rawissuesdf['issue_author_username'].isna().sum()}"
+        )
         if not (open_issues_df := rawissuesdf.query("issue_state == 'open'")).empty:
             open_issues_df.loc[:, "datetime"] = rawissuesdf.query(
                 "issue_state == 'open'"
@@ -244,7 +262,9 @@ class PrepDataTimes(LocationSetup):
 
         # rename users for better joins/consistency
         issuesdf = issuesdf.rename(columns={"issue_author_username": "gh_username"})
-
+        self.logger.info(
+            f"NAs counted in gh_username col: {issuesdf['gh_username'].isna().sum()}"
+        )
         # pull out the closed_by info:
         issuesdf["closer"] = issuesdf["closed_by"].apply(
             lambda row: row if pd.isna(row) else literal_eval(row)["login"]
@@ -270,7 +290,9 @@ class PrepDataTimes(LocationSetup):
                 "interaction_type",
             ]
         ]
-
+        self.logger.info(
+            f"NAs counted in gh_username col: {interactions_df_issues['gh_username'].isna().sum()}"
+        )
         return interactions_df_issues
 
     def join_all_interactions(
@@ -334,6 +356,9 @@ class PrepDataTimes(LocationSetup):
                 # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
                 objs=[issues_interactions, commits_interactions, reviews_interactions],
                 join="outer",  # outer join returns ALL rows, matching where possible, applying NaNs if not; KEEPS non-shared columns (V. IMP!)
+            )
+            self.logger.info(
+                f"POST-CONCAT 'all_types_interactions' df NAs counted in gh_username col: {all_types_interactions['gh_username'].isna().sum()}"
             )
             writeout_path_tmp = Path(
                 self.data_location,
