@@ -50,18 +50,18 @@ def subset_by_dates(
     logger.info(f"to_datestamp used for END date filtering is: {to_datestamp}.")
 
     orig_len = len(df)
-    logger.info(f"orig_len = {len(df)}")
+    logger.debug(f"orig_len = {len(df)}")
 
-    logger.info(f"data type of datestamp_column is {df[datestamp_column].dtype}")
+    logger.debug(f"data type of datestamp_column is {df[datestamp_column].dtype}")
 
     df["datestamp_column_temp"] = pd.to_datetime(  # make new column
         df[datestamp_column]
     )  # change type from string to datetime
 
-    logger.info(
+    logger.debug(
         f"type of df['datestamp_column_temp'] is {type(df['datestamp_column_temp'])} ; dtypes of df are: {df.dtypes}"
     )
-    logger.info(
+    logger.debug(
         f"df['datestamp_column_temp'][0:5] is: {df['datestamp_column_temp'][0:5]}"
     )
 
