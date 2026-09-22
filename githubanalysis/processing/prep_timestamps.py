@@ -326,7 +326,9 @@ class PrepDataTimes(LocationSetup):
         )  # TODO: add discussion to this when implementing
 
         # JOIN ISSUES AND COMMITS AND REVIEWS DATA TOGETHER HERE:
-        self.logger.info("Attempting THE JOIN: issues + commits + reviews...")
+        self.logger.info(
+            "Attempting THE JOIN (outer join via concat): issues + commits + reviews..."
+        )
         try:
             all_types_interactions = pd.concat(
                 # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
@@ -349,8 +351,6 @@ class PrepDataTimes(LocationSetup):
                 f"Unexpected error with THE JOIN (issues + commits + reviews) via concat(), traceback:\n{traceback.format_exc()}"
             )
             raise
-
-        self.logger.info("Attempting join: issues + commits + reviews...")
 
         self.logger.debug(
             "joined issues and commits and reviews interactions"
@@ -425,23 +425,21 @@ class PrepDataTimes(LocationSetup):
             "pc_interaction_days",
         ]
         """
+        assert all_types_interactions is not None, (
+            f"all_interactions_data should not be type None; type is: {type(all_types_interactions)}."
+        )
+        self.logger.info(
+            f"At beginning of function calculate_all_interactions(), df 'all_types_interactions' shape is: {all_types_interactions.shape}."
+        )
         # # remove rows where gh_username is NaN/NA
+        templen = len(all_types_interactions)
         all_types_interactions = all_types_interactions.dropna(
             subset="gh_username", axis=0
         )
-        self.logger.debug("removed missing GH_username rows")
-
-        self.logger.debug(
-            all_types_interactions.groupby(["repo_name", "gh_username"])["datetime_day"]
+        self.logger.info(
+            f"Removed {templen - len(all_types_interactions)} missing GH_username rows"
         )
 
-        self.logger.debug(
-            type(
-                all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ]
-            )
-        )
         # Gather MISSING data counts:
         n_all_before = len(all_types_interactions)
         n_gh_users = all_types_interactions["gh_username"].isna().sum()
@@ -463,6 +461,10 @@ class PrepDataTimes(LocationSetup):
             f"Filtering out {n_all_before - n_after_drop} rows with missing data out of {n_all_before} rows in total."
         )
         self.logger.info(f"{n_after_drop} rows remaining.")
+
+        self.logger.info(
+            f"After removing missing data rows, `all_types_interactions` df contains {all_types_interactions.groupby(by=['repo_name', 'gh_username']).ngroups} repo-individuals from {all_types_interactions.groupby(by=['repo_name']).ngroups} repos."
+        )
 
         # reasonably important writeout: combined issues + commits + reviews with missing data handled.
         writeout_combined = Path(
@@ -570,11 +572,13 @@ class PrepDataTimes(LocationSetup):
         )
 
         # join on 'interaction_period_days' column from timediff
-        self.logger.info(
-            f"INNER join status_df and timediff on repo-individuals to obtain 'interaction_period_days' column from timediff; shape of status_df:{status_df.shape} shape of timediff: {timediff.shape}."
-        )
         assert len(status_df) == len(timediff), (
-            f"ERROR: lengths of statusdf and timediff are DIFFERENT, but this is not what we'd expect! status_df: {len(status_df)}, timediff: {len(timediff)}"
+            f"ERROR: lengths of statusdf and timediff are DIFFERENT, but this is NOT what we'd expect! status_df: {len(status_df)}, timediff: {len(timediff)}"
+        )
+        self.logger.info(f"Columns of status_df: {status_df.columns}")
+        self.logger.info(f"Columns of timediff: {timediff.columns}")
+        self.logger.info(
+            f"INNER join (via pd.merge()) status_df and timediff on repo-individuals to obtain 'interaction_period_days' column from timediff; shape of status_df:{status_df.shape} shape of timediff: {timediff.shape}."
         )
         status_df = pd.merge(
             status_df,
@@ -582,8 +586,14 @@ class PrepDataTimes(LocationSetup):
             how="inner",  # JOIN TYPE: INNER: we assert both dfs are the same length so keys WILL match precisely.
             on=["repo_name", "gh_username"],
         )
+        self.logger.info(
+            f"NEW columns of status_df after merging in timediff info: {status_df.columns}"
+        )
+        # this merge is transferring the time period info ?
         self.logger.info(f"AFTER joining timediff and status_df: {status_df.shape}.")
 
+        # setting values to 0 if they're not present
+        # (ie weren't joined from other interactions sets where interactions weren't recorded):
         for col in [
             "commit_created",
             "issue_closed",
@@ -596,6 +606,9 @@ class PrepDataTimes(LocationSetup):
             if col not in status_df.columns:
                 status_df.loc[:, col] = 0
 
+        self.logger.info(
+            "Calculating net interactions columns, sums, repository contributions, means etc..."
+        )
         # create ratio of created:closed issues per user:
         status_df["created-closed_issues"] = (
             status_df["issue_created"] - status_df["issue_closed"]
@@ -901,7 +914,7 @@ class PrepDataTimes(LocationSetup):
                 # discussions_interactions,
             )
             self.logger.info(
-                f"all_interactions_data df has shape {all_interactions_data.shape}"
+                f"all_interactions_data df has shape {all_interactions_data.shape}; this df is per-repo-individual data now"
             )
             # all_interactions_data will now have columns:
             # ['repo_name', 'gh_username', 'datetime_day', 'contribution', 'interaction_type']
@@ -969,7 +982,7 @@ class PrepDataTimes(LocationSetup):
             )
 
             self.logger.info(
-                f"Saved devs_commits_data df for {n_repos_all_interactions_data} repos with {len(all_interactions_data)} devs to file: {filestr}"
+                f"Saved ROW-PER-REPO-INDIVIDUAL-FORMAT format all_interactions_data df for {n_repos_all_interactions_data} repos with {len(all_interactions_data)} devs to file: {filestr}"
             )
 
             return all_interactions_data  # RETURN MERGED DATASET
@@ -1054,7 +1067,7 @@ if __name__ == "__main__":
     -f code_review_subset_2026-07-26_x17.txt 
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
-    -r data/merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-16.csv
+    -r data/merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
 
     (45 sec to run)
     """
@@ -1064,7 +1077,7 @@ if __name__ == "__main__":
     -f sample_45pc_subsample_repo_names_list_2025-05-12_x1284.txt
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
-    -r data/merged_reviews_data_all_types_x1284repos_x2593270reviews_x3810reviewfiles_2026-07-16.csv
+    -r data/merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
     
     (?? sec to run)
     """
@@ -1074,7 +1087,7 @@ if __name__ == "__main__":
     -f set2_sample_55pc_subsample_repo_names_list_2026-02-05_x1697.txt
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
-    -r data/merged_reviews_data_all_types_x1697repos_x3288083reviews_x4768reviewfiles_2026-07-27.csv
+    -r data/merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
 
     (?? sec to run)
     """
@@ -1084,7 +1097,7 @@ if __name__ == "__main__":
     -f study-sample-repo-names_2025-05-01_x2981.txt
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
     -i data/issues_interactions_x3380102_2025-04-18.csv 
-    -r TODO: Not yet run (Currently running at 2026-09-21 1400.)
+    -r data/merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
 
     (?? sec to run)
     """
