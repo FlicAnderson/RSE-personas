@@ -65,6 +65,12 @@ def subset_by_dates(
         f"df['datestamp_column_temp'][0:5] is: {df['datestamp_column_temp'][0:5]}"
     )
 
+    #### assert that df["datestamp_column_temp"] values are NOT FLOATS somehow.
+    ##?? Are there msising data?
+    logger.info(
+        f"NA values in datestamp_column_temp: {df['datestamp_column_temp'].isna().sum()}"
+    )
+
     df["datestamp_column_temp"] = df["datestamp_column_temp"].apply(
         lambda x: pd.Timestamp.date(
             x
