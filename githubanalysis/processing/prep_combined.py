@@ -180,6 +180,10 @@ parser.add_argument(
 
 
 if __name__ == "__main__":
+    """
+    THIS SCRIPT DOES >>>NOT<<< SUBSET DATA BY SPECIFIC DATES (e.g. prep_timestamps)
+    """
+
     args = parser.parse_args()
     commits_data: str = args.commits_data_per_dev_file
     issues_data: str = args.issues_data_per_dev_file
