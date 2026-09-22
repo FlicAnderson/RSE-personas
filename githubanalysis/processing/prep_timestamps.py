@@ -766,16 +766,16 @@ class PrepDataTimes(LocationSetup):
             f"Length of interactions_df BEFORE subsetting to only repos in repo_list is: {len(interactions_df)}"
         )
         self.logger.info(
-            f"Number of unique repos in interactions_df BEFORE subsetting is: {interactions_df.repo_name.nunique()}"
+            f"Number of unique repos in interactions_df BEFORE subsetting to only repos in repo_list is: {interactions_df.repo_name.nunique()}"
         )
         interactions_df = interactions_df[  # SUBSET DF TO ONLY THOSE ROWS WHERE REPO_NAME IN REPO_LIST
             interactions_df["repo_name"].isin(repo_list)
         ]
         self.logger.info(
-            f"Length of interactions_df AFTER subsetting is: {len(interactions_df)}"
+            f"Length of interactions_df AFTER subsetting to only repos in repo_list is: {len(interactions_df)}"
         )
         self.logger.info(
-            f"Number of unique repos in interactions_df AFTER subsetting is: {interactions_df.repo_name.nunique()}"
+            f"Number of unique repos in interactions_df AFTER subsetting to repo_list repos is: {interactions_df.repo_name.nunique()}"
         )
         return interactions_df
 
