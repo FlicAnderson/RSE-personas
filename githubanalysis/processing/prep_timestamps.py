@@ -810,6 +810,7 @@ class PrepDataTimes(LocationSetup):
         assert isinstance(cutoff_date, pd.Timestamp), (
             f"cutoff_date is not of correct timestamp type: {type(cutoff_date)}"
         )
+        self.logger.info(f"Reading in INTERACTION-PER-ROW data now...")
 
         start_time = datetime.datetime.now()
         self.logger.info(f"processing {len(repo_list)} repos' worth of issues data")
@@ -914,7 +915,7 @@ class PrepDataTimes(LocationSetup):
                 # discussions_interactions,
             )
             self.logger.info(
-                f"all_interactions_data df has shape {all_interactions_data.shape}; this df is per-repo-individual data now"
+                f"all_interactions_data df has shape {all_interactions_data.shape}; df is **still** INTERACTION-PER-ROW FORMAT"
             )
             # all_interactions_data will now have columns:
             # ['repo_name', 'gh_username', 'datetime_day', 'contribution', 'interaction_type']
@@ -925,10 +926,15 @@ class PrepDataTimes(LocationSetup):
             )
             raise
 
-        self.logger.info("Attempting calculations of interaction data...")
+        self.logger.info(
+            "\n Attempting calculations of joined interaction-per-row data; \n summarising to return ROW-PER-REPO-INDIVIDUAL format df... \n"
+        )
         try:
             all_interactions_data = self.calculate_all_interactions(
                 all_types_interactions=all_interactions_data
+            )
+            self.logger.info(
+                "!! `all_interactions_data` df is now in ROW-PER-REPO-INDIVIDUAL format !!"
             )
         except Exception as e:
             self.logger.error(
@@ -944,7 +950,7 @@ class PrepDataTimes(LocationSetup):
         )  # should this be done in calculate_all_interactions() instead??
 
         self.logger.info(
-            f"Dataset of combined issues and commits interactions info contains {all_interactions_data.repo_name.nunique()} unique repo_names."
+            f"Dataset of combined interactions info contains {all_interactions_data.repo_name.nunique()} unique repo_names."
         )
         self.logger.info(
             f"... and contains {all_interactions_data.gh_username.nunique()} unique GH_usernames."
@@ -1123,7 +1129,7 @@ if __name__ == "__main__":
     repo_list = reporeader.get_repos(repo_list_file_name=filepath)
 
     logger.info(
-        f"Running data timestamps pre-analysis preparation methods on processed- commits and issues files for {len(repo_list)} repositories' data."
+        f"Running data timestamps pre-analysis preparation methods on commits, issues and reviews interactions files for {len(repo_list)} repositories' data."
     )
 
     prepdatatimes = PrepDataTimes(
