@@ -431,6 +431,12 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(
             f"At beginning of function calculate_all_interactions(), df 'all_types_interactions' shape is: {all_types_interactions.shape}."
         )
+        # IDENTIFY NAs, esp @ gh_username
+        self.logger.info(f"{all_types_interactions.columns = }")
+        self.logger.info(
+            f"NAs counted in gh_username cols: {all_types_interactions['gh_username'].isna().sum()}"
+        )
+
         # # remove rows where gh_username is NaN/NA
         templen = len(all_types_interactions)
         all_types_interactions = all_types_interactions.dropna(
