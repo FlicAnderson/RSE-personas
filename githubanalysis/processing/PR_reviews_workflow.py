@@ -1,4 +1,4 @@
-"""Workflow for running PR Code Review (PRCR) processing and analysis code for 1 repo."""
+"""Workflow for running PR Code Review (PRCR) processing and analysis code across many repos."""
 
 import csv
 import traceback
@@ -75,7 +75,7 @@ class RunPRReviews(LocationSetup):
         get_code_reviews.logger.info(
             f"Attempting to run through {len(repo_list)} repositories."
         )
-        get_code_reviews.logger.info(f"{repo_list = }")
+        get_code_reviews.logger.debug(f"{repo_list = }")
 
         get_code_reviews.logger.info("Getting DISCUSSION info for all repos:")
         # for each repo in repo_list, do all the things to get DISCUSSIONS FIRST:
@@ -124,7 +124,7 @@ class RunPRReviews(LocationSetup):
 
         output_globs = []
 
-        self.logger.info(f"{subset_repos=}")  # for clarity of what's running here:
+        self.logger.debug(f"{subset_repos=}")  # for clarity of what's running here:
 
         for reponame in subset_repos:  # (currently 2x repos)
             output_globs.extend(
@@ -134,7 +134,7 @@ class RunPRReviews(LocationSetup):
                     matchstrings=matchstrings,
                 )
             )
-        self.logger.info(
+        self.logger.debug(
             f"{output_globs=}"
         )  # return item now contains multiple repos' globs :D
 
@@ -430,6 +430,7 @@ parser.add_argument(
 if __name__ == "__main__":
     """
     This function is the runner function for PR review data processing (not collection). 
+    Returns row-per-interaction data; NOT summarised row-per-repo-individual.
 
     It takes 1 argument at commandline: -f (data/file_name_of_repos_list_to_process_reviews_for.txt).  
 
@@ -437,6 +438,53 @@ if __name__ == "__main__":
 
     This will process data for ALL of SET 1 AND SET 2 repos. 
     (e.g. 1284 + 1697 = 2981 repos maximum, likely fewer as not all repos have reviews.
+
+    # example run (SET1 + SET2 reviews) logging: 
+    $ time python githubanalysis/processing/PR_reviews_workflow.py -f data/study-sample-repo-names_2025-05-01_x2981.txt
+    # ...
+        [2026-09-21 11:39:01,037] INFO:Running PR review data formatting.
+        [2026-09-21 11:39:01,037] INFO:This workflow currently only runs data PROCESSING for PR code reviews data, not data COLLECTION. See run_get_reviews()
+        [2026-09-21 11:39:01,037] INFO:Running multi repo PR code review interactions file processing method on repos in file: data/study-sample-repo-names_2025-05-01_x2981.txt
+        [2026-09-21 11:39:01,037] INFO:
+        [2026-09-21 11:39:01,054] INFO:length of subset_repos_file is: 2981 repos
+        [2026-09-21 11:39:01,055] INFO:Currently processing 2981 repos' worth of PR Reviews data
+        [2026-09-21 11:39:01,055] INFO:subset_repos=[# ... lots of repo names
+        # ... lots of output ...
+        [2026-09-21 15:25:25,400] INFO:Generated df of 5881353 review data.
+        [2026-09-21 15:27:29,344] INFO:Saved reviews_data df for 2981 repos with 5881353 review interactions to file: merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
+        [2026-09-21 15:27:29,344] INFO:Run time for 2981 repos with 5881353 review interactions cumulatively: 3:48:28.290154
+        [2026-09-21 15:27:29,359] INFO:Completed processing review files, returning 'reviews_data' df
+        [2026-09-21 15:27:37,398] INFO:PR CR processing workflow completed.
+
+        real    228m36.910s (~4h)
+        user    199m30.333s
+        sys     25m37.127s
+
+    # output file: 
+    # data/merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
+    # 4.7Gb filesize.
+
+    This output file is **ONE ROW PER INTERACTION** (not row-per-repo-individual)  
+    and contains the following columns:
+        [
+        "review_item_url",
+        "review_PR_url",
+        "PR_review_id",
+        "author_review_date", # IMPORTANT!! Interaction date
+        "subsequent_author_review_date",
+        "review_body",
+        "review_author_repo_association",
+        "reviewed_PR_number",
+        "review_author_gh_username", # important: gh_username
+        "review_type",
+        "review_author_gh_id",
+        "repo_name",  # important: repo_name
+        "review_state",
+        "API_links",
+        "commit_id",
+        "main_PR_review_id",
+        "reply_to_subreview_id",
+    ]
     """
 
     args = parser.parse_args()
