@@ -18,14 +18,21 @@ from pathlib import Path
 import datetime
 import sys
 import csv
+
 from ast import literal_eval
 import pandas as pd
-import pandas.api.types as ptypes
+
+# import pandas.api.types as ptypes
 from githubanalysis.setup_classes import LocationSetup
 import utilities.get_default_logger as loggit
 from utilities.simple_read_repos_from_file import Repo_Reader
 from utilities.glob_making_matching import Globber
 import utilities.subset_by_date as subset_by_date
+from githubanalysis.processing.summarise_interactions_per_repo_individual import (
+    summarise_interactions_per_repo_individual,
+)
+from githubanalysis.processing.join_interactions_types_data import join_all_interactions
+from githubanalysis.processing.read_interactions_files import read_interactions
 
 pd.options.mode.copy_on_write = True
 
@@ -295,528 +302,6 @@ class PrepDataTimes(LocationSetup):
         )
         return interactions_df_issues
 
-    def join_all_interactions(
-        self,
-        commits_interactions: pd.DataFrame,
-        issues_interactions: pd.DataFrame,
-        reviews_interactions: pd.DataFrame,
-        # discussions_interactions: pd.DataFrame,
-    ) -> pd.DataFrame:
-        """
-        Function combines issues (+ PRs) and commits and reviews
-        interactions and abridged timestamp data; returns df of this.
-
-        Returned df is interaction-per-line with many lines per repo-individual and includes multiple repos.
-
-        Returned df has columns:
-        ['repo_name', 'gh_username', 'datetime_day', 'contribution', 'interaction_type']
-        """
-        pd.options.mode.copy_on_write = True
-        # self.logger.debug(discussions_interactions.info())
-        self.logger.debug(
-            "Columns of issues, commits and reviews interactions dfs respectively:..."
-        )
-        self.logger.debug(issues_interactions.columns)
-        self.logger.debug(commits_interactions.columns)
-        self.logger.debug(reviews_interactions.columns)
-        # self.logger.debug(discussions_interactions.columns)
-
-        # assert "datetime_day" in discussions_interactions.columns, (
-        #     "The datetime_day column is missing from discussions_interactions df; please fix, rename and retry"
-        # )  # in case I forget to address this earlier.
-
-        self.logger.info(
-            f"PRE-CONCAT 'issues_interactions' df NAs counted in gh_username col: {issues_interactions['gh_username'].isna().sum()}"
-        )
-        filestr_iss = f"issues_interactions_x{len(issues_interactions)}interactions_x{issues_interactions.groupby(by=['repo_name']).ngroups}repos_x{issues_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
-        writeout_path_iss = Path(self.data_location, filestr_iss)
-        issues_interactions.to_csv(writeout_path_iss, header=True, index=False)
-
-        self.logger.info(
-            f"PRE-CONCAT 'commits_interactions' df NAs counted in gh_username col: {commits_interactions['gh_username'].isna().sum()}"
-        )
-        filestr_cmt = f"commits_interactions_x{len(commits_interactions)}interactions_x{commits_interactions.groupby(by=['repo_name']).ngroups}repos_x{commits_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
-        writeout_path_cmt = Path(self.data_location, filestr_cmt)
-        commits_interactions.to_csv(writeout_path_cmt, header=True, index=False)
-
-        self.logger.info(
-            f"PRE-CONCAT 'reviews_interactions' df NAs counted in gh_username col: {reviews_interactions['gh_username'].isna().sum()}"
-        )
-        filestr_rvw = f"review_interactions_x{len(reviews_interactions)}interactions_x{reviews_interactions.groupby(by=['repo_name']).ngroups}repos_x{reviews_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
-        writeout_path_rvw = Path(self.data_location, filestr_rvw)
-        reviews_interactions.to_csv(writeout_path_rvw, header=True, index=False)
-
-        # filestr_dsc = f"discussions_interactions_x{len(discussions_interactions)}interactions_x{discussions_interactions.groupby(by=['repo_name']).ngroups}repos_x{reviews_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
-        # writeout_path_dsc = Path(self.data_location, filestr_dsc)
-        # discussions_interactions.to_csv(writeout_path_dsc, header=True, index=False)
-
-        self.logger.debug(
-            f"wrote out commits, issues and reviews interactions dfs to separate csv files: {writeout_path_cmt} and {writeout_path_iss} and {writeout_path_rvw}."
-        )  # TODO: add discussion to this when implementing
-
-        # JOIN ISSUES AND COMMITS AND REVIEWS DATA TOGETHER HERE:
-        self.logger.info(
-            "Attempting THE JOIN (outer join via concat): issues + commits + reviews..."
-        )
-        try:
-            all_types_interactions = pd.concat(
-                # CONCAT rather than merge, because the columns match exactly, and we're aiming for a LONG df of stacked interactions
-                objs=[issues_interactions, commits_interactions, reviews_interactions],
-                join="outer",  # outer join returns ALL rows, matching where possible, applying NaNs if not; KEEPS non-shared columns (V. IMP!)
-            )
-            self.logger.info(
-                f"POST-CONCAT 'all_types_interactions' df NAs counted in gh_username col: {all_types_interactions['gh_username'].isna().sum()}"
-            )
-            writeout_path_tmp = Path(
-                self.data_location,
-                f"tmp_interactions_merge_{self.current_date_info}.csv",
-            )
-            all_types_interactions.to_csv(writeout_path_tmp, header=True, index=False)
-            self.logger.info(
-                f"Intermediate output of JOIN written out to {writeout_path_tmp}"
-            )
-        except Exception as e:
-            self.logger.error(
-                f"Problem running data analysis workflow: {e}; arguments were: {args}."
-            )
-            self.logger.error(
-                f"Unexpected error with THE JOIN (issues + commits + reviews) via concat(), traceback:\n{traceback.format_exc()}"
-            )
-            raise
-
-        self.logger.debug(
-            "joined issues and commits and reviews interactions"
-        )  # TODO: add discussions df to this when implementing
-        return all_types_interactions
-
-    def calculate_all_interactions(
-        self, all_types_interactions: pd.DataFrame
-    ) -> pd.DataFrame:
-        """
-        MAIN INTERACTIONS CALCULATION AND SUMMARISING FUNCTION!
-
-        This takes df of 'stacked' interactions data: all_types_interactions
-        (interaction-per-line, multi lines per repo-individuial, multi repos)
-
-        then:
-         - drops rows with missing data (e.g. where gh_username value is missing as cannot calculate with missing repo-individuals ; missing repo_name; missing datetime_day' etc)
-         - debugging / logging checks and reporting of Ns of rows deducted for missing data, date data types, etc
-         - pre-calculation write-out as: combined_interactions_data_x....csv
-         - create 'status_df': line-per-repo-individual summary df to hold calc'd data
-         and in status_df:
-         - calculation FOR EACH REPO-INDIVIDUAL: difference between earliest interaction date and latest interaction date in dataset; add to status_df as 'interaction_period_days'
-         - calculation of number (count) of interactions PER INTERACTION TYPE PER REPO-INDIVIDUAL (e.g. commits 5, issue_creation 4, code_reviewed 2, etc); added to status_df
-         - calculation of "interaction_days" (unique different days of interactions contributed of all sorts) PER REPO-INDIVIDUAL, added to status_df;
-         - set any non-filled values in status_df to 0 as no interactions of those types were recorded
-         - calculates net (raw N, and %) difference in issues (e.g. N created minus N closed and pc(%) created minus % closed)
-         - (same as net difference in issues, but for pull requests)
-         - calc total N of interactions of all sorts as "sum_n_interactions"
-         - calc average N of interactions per interaction day as "mean_n_interactions_per_interaction_day" (= sum_N_interactions / N of interaction days)
-         - generate "which_interactions": join strings of interaction_type together for all present interactions by repo_individual
-         - calc "breadth_interactions" (Unique Interaction Types; N of different interaction types present for repo-individual)
-         - calcs repo-individual's RC (% Repository Contribution) values for each CONTRIBUTION TYPE:
-             - PR creation ("pc_pull_request_created")
-             - PR closure ("pc_pull_request_closed")
-             - commit creation ("pc_commit_created")
-             - issue creation ("pc_issue_created")
-             - issue closure ("pc_issue_closed")
-             - reviews created ("pc_reviews_created")
-            TODO: ??? ASSIGNMENT SHOULD GO HERE!!! ???
-         - calcs repo-individual's RC (% Repository Contribution) of META INFO:
-             - total number of interactions of ALL TYPES as "pc_sum_n_interactions"
-             - calcs RC of all repository's unique interaction days as "pc_interaction_days"
-
-        THEN returns status_df: a line-per-repo-individual summary df
-        of each repo-individuals' contributions of all types!
-
-        status_df has columns:
-        [
-            "repo_name",
-            "gh_username",
-            "code_reviewed",
-            "commit_created",
-            "issue_closed",
-            "issue_created",
-            "pull_request_closed",
-            "pull_request_created",
-            "interaction_days",
-            "interaction_period_days",
-            "created-closed_issues",
-            "pc_created-closed_issues",
-            "sum_n_interactions",
-            "mean_n_interactions_per_interaction_day",
-            "which_interactions",
-            "breadth_interactions",
-            "pc_pull_request_created",
-            "pc_pull_request_closed",
-            "pc_commit_created",
-            "pc_issue_created",
-            "pc_issue_closed",
-            "pc_reviews_created",
-            "pc_sum_n_interactions",
-            "pc_interaction_days",
-        ]
-        """
-        assert all_types_interactions is not None, (
-            f"all_interactions_data should not be type None; type is: {type(all_types_interactions)}."
-        )
-        self.logger.info(
-            f"At beginning of function calculate_all_interactions(), df 'all_types_interactions' shape is: {all_types_interactions.shape}."
-        )
-        # IDENTIFY NAs, esp @ gh_username
-        self.logger.info(f"{all_types_interactions.columns = }")
-        self.logger.info(
-            f"NAs counted in gh_username cols: {all_types_interactions['gh_username'].isna().sum()}"
-        )
-
-        # # remove rows where gh_username is NaN/NA
-        templen = len(all_types_interactions)
-        all_types_interactions = all_types_interactions.dropna(
-            subset="gh_username", axis=0
-        )
-        self.logger.info(
-            f"Removed {templen - len(all_types_interactions)} missing GH_username rows"
-        )
-
-        # Gather MISSING data counts:
-        n_all_before = len(all_types_interactions)
-        n_gh_users = all_types_interactions["gh_username"].isna().sum()
-        n_repos = all_types_interactions["repo_name"].isna().sum()
-        n_missing_date = all_types_interactions["datetime_day"].isna().sum()
-
-        self.logger.info(
-            f"Filtering out rows including {n_gh_users + n_repos + n_missing_date} missing data elements: {n_repos} rows missing repo_names; {n_missing_date} rows missing date_time days."
-        )
-
-        # remove missing repo_name data, and rows with missing gh_usernames
-        # AND with missing datetime_day values (NaT)
-        all_types_interactions = all_types_interactions.dropna(
-            subset=["gh_username", "repo_name", "datetime_day"]
-        )
-        n_after_drop = len(all_types_interactions)
-
-        self.logger.info(
-            f"Filtering out {n_all_before - n_after_drop} rows with missing data out of {n_all_before} rows in total."
-        )
-        self.logger.info(f"{n_after_drop} rows remaining.")
-
-        self.logger.info(
-            f"After removing missing data rows, `all_types_interactions` df contains {all_types_interactions.groupby(by=['repo_name', 'gh_username']).ngroups} repo-individuals from {all_types_interactions.groupby(by=['repo_name']).ngroups} repos."
-        )
-
-        # reasonably important writeout: combined issues + commits + reviews with missing data handled.
-        writeout_combined = Path(
-            self.data_location,
-            f"combined_interactions_data_x{all_types_interactions.groupby('repo_name').ngroups}repos_x{all_types_interactions.groupby(['repo_name', 'gh_username']).ngroups}repo-indivds_{self.current_date_info}.csv",
-        )
-        self.logger.info(f"Writing out combined interactions as: {writeout_combined}.")
-        all_types_interactions.to_csv(
-            writeout_combined,
-            header=True,
-            index=False,
-        )
-        self.logger.debug(f"wrote out combined interactions file {writeout_combined}.")
-        self.logger.info(
-            "Now attempting calculation of timediffs to help calculate interaction_period."
-        )
-        try:
-            all_types_interactions["datetime_day"] = pd.to_datetime(
-                all_types_interactions["datetime_day"],
-                # utc = False: this is the default, "inputs will not be coerced to UTC. Timezone-naive inputs will remain naive, while timezone-aware ones will keep their time offsets." Think this is best because we only have DAY not times as well
-            )
-
-            assert ptypes.is_datetime64_any_dtype(
-                all_types_interactions["datetime_day"]
-            ), "The column datetime_day is NOT a date type! This is BAD"
-
-            # pull out the number of days timediff between 1st and latest interactions
-            timediff = (
-                all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ].max()
-                - all_types_interactions.groupby(["repo_name", "gh_username"])[
-                    "datetime_day"
-                ].min()
-            )
-
-        except Exception as e:
-            tmp_errors = all_types_interactions["datetime_day"].isna()
-            tmp_errors = all_types_interactions[tmp_errors]
-            self.logger.error(
-                f"Unexpected error during TIMEDIFF calculations, ({e}) traceback:\n{traceback.format_exc()}"
-            )
-            self.logger.error(
-                f"error {e}: \n value_counts of types for datetime_day are: \n {all_types_interactions['datetime_day'].apply(lambda x: str(type(x))).value_counts(dropna=False)} \n"
-            )
-            self.logger.error(f"tmp_errors is: {tmp_errors}")
-            tmp_errors.to_csv(
-                Path(
-                    self.data_location,
-                    f"error_rows_interactions_data_{self.current_date_info}.csv",
-                )
-            )
-
-            raise
-
-        self.logger.debug(
-            "completed timediff calculation: datetime_day max - datetime_day min by groups"
-        )
-        timediff = timediff.apply(
-            lambda x: x + datetime.timedelta(days=1)
-        )  # add 1 day so the time difference is inclusive of both first and last days (ie no zeroes!)
-        timediff = timediff.apply(lambda x: x.days).reset_index()
-        timediff = timediff.rename(columns={"datetime_day": "interaction_period_days"})
-        self.logger.debug("rename timediff column as interaction_period_days")
-
-        # pull interaction_types into separate columns, and add counts of each category into them
-        status_df = (
-            all_types_interactions.groupby(
-                ["repo_name", "gh_username", "interaction_type"]
-            )
-            .agg(n_interactions=pd.NamedAgg(column="repo_name", aggfunc="count"))
-            .pivot_table(
-                values="n_interactions",
-                index=["repo_name", "gh_username"],
-                columns="interaction_type",
-                fill_value=0,
-            )
-            .reset_index()
-        )
-
-        # count unique interaction_days per user:
-        status_df["interaction_days"] = (
-            all_types_interactions.groupby(by=["repo_name", "gh_username"])[
-                ["datetime_day"]
-            ]
-            .nunique()
-            .reset_index()["datetime_day"]
-        )
-
-        # to avoid unexpected behaviour, pre-drop rows where keys are null value:
-        self.logger.info(
-            f"Shape BEFORE dropping rows with missing values for repo_name or gh_username from status_df: {status_df.shape}"
-        )
-        status_df = status_df.dropna(subset=["repo_name", "gh_username"])
-        self.logger.info(
-            f"Shape AFTER dropping rows with missing values for repo_name or gh_username from status_df: {status_df.shape}"
-        )
-
-        self.logger.info(
-            f"Shape BEFORE dropping rows with missing values for repo_name or gh_username from timediff: {timediff.shape}"
-        )
-        timediff = timediff.dropna(subset=["repo_name", "gh_username"])
-        self.logger.info(
-            f"Shape AFTER dropping rows with missing values for repo_name or gh_username from timediff: {timediff.shape}"
-        )
-
-        # join on 'interaction_period_days' column from timediff
-        assert len(status_df) == len(timediff), (
-            f"ERROR: lengths of statusdf and timediff are DIFFERENT, but this is NOT what we'd expect! status_df: {len(status_df)}, timediff: {len(timediff)}"
-        )
-        self.logger.info(f"Columns of status_df: {status_df.columns}")
-        self.logger.info(f"Columns of timediff: {timediff.columns}")
-        self.logger.info(
-            f"INNER join (via pd.merge()) status_df and timediff on repo-individuals to obtain 'interaction_period_days' column from timediff; shape of status_df:{status_df.shape} shape of timediff: {timediff.shape}."
-        )
-        status_df = pd.merge(
-            status_df,
-            timediff,
-            how="inner",  # JOIN TYPE: INNER: we assert both dfs are the same length so keys WILL match precisely.
-            on=["repo_name", "gh_username"],
-        )
-        self.logger.info(
-            f"NEW columns of status_df after merging in timediff info: {status_df.columns}"
-        )
-        # this merge is transferring the time period info ?
-        self.logger.info(f"AFTER joining timediff and status_df: {status_df.shape}.")
-
-        # setting values to 0 if they're not present
-        # (ie weren't joined from other interactions sets where interactions weren't recorded):
-        for col in [
-            "commit_created",
-            "issue_closed",
-            "issue_created",
-            "pull_request_created",
-            "pull_request_closed",
-            "code_reviewed",
-            # "discussion_added",
-        ]:
-            if col not in status_df.columns:
-                status_df.loc[:, col] = 0
-
-        self.logger.info(
-            "Calculating net interactions columns, sums, repository contributions, means etc..."
-        )
-        # create ratio of created:closed issues per user:
-        status_df["created-closed_issues"] = (
-            status_df["issue_created"] - status_df["issue_closed"]
-        )
-
-        # should not result in a divide by zero issue because no issues datafile exists if no issues in repo
-        # (hopefully)
-        status_df["pc_created-closed_issues"] = (
-            status_df["issue_created"]
-            / status_df.groupby("repo_name")["issue_created"].transform("sum")
-        ) - (
-            status_df["issue_closed"]
-            / status_df.groupby("repo_name")["issue_closed"].transform("sum")
-        ) * 100
-
-        # calculate number of different interactions by each user:
-        status_df["sum_n_interactions"] = (
-            status_df["commit_created"]
-            + status_df["issue_closed"]
-            + status_df["issue_created"]
-            + status_df["pull_request_created"]
-            + status_df["pull_request_closed"]
-            + status_df["code_reviewed"]
-            # + status_df["discussion_added"]
-        )
-
-        # mean_n_interactions_per_interaction_days: sum of interactions ()all types) divide by number of unique interaction days
-        status_df["mean_n_interactions_per_interaction_day"] = (
-            status_df["sum_n_interactions"] / status_df["interaction_days"]
-        )
-
-        # gather text labels for which interactions were done by users:
-        status_df["which_interactions"] = (
-            all_types_interactions.groupby(by=["repo_name", "gh_username"])[
-                ["interaction_type"]
-            ]
-            .agg(lambda x: ", ".join(list(map(str, set(x)))))
-            .reset_index()["interaction_type"]
-        )
-
-        # get breadth of unique interactions :
-        status_df["breadth_interactions"] = status_df.which_interactions.apply(
-            lambda x: len(x.split())
-        )
-
-        # per-repo pc(pull_requests):
-        status_df["pc_pull_request_created"] = (
-            status_df["pull_request_created"]
-            / status_df.groupby("repo_name")["pull_request_created"].transform("sum")
-            * 100
-        )
-
-        status_df["pc_pull_request_closed"] = (
-            status_df["pull_request_closed"]
-            / status_df.groupby("repo_name")["pull_request_closed"].transform("sum")
-            * 100
-        )
-
-        # per-repo sum(commits):
-        status_df["pc_commit_created"] = (
-            status_df["commit_created"]
-            / status_df.groupby("repo_name")["commit_created"].transform("sum")
-            * 100
-        )
-
-        # per-repo pc(opened issues):
-        status_df["pc_issue_created"] = (
-            status_df["issue_created"]
-            / status_df.groupby("repo_name")["issue_created"].transform("sum")
-            * 100
-        )
-
-        # per-repo pc(closed issues):
-        status_df["pc_issue_closed"] = (
-            status_df["issue_closed"]
-            / status_df.groupby("repo_name")["issue_closed"].transform("sum")
-            * 100
-        )
-
-        # RC (repo-contribution) of PR code reviews (PRCR):
-        status_df["pc_reviews_created"] = (
-            status_df["code_reviewed"]
-            / status_df.groupby("repo_name")["code_reviewed"].transform("sum")
-            * 100
-        )
-
-        # # RC (repo-contribution) of Issue Ticket Discussions (ITD):
-        # status_df["pc_discussions"] = (
-        #     status_df["discussion_added"]
-        #     / status_df.groupby("repo_name")["discussion_added"].transform("sum")
-        #     * 100
-        # )
-
-        # per-repo pc of total sum of n interactions:
-        status_df["pc_sum_n_interactions"] = (
-            status_df["sum_n_interactions"]
-            / status_df.groupby("repo_name")["sum_n_interactions"].transform("sum")
-            * 100
-        )
-
-        # per-repo pc of repo interaction_days:
-        status_df["pc_interaction_days"] = (
-            status_df["interaction_days"]
-            / status_df.groupby("repo_name")["interaction_days"].transform("sum")
-            * 100
-        )
-
-        self.logger.info(
-            f"status_df being returned by calculate_all_interactions() has shape {status_df.shape} and columns: {status_df.columns}"
-        )
-        self.logger.info(
-            f"status_df has {status_df.groupby(by=['repo_name', 'gh_username']).ngroups} repo-individuals from {status_df.groupby(by=['repo_name']).ngroups} repos."
-        )
-        return status_df
-
-    def read_interactions(
-        self, interactions_file: Path, repo_list: list[str]
-    ) -> pd.DataFrame:
-        """
-        READS in .csv file of interactions of specific type (commits | issues (inc PRs) | code reviews)
-        then SUBSETS these to discard any rows from repos NOT in the repo_list;
-        returns the remaining in-list repos' interactions data of this type.
-        """
-        # READ IN DATA as df
-        self.logger.info(
-            f"Attempting to read in: {interactions_file}; this could take some SECONDS if it's a large file"
-        )
-        try:
-            interactions_df = pd.read_csv(
-                filepath_or_buffer=interactions_file,
-                header=0,
-                low_memory=False,
-                dtype=object,
-            )
-            assert not interactions_df.empty, (
-                "Read-in interactions df is empty but should not be."
-            )
-            assert interactions_df is not None, (
-                "interactions_df is None, this is bad. Check the file {interactions_file}"
-            )
-            self.logger.debug(
-                f"Columns for interactions_df are: {interactions_df.columns}"
-            )
-        except:
-            self.logger.error(
-                f"Problem loading in interactions from file {interactions_file}"
-            )
-            raise RuntimeError(
-                f"interactions read in not working somehow for: {interactions_file}"
-            )
-
-        # subset df from file into the following repos' data only:
-        # repo_name column value in repo_list e.g. df[df['A'].isin([3, 6])]
-        self.logger.info(
-            f"Length of interactions_df BEFORE subsetting to only repos in repo_list is: {len(interactions_df)}"
-        )
-        self.logger.info(
-            f"Number of unique repos in interactions_df BEFORE subsetting to only repos in repo_list is: {interactions_df.repo_name.nunique()}"
-        )
-        interactions_df = interactions_df[  # SUBSET DF TO ONLY THOSE ROWS WHERE REPO_NAME IN REPO_LIST
-            interactions_df["repo_name"].isin(repo_list)
-        ]
-        self.logger.info(
-            f"Length of interactions_df AFTER subsetting to only repos in repo_list is: {len(interactions_df)}"
-        )
-        self.logger.info(
-            f"Number of unique repos in interactions_df AFTER subsetting to repo_list repos is: {interactions_df.repo_name.nunique()}"
-        )
-        return interactions_df
-
     def interactions_data_workflow(
         self,
         repo_list: list[str],
@@ -848,16 +333,25 @@ class PrepDataTimes(LocationSetup):
         assert isinstance(cutoff_date, pd.Timestamp), (
             f"cutoff_date is not of correct timestamp type: {type(cutoff_date)}"
         )
-        self.logger.info(f"Reading in INTERACTION-PER-ROW data now...")
+        self.logger.info("Reading in INTERACTION-PER-ROW data now...")
 
         start_time = datetime.datetime.now()
         self.logger.info(f"processing {len(repo_list)} repos' worth of issues data")
 
         self.logger.info("attempting to read ISSUES data from file")
         # read issues data in from previously created file and subset to relevant repos:
-        issues_interactions = self.read_interactions(
-            interactions_file=issues_interactions_file, repo_list=repo_list
+        issues_interactions = read_interactions(
+            interactions_file=issues_interactions_file,
+            repo_list=repo_list,
+            logger=self.logger,
         )
+
+        self.logger.info(
+            "THIS IS WHERE ISSUES INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT IT'S GENERIC??"
+            # this code is assuming issues interaction processing was done previously in a different script, probably issues_workflow?
+            # self.get_issues_PRs_interactions(rawissuesdf=issues_interactions)
+        )
+
         assert "datetime_day" in issues_interactions.columns, (
             f"issues_interactions df from file {issues_interactions_file} is missing column 'datetime_day'; columns are: {issues_interactions.columns}."
         )
@@ -874,9 +368,16 @@ class PrepDataTimes(LocationSetup):
 
         self.logger.info("attempting to read COMMITS data from file")
         # read commits data in from previously created file and subset to relevant repos:
-        commits_interactions = self.read_interactions(
-            interactions_file=commits_interactions_file, repo_list=repo_list
+        commits_interactions = read_interactions(
+            interactions_file=commits_interactions_file,
+            repo_list=repo_list,
+            logger=self.logger,
         )
+
+        self.logger.info(
+            "THIS IS WHERE COMMITS INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT IT'S GENERIC??"
+        )
+
         assert "datetime_day" in commits_interactions.columns, (
             f"commits_interactions df from file {commits_interactions_file} is missing column 'datetime_day'; columns are: {commits_interactions.columns}."
         )
@@ -893,8 +394,10 @@ class PrepDataTimes(LocationSetup):
 
         self.logger.info("attempting to read REVIEWS data from file")
         # read in and subset the large collated reviews data file to the specified repos only
-        reviews_interactions = self.read_interactions(
-            interactions_file=reviews_interactions_file, repo_list=repo_list
+        reviews_interactions = read_interactions(
+            interactions_file=reviews_interactions_file,
+            repo_list=repo_list,
+            logger=self.logger,
         )
         assert "author_review_date" in reviews_interactions.columns, (
             f"reviews_interactions df from file {reviews_interactions_file} is missing column 'author_review_date'; columns are: {reviews_interactions.columns}."
@@ -946,11 +449,14 @@ class PrepDataTimes(LocationSetup):
         # )
         self.logger.info("Attempting joins of interaction data...")
         try:
-            all_interactions_data = self.join_all_interactions(
+            all_interactions_data = join_all_interactions(
                 commits_interactions,
                 issues_interactions,
                 reviews_interactions,
                 # discussions_interactions,
+                logger=self.logger,
+                current_date_info=self.current_date_info,
+                data_location=self.data_location,
             )
             self.logger.info(
                 f"all_interactions_data df has shape {all_interactions_data.shape}; df is **still** INTERACTION-PER-ROW FORMAT"
@@ -968,8 +474,11 @@ class PrepDataTimes(LocationSetup):
             "\n Attempting calculations of joined interaction-per-row data; \n summarising to return ROW-PER-REPO-INDIVIDUAL format df... \n"
         )
         try:
-            all_interactions_data = self.calculate_all_interactions(
-                all_types_interactions=all_interactions_data
+            all_interactions_data = summarise_interactions_per_repo_individual(
+                all_types_interactions=all_interactions_data,
+                logger=self.logger,
+                current_date_info=self.current_date_info,
+                data_location=self.data_location,
             )
             self.logger.info(
                 "!! `all_interactions_data` df is now in ROW-PER-REPO-INDIVIDUAL format !!"
@@ -985,7 +494,7 @@ class PrepDataTimes(LocationSetup):
         # that repo-individ from any of the API endpoints
         all_interactions_data.fillna(
             value=0, inplace=True
-        )  # should this be done in calculate_all_interactions() instead??
+        )  # should this be done in summarise_interactions_per_repo_individual() instead??
 
         self.logger.info(
             f"Dataset of combined interactions info contains {all_interactions_data.repo_name.nunique()} unique repo_names."
@@ -1180,13 +689,17 @@ if __name__ == "__main__":
     reviews_interactions_file = Path(reviews_interactions_file)
 
     try:
-        all_interactions_data = prepdatatimes.interactions_data_workflow(
-            repo_list=repo_list,
-            issues_interactions_file=issues_interactions_file,
-            commits_interactions_file=commits_interactions_file,
-            reviews_interactions_file=reviews_interactions_file,
-            # discussions_interactions_file=discussions_interactions_file,
-            cutoff_date=pd.Timestamp("2024-11-21"),  # HARDCODING THIS FOR REPLICATION
+        all_interactions_data = (
+            prepdatatimes.interactions_data_workflow(  # <- start here :)
+                repo_list=repo_list,
+                issues_interactions_file=issues_interactions_file,
+                commits_interactions_file=commits_interactions_file,
+                reviews_interactions_file=reviews_interactions_file,
+                # discussions_interactions_file=discussions_interactions_file,
+                cutoff_date=pd.Timestamp(
+                    "2024-11-21"
+                ),  # HARDCODING THIS FOR REPLICATION
+            )
         )
     except Exception as e:
         logger.error(
