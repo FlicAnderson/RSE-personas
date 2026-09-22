@@ -72,7 +72,11 @@ def subset_by_dates(
     )
 
     df["datestamp_column_temp"] = df["datestamp_column_temp"].apply(
-        lambda x: pd.Timestamp.date(
+        lambda x: pd.Timestamp.max.date()
+        if pd.isna(
+            x
+        )  # set NA values in col to 2262-04-11 in the future as these get filtered out in a moment.
+        else pd.Timestamp.date(
             x
         )  # drop the times, keep the date for date comparisons and subsetting
     )
