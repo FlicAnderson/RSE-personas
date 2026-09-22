@@ -312,12 +312,10 @@ class PrepDataTimes(LocationSetup):
         ['repo_name', 'gh_username', 'datetime_day', 'contribution', 'interaction_type']
         """
         pd.options.mode.copy_on_write = True
-
-        self.logger.debug(issues_interactions.info())
-        self.logger.debug(commits_interactions.info())
-        self.logger.debug(reviews_interactions.info())
         # self.logger.debug(discussions_interactions.info())
-
+        self.logger.debug(
+            "Columns of issues, commits and reviews interactions dfs respectively:..."
+        )
         self.logger.debug(issues_interactions.columns)
         self.logger.debug(commits_interactions.columns)
         self.logger.debug(reviews_interactions.columns)
@@ -327,14 +325,23 @@ class PrepDataTimes(LocationSetup):
         #     "The datetime_day column is missing from discussions_interactions df; please fix, rename and retry"
         # )  # in case I forget to address this earlier.
 
+        self.logger.info(
+            f"PRE-CONCAT 'issues_interactions' df NAs counted in gh_username col: {issues_interactions['gh_username'].isna().sum()}"
+        )
         filestr_iss = f"issues_interactions_x{len(issues_interactions)}interactions_x{issues_interactions.groupby(by=['repo_name']).ngroups}repos_x{issues_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
         writeout_path_iss = Path(self.data_location, filestr_iss)
         issues_interactions.to_csv(writeout_path_iss, header=True, index=False)
 
+        self.logger.info(
+            f"PRE-CONCAT 'commits_interactions' df NAs counted in gh_username col: {commits_interactions['gh_username'].isna().sum()}"
+        )
         filestr_cmt = f"commits_interactions_x{len(commits_interactions)}interactions_x{commits_interactions.groupby(by=['repo_name']).ngroups}repos_x{commits_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
         writeout_path_cmt = Path(self.data_location, filestr_cmt)
         commits_interactions.to_csv(writeout_path_cmt, header=True, index=False)
 
+        self.logger.info(
+            f"PRE-CONCAT 'reviews_interactions' df NAs counted in gh_username col: {reviews_interactions['gh_username'].isna().sum()}"
+        )
         filestr_rvw = f"review_interactions_x{len(reviews_interactions)}interactions_x{reviews_interactions.groupby(by=['repo_name']).ngroups}repos_x{reviews_interactions.groupby(by=['repo_name', 'gh_username']).ngroups}repo-individs_{self.current_date_info}.csv"
         writeout_path_rvw = Path(self.data_location, filestr_rvw)
         reviews_interactions.to_csv(writeout_path_rvw, header=True, index=False)
