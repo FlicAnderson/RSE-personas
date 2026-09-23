@@ -168,7 +168,7 @@ class RunIssues(LocationSetup):
     def __save_formatted_issues(
         self,
         issues_df: pd.DataFrame,
-        out_filename: str = "processed-issues",
+        out_filename: str = "processed-issues",  # NOTE: processed-DASH-issues_, not processed_UNDERSCORE_issues for filename.
     ):
         """
         Save the reformatted issues data out to csv file.
