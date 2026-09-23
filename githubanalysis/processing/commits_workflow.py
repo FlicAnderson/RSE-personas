@@ -87,17 +87,17 @@ class RunCommits(LocationSetup):
             )
             with open(preexisting_file) as dedupdfile:
                 return json.load(dedupdfile)
-        assert False, (
-            "NOOOOOO, not right now"
-        )  # this is a temporary line as we don't want API data gathering right now.
-        self.logger.info(
-            f"Pre-existing file did NOT exist for repo {self.repo_name}, gathering data via API."
+        self.logger.info(f"Adding missing repo {self.repo_name} to badnames_list.txt")
+        with open(Path(self.data_location, "badnames_list.txt"), "a") as file:
+            print(
+                self.repo_name, file=file, flush=True
+            )  # flush writes to disk NOW rather than buffering
+        # self.logger.info(
+        #     f"Pre-existing file did NOT exist for repo {self.repo_name}, gathering data via API."
+        # )
+        raise RuntimeError(
+            "The thing didn't exist at dedup file level, proceeding onwards."
         )
-        all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
-            repo_name=self.repo_name
-        )
-        self.logger.info("did allbranchescommitsgetter()")
-        return all_branches_commits
 
     def process_format_commits(self, all_branches_commits, writeout: bool = True):
         """
