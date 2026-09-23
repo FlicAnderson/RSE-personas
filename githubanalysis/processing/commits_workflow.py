@@ -4,6 +4,8 @@ import logging
 import pandas as pd
 from pathlib import Path
 import numpy as np
+import glob
+import json
 
 from githubanalysis.setup_classes import LocationSetup
 from utilities.check_gh_reponse import UnexpectedAPIError
@@ -39,13 +41,53 @@ class RunCommits(LocationSetup):
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.repo_name = repo_name
 
+    def _check_file_already_exists(
+        self, allbranchescommitsgetter: AllBranchesCommitsGetter
+    ) -> Path | None:
+        writeout_stub = allbranchescommitsgetter.make_writeout_name_stub(
+            out_filename=AllBranchesCommitsGetter.DEFAULT_FILE_PREFIX
+        )
+
+        files = glob.glob(f"{writeout_stub}_*_deduplicated.json")
+        match len(files):
+            case 0:  # if no files match...
+                return None
+            case 1:  # if 1 file matches...
+                return Path(files[0])
+            case _:  # otherwise...
+                self.logger.info(
+                    f"NOTE: more than one file matched for deduplicated commits json filename glob, options are: {files}"
+                )
+                files.sort()
+                return Path(files[-1])
+        assert False, "This is a tripwire, the code shouldn't reach this point"
+
     def generate_all_branches_commits(self):
+        """
+        This is where we're working.
+        The aim is to add a part checking for the existence of deduplicated .json files of commits,
+        then using those to create processed-commits if they exist, instead of just re-GETing via API.
+        """
+
         allbranchescommitsgetter = AllBranchesCommitsGetter(
             repo_name=self.repo_name,
             in_notebook=self.in_notebook,
             config_path=self.config_path,
         )
 
+        preexisting_file = self._check_file_already_exists(allbranchescommitsgetter)
+        if preexisting_file is not None:
+            self.logger.info(
+                f"Pre-existing deduplicated json file for repo {self.repo_name} being loaded and returned for further processing: {preexisting_file}"
+            )
+            with open(preexisting_file) as dedupdfile:
+                return json.load(dedupdfile)
+        assert False, (
+            "NOOOOOO, not right now"
+        )  # this is a temporary line as we don't want API data gathering right now.
+        self.logger.info(
+            f"Pre-existing file did NOT exist for repo {self.repo_name}, gathering data via API."
+        )
         all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
             repo_name=self.repo_name
         )
@@ -79,25 +121,28 @@ class RunCommits(LocationSetup):
         If not, run `get_all_branches_commits( repo_name )` to get up to
         date commits data for that repo, then reformats it.
         """
+        ### COMMENTED THIS OUT BECAUSE THIS WILL USE THE EXISTING (INFERIOR) PROCESSED-COMMITS FILES
+        ### WE DO NOT WANT THIS.
+        ### WE WISH TO REGENERATE THESE PROPERLY.
+        # formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        # formatted_commits_path = Path(formatted_commits_filename)
+        # self.logger.info(
+        #     f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
+        # )
 
-        formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        formatted_commits_path = Path(formatted_commits_filename)
-        self.logger.info(
-            f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
+        # if formatted_commits_path.is_file():  # read in existing dataset
+        #     processed_commits_df = pd.read_csv(
+        #         formatted_commits_filename, index_col=0, header=0
+        #     )
+
+        #     self.logger.info("loaded in previously-got commits data")
+        #     return processed_commits_df
+
+        # else:  # run steps to get commits data and generate dataset
+
+        return self.process_format_commits(
+            self.generate_all_branches_commits(), writeout=True
         )
-
-        if formatted_commits_path.is_file():  # read in existing dataset
-            processed_commits_df = pd.read_csv(
-                formatted_commits_filename, index_col=0, header=0
-            )
-
-            self.logger.info("loaded in previously-got commits data")
-            return processed_commits_df
-
-        else:  # run steps to get commits data and generate dataset
-            return self.process_format_commits(
-                self.generate_all_branches_commits(), writeout=True
-            )
 
     def getcommitschangesvcats(
         self,
@@ -241,10 +286,10 @@ class RunCommits(LocationSetup):
         file if this exists; returns df of processed, categorised commit
         data.
         """
-        self.logger.info("checking whether formatted commits dataset already exists")
+        # self.logger.info("checking whether formatted commits dataset already exists")
         # if all processed commits here from same day, don't re-run getter steps.
         processed_commits = self.check_existing_formatted_commits()
-        self.logger.info("got formatted commits data")
+        # self.logger.info("got formatted commits data")
 
         if processed_commits is None or processed_commits.empty:
             raise pd.errors.EmptyDataError(
