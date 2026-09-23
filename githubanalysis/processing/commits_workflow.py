@@ -123,7 +123,7 @@ class RunCommits(LocationSetup):
         If not, run `get_all_branches_commits( repo_name )` to get up to
         date commits data for that repo, then reformats it.
         """
-        formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"  # NOTE: processed-DASH-commits_, not processed_UNDERSCORE_commits for filename.
         formatted_commits_path = Path(formatted_commits_filename)
         self.logger.info(
             f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
