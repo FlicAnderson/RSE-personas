@@ -38,6 +38,8 @@ def deduplicate_commits(all_branches_commits: dict[str, list]):
 
 
 class AllBranchesCommitsGetter(RESTRequestSetup):
+    DEFAULT_FILE_PREFIX = "all-branches-commits"
+
     def _log_name(self) -> str:
         return "get_all_branches_commits_logs"
 
@@ -126,12 +128,14 @@ class AllBranchesCommitsGetter(RESTRequestSetup):
 
         return all_commits
 
+    def make_writeout_name_stub(self, out_filename: str):
+        return f"{self.data_location / out_filename}_{self.sanitised_repo_name}"
+
     def get_all_branches_commits(
         self,
         repo_name: str,
         per_pg=100,
-        out_filename: str = "all-branches-commits",
-        write_out_location: str = "data/",
+        out_filename: str = DEFAULT_FILE_PREFIX,
     ) -> dict[str, list[str]]:
         """
         Obtain all DEDUPLICATED commits data from all API request pages for ALL BRANCHES of a given GitHub repo `repo_name`.
@@ -170,7 +174,7 @@ class AllBranchesCommitsGetter(RESTRequestSetup):
             f"Getting commits for repo {repo_name}, running within notebook is {self.in_notebook}."
         )
 
-        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}"
+        write_out = self.make_writeout_name_stub(out_filename=out_filename)
 
         write_out_extra_info_json = f"{write_out}_{self.current_date_info}.json"
 
@@ -204,9 +208,9 @@ class AllBranchesCommitsGetter(RESTRequestSetup):
                     logger=self.logger,
                 )
 
-                assert (
-                    api_response.status_code != 401
-                ), f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {commits_url} is {api_response}"
+                assert api_response.status_code != 401, (
+                    f"WARNING! The API response code is 401: Unauthorised. Check your GitHub Personal Access Token is not expired. API Response for query {commits_url} is {api_response}"
+                )
                 # assertion check on 401 only as unauthorise is more likely to stop whole run than 404 which may apply to given repo only
 
                 commit_links = api_response.links
