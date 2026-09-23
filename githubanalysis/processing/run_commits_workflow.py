@@ -24,6 +24,8 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; Repo DOES NOT EXIST or is private: {e}"
         )
         return None
+    except AssertionError:
+        raise  # this stops the program when an assertion error happens, otherwise it gets reported and life continues...
     except Exception as e:
         logger.error(
             f"Encountered repo-getting-workflow-borking error in repo {repo_name}; error {e}"
