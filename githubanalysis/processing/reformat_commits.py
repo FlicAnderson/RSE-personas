@@ -30,8 +30,6 @@ class CommitReformatter(LocationSetup):
         """
         Reformat previously-made commit data (from get_all_branches_commits() ) into pd.DataFrame.
         """
-        # repo_name = self.sanitised_repo_name.replace("-", "/") # <<<<< THIS IS THE SOURCE OF HORRORS
-
         columns = [
             "repo_name",
             "branch_sha",
