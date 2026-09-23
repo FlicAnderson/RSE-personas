@@ -67,6 +67,14 @@ class RunCommits(LocationSetup):
         files = glob.glob(f"{writeout_stub}_*_deduplicated.json")
         return _glob_handling(files, logger=self.logger)
 
+    def _append_to_file(self, missingfiles: list[str]):
+        badnames = set(missingfiles)
+        if badnames:  # if there's stuff in the SET of missingfiles, add it to the file:
+            with open(Path(self.data_location, "badnames_list.txt"), "a") as file:
+                print(
+                    *badnames, file=file, sep="\n", flush=True
+                )  # flush writes to disk NOW rather than buffering
+
     def generate_all_branches_commits(self):
         """
         This is where we're working.
@@ -382,12 +390,7 @@ class RunCommits(LocationSetup):
             # ADD REPO NAME TO A FILE.
         # resave using original filename
 
-        badnames = set(missingfiles)
-
-        with open(Path(self.data_location, "badnames_list.txt"), "a") as file:
-            print(
-                *badnames, file=file, sep="\n", flush=True
-            )  # flush writes to disk NOW rather than buffering
+        self._append_to_file(missingfiles)
 
         # proceed to next.
 
