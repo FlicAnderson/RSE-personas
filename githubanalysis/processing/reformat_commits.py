@@ -22,6 +22,7 @@ class CommitReformatter(LocationSetup):
         )
         self.sanitised_repo_name = repo_name.replace("/", "-")
         self.reformatted_commits = None
+        self.repo_name = repo_name
 
     def reformat_commits_object(
         self, unique_commits_all_branches: dict[str, list]
@@ -29,7 +30,7 @@ class CommitReformatter(LocationSetup):
         """
         Reformat previously-made commit data (from get_all_branches_commits() ) into pd.DataFrame.
         """
-        repo_name = self.sanitised_repo_name.replace("-", "/")
+        # repo_name = self.sanitised_repo_name.replace("-", "/") # <<<<< THIS IS THE SOURCE OF HORRORS
 
         columns = [
             "repo_name",
@@ -52,7 +53,7 @@ class CommitReformatter(LocationSetup):
                 commit = record["commit"]
 
                 record_list = [
-                    repo_name,
+                    self.repo_name,  # insert the REAL repo-name instead of something awful.
                     branch,
                     record["sha"],
                 ]
@@ -101,7 +102,7 @@ class CommitReformatter(LocationSetup):
         Save the reformatted commits data out to csv file.
         """
 
-        write_out = f"{self.data_location/out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        write_out = f"{self.data_location / out_filename}_{self.sanitised_repo_name}_{self.current_date_info}.csv"
 
         if self.reformatted_commits is not None:
             self.reformatted_commits.to_csv(
