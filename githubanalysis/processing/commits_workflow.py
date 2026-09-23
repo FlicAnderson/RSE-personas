@@ -19,7 +19,6 @@ from githubanalysis.analysis.hattori_lanza_commit_content_classification import 
 from githubanalysis.analysis.vasilescu_commit_files_classification import (
     Vasilescu_Commit_Classifier,
 )
-from utilities.repo_names_write_out import RepoNamesListCreator
 
 
 def _glob_handling(files, logger: logging.Logger):
@@ -67,14 +66,6 @@ class RunCommits(LocationSetup):
         files = glob.glob(f"{writeout_stub}_*_deduplicated.json")
         return _glob_handling(files, logger=self.logger)
 
-    def _append_to_file(self, missingfiles: list[str]):
-        badnames = set(missingfiles)
-        if badnames:  # if there's stuff in the SET of missingfiles, add it to the file:
-            with open(Path(self.data_location, "badnames_list.txt"), "a") as file:
-                print(
-                    *badnames, file=file, sep="\n", flush=True
-                )  # flush writes to disk NOW rather than buffering
-
     def generate_all_branches_commits(self):
         """
         This is where we're working.
@@ -95,17 +86,15 @@ class RunCommits(LocationSetup):
             )
             with open(preexisting_file) as dedupdfile:
                 return json.load(dedupdfile)
-        self.logger.info(f"Adding missing repo {self.repo_name} to badnames_list.txt")
-        with open(Path(self.data_location, "badnames_list.txt"), "a") as file:
-            print(
-                self.repo_name, file=file, flush=True
-            )  # flush writes to disk NOW rather than buffering
-        # self.logger.info(
-        #     f"Pre-existing file did NOT exist for repo {self.repo_name}, gathering data via API."
-        # )
-        raise RuntimeError(
-            "The thing didn't exist at dedup file level, proceeding onwards."
+        # if the deduplicated json files doesn't exist, collect the data via API calls etc
+        self.logger.info(
+            f"Pre-existing file did NOT exist for repo {self.repo_name}, gathering data via API."
         )
+        all_branches_commits = allbranchescommitsgetter.get_all_branches_commits(
+            repo_name=self.repo_name
+        )
+        self.logger.info("did allbranchescommitsgetter()")
+        return all_branches_commits
 
     def process_format_commits(self, all_branches_commits, writeout: bool = True):
         """
@@ -134,28 +123,24 @@ class RunCommits(LocationSetup):
         If not, run `get_all_branches_commits( repo_name )` to get up to
         date commits data for that repo, then reformats it.
         """
-        ### COMMENTED THIS OUT BECAUSE THIS WILL USE THE EXISTING (INFERIOR) PROCESSED-COMMITS FILES
-        ### WE DO NOT WANT THIS.
-        ### WE WISH TO REGENERATE THESE PROPERLY.
-        # formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        # formatted_commits_path = Path(formatted_commits_filename)
-        # self.logger.info(
-        #     f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
-        # )
-
-        # if formatted_commits_path.is_file():  # read in existing dataset
-        #     processed_commits_df = pd.read_csv(
-        #         formatted_commits_filename, index_col=0, header=0
-        #     )
-
-        #     self.logger.info("loaded in previously-got commits data")
-        #     return processed_commits_df
-
-        # else:  # run steps to get commits data and generate dataset
-
-        return self.process_format_commits(
-            self.generate_all_branches_commits(), writeout=True
+        formatted_commits_filename = f"{self.data_location}/processed-commits_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        formatted_commits_path = Path(formatted_commits_filename)
+        self.logger.info(
+            f"checking whether formatted commits dataset already exists at path {formatted_commits_path}"
         )
+
+        if formatted_commits_path.is_file():  # read in existing dataset
+            processed_commits_df = pd.read_csv(
+                formatted_commits_filename, index_col=0, header=0
+            )
+
+            self.logger.info("loaded in previously-got commits data")
+            return processed_commits_df
+
+        else:  # run steps to get commits data and generate dataset
+            return self.process_format_commits(
+                self.generate_all_branches_commits(), writeout=True
+            )
 
     def getcommitschangesvcats(
         self,
@@ -299,183 +284,96 @@ class RunCommits(LocationSetup):
         file if this exists; returns df of processed, categorised commit
         data.
         """
-        # self.logger.info("checking whether formatted commits dataset already exists")
+        self.logger.info("checking whether formatted commits dataset already exists")
         # if all processed commits here from same day, don't re-run getter steps.
         processed_commits = self.check_existing_formatted_commits()
-        # self.logger.info("got formatted commits data")
+        self.logger.info("got formatted commits data")
 
         if processed_commits is None or processed_commits.empty:
             raise pd.errors.EmptyDataError(
                 "Frame is None or pd.DataFrame is empty; perhaps no commits?"
             )
 
-        missingfiles: list[str] = []
-
-        ##############################
-        # try changing the column in the other files without changing the other content of the files:
-
-        # file 1: f"{self.data_location}/commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        commits_changes_file_name = (
-            f"{self.data_location}/commits_changes_{self.sanitised_repo_name}*.csv"
+        commitchanges = CommitChanges(
+            repo_name=self.repo_name,
+            in_notebook=self.in_notebook,
+            config_path=self.config_path,
+        )
+        vasilescucommitclassifier = Vasilescu_Commit_Classifier(
+            repo_name=self.repo_name,
+            in_notebook=self.in_notebook,
+            config_path=self.config_path,
+        )
+        n_files, n_changes, v_category = self.getcommitschangesvcats(
+            commitchanges,
+            processed_commits,
+            vasilescucommitclassifier,
+        )
+        self.logger.info(
+            "did get commits changes; get vasilescu categories; return lists"
         )
 
-        # some magic glob match thing.
-        commits_changes_file_name = _glob_handling(
-            files=glob.glob(commits_changes_file_name), logger=self.logger
+        processed_commits = self.merge_stats(
+            n_files,
+            n_changes,
+            v_category,
+            processed_commits,
         )
-        # capture datestring in .csv filename
-        if commits_changes_file_name is not None:
-            self.logger.info(
-                f"Replacing bad repo_names in file {commits_changes_file_name}."
-            )
-            commits_changes_content = pd.read_csv(commits_changes_file_name)
-            commits_changes_content: pd.DataFrame = (
-                commits_changes_content.drop(  # drop original bad 'repo_name' col
-                    columns=["repo_name"]
-                )
-            )
-            commits_changes_content["repo_name"] = (
-                self.repo_name
-            )  # replace with new repo_name col.
-            # resave using original filename
-            commits_changes_content.to_csv(
-                path_or_buf=commits_changes_file_name,  # save out to original filename.
-                header=True,
-                index=False,
-                na_rep="",
-                mode="w",
-            )
-
-        else:
-            self.logger.warning(
-                f"Ooops. There's no matching commits_changes_ file for repo {self.repo_name} matching {commits_changes_file_name}."
-            )
-            missingfiles.append(self.repo_name)
-            # ADD REPO NAME TO A FILE.
-
-        # file 2: f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        commits_stats_file_name = (
-            f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}*.csv"
+        self.logger.info("did merge the lists with processed commits data")
+        self.logger.debug(
+            f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
         )
-        # some magic glob match thing.
-        commits_stats_file_name = _glob_handling(
-            files=glob.glob(commits_stats_file_name), logger=self.logger
+
+        write_out = f"{self.data_location}/commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        processed_commits.to_csv(
+            path_or_buf=write_out,
+            header=True,
+            index=False,
+            na_rep="",
+            mode="w",
         )
-        if commits_stats_file_name is not None:
-            self.logger.info(
-                f"Replacing bad repo_names in file {commits_stats_file_name}."
-            )
-            commits_stats_content = pd.read_csv(commits_stats_file_name)
-            commits_stats_content: pd.DataFrame = (
-                commits_stats_content.drop(  # drop original bad 'repo_name' col
-                    columns=["repo_name"]
-                )
-            )
-            commits_stats_content["repo_name"] = (
-                self.repo_name
-            )  # replace with new repo_name col.
-            # resave using original filename
-            commits_stats_content.to_csv(
-                path_or_buf=commits_stats_file_name,  # save out to original filename.
-                header=True,
-                index=False,
-                na_rep="",
-                mode="w",
-            )
-        else:
-            self.logger.warning(
-                f"Ooops. There's no matching commits_stats_ file for repo {self.repo_name} matching {commits_stats_file_name}."
-            )
-            missingfiles.append(self.repo_name)
-            # ADD REPO NAME TO A FILE.
-        # resave using original filename
+        self.logger.info(
+            f"writing processed commits with changes and v_cats file out to this path / filename: {write_out}"
+        )
 
-        self._append_to_file(missingfiles)
+        processed_commits = processed_commits.dropna(
+            subset=["n_files_changed", "n_changes"]
+        )  # drop rows with NaN values / missing data from commit changes
+        self.logger.debug(
+            f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
+        )
 
-        # proceed to next.
+        processed_commits["hattori_lanza_content_cat"] = self.classify_content(
+            processed_commits
+        )
+        self.logger.info("did hattori lanza commits content classification")
+        self.logger.debug(
+            f"Info details of `processed_commits` object is {processed_commits.info()}"
+        )
 
-        ##############################
+        processed_commits["hattori_lanza_size_cat"] = self.classify_size(
+            processed_commits
+        )
+        self.logger.info("did hattori lanza size classification")
+        self.logger.debug(
+            f"Info details of `processed_commits` object is {processed_commits.info()}"
+        )
 
-        # commitchanges = CommitChanges(
-        #     repo_name=self.repo_name,
-        #     in_notebook=self.in_notebook,
-        #     config_path=self.config_path,
-        # )
-        # vasilescucommitclassifier = Vasilescu_Commit_Classifier(
-        #     repo_name=self.repo_name,
-        #     in_notebook=self.in_notebook,
-        #     config_path=self.config_path,
-        # )
-        # n_files, n_changes, v_category = self.getcommitschangesvcats(
-        #     commitchanges,
-        #     processed_commits,
-        #     vasilescucommitclassifier,
-        # )
-        # self.logger.info(
-        #     "did get commits changes; get vasilescu categories; return lists"
-        # )
+        write_out = f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
+        self.logger.info(
+            f"writing post-workflow file out to this path / filename: {write_out}"
+        )
 
-        # processed_commits = self.merge_stats(
-        #     n_files,
-        #     n_changes,
-        #     v_category,
-        #     processed_commits,
-        # )
-        # self.logger.info("did merge the lists with processed commits data")
-        # self.logger.debug(
-        #     f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
-        # )
-
-        # write_out = f"{self.data_location}/commits_changes_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        # processed_commits.to_csv(
-        #     path_or_buf=write_out,
-        #     header=True,
-        #     index=False,
-        #     na_rep="",
-        #     mode="w",
-        # )
-        # self.logger.info(
-        #     f"writing processed commits with changes and v_cats file out to this path / filename: {write_out}"
-        # )
-
-        # processed_commits = processed_commits.dropna(
-        #     subset=["n_files_changed", "n_changes"]
-        # )  # drop rows with NaN values / missing data from commit changes
-        # self.logger.debug(
-        #     f"Info details of `processed_commits` {len(processed_commits)} length df object is {processed_commits.info()}"
-        # )
-
-        # processed_commits["hattori_lanza_content_cat"] = self.classify_content(
-        #     processed_commits
-        # )
-        # self.logger.info("did hattori lanza commits content classification")
-        # self.logger.debug(
-        #     f"Info details of `processed_commits` object is {processed_commits.info()}"
-        # )
-
-        # processed_commits["hattori_lanza_size_cat"] = self.classify_size(
-        #     processed_commits
-        # )
-        # self.logger.info("did hattori lanza size classification")
-        # self.logger.debug(
-        #     f"Info details of `processed_commits` object is {processed_commits.info()}"
-        # )
-
-        # write_out = f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
-        # self.logger.info(
-        #     f"writing post-workflow file out to this path / filename: {write_out}"
-        # )
-
-        # processed_commits.to_csv(
-        #     path_or_buf=write_out,
-        #     header=True,
-        #     index=False,
-        #     na_rep="",
-        #     mode="w",
-        # )
-        # self.logger.info("did writeout")
-        # self.logger.debug(
-        #     f"Info details of FINAL `processed_commits` object is {processed_commits.info()}"
-        # )
+        processed_commits.to_csv(
+            path_or_buf=write_out,
+            header=True,
+            index=False,
+            na_rep="",
+            mode="w",
+        )
+        self.logger.info("did writeout")
+        self.logger.debug(
+            f"Info details of FINAL `processed_commits` object is {processed_commits.info()}"
+        )
 
         return processed_commits
