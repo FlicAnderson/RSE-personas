@@ -11,10 +11,14 @@
 
 
 pattern=${1:-"all-PR-reviews"}
-dest_dir=${2:-older_PR-reviews/}
+dest_dir=${2:-"older_PR-reviews/"}
 
-REPOS=$(find . -maxdepth 1 -mindepth 1 -name "${pattern}_*.json" | sed 's/.\{16\}$//' | uniq)
+[ -d "$dest_dir" ] || { echo "Create $dest_dir first"; exit 1; } # this line checks folder exists, and if not, it exits with an error message
+
+REPOS=$(find . -maxdepth 1 -mindepth 1 -name "${pattern}_*.csv" | sed 's/.\{15\}$//' | uniq)
+#REPOS=$(find . -maxdepth 1 -mindepth 1 -name "${pattern}_*.json" | sed 's/.\{16\}$//' | uniq)
+
 for r in $REPOS; do
     mapfile -t ALL < <(find . -maxdepth 1 -mindepth 1 -wholename "$r*" |sort -r)
-    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" "${dest_dir}"
+    [ ${#ALL[@]} -gt 1 ] && mv "${ALL[@]:1}" "${dest_dir}" 
 done
