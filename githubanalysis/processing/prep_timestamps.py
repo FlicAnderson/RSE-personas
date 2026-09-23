@@ -165,7 +165,6 @@ class PrepDataTimes(LocationSetup):
             ]
         ]
 
-        # deal with issue data (NOT pull request) only:
         interactions_df_commits = commitsdf
         self.logger.info(
             f"NAs counted in author_username col: {interactions_df_commits['author_username'].isna().sum()}"
@@ -338,18 +337,58 @@ class PrepDataTimes(LocationSetup):
         start_time = datetime.datetime.now()
         self.logger.info(f"processing {len(repo_list)} repos' worth of issues data")
 
+        # TODO: PER-FILE ISSUES DATA HARVESTING VIA GLOBS GOES HERE
+        self.logger.info(
+            "THIS IS WHERE ISSUES INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT IT'S SINGLE-FILE"
+        )
+        # Issues interactions (inc PRs)
+        issues_files_repolist = self.globber.multi_repo_filename_file_matcher(
+            list_of_repos_to_match=repo_list,
+            out_filename="processed-issues_",
+            matchstrings=[""],
+            file_extension=".csv",
+        )
+        self.logger.info(
+            f"List of repo_names ISSUES FILES of length {len(issues_files_repolist)} obtained via glob matcher"
+        )
+
+        # issues_interactions = pd.DataFrame()
+
+        # for file in issues_files_repolist:
+        #     if file.exists():
+        #         try:
+        #             self.logger.debug(
+        #                 f"Running get_issues_PRs_interactions on file {file}."
+        #             )
+        #             issues_interactions_next = self.get_issues_PRs_interactions(file)
+        #             issues_interactions = pd.concat(
+        #                 [issues_interactions, issues_interactions_next]
+        #             )
+        #         except:
+        #             self.logger.error(
+        #                 "commits file read-inand/or get_commit_interactions() error for file {file}"
+        #             )
+        #             raise RuntimeError(
+        #                 f"Error reading in or handling commits interactions file {file}"
+        #             )
+        #     else:
+        #         print(f"commits file read-in error for file {file}")
+
+        # self.logger.info(
+        #     f"Generated df of {len(issues_interactions)} issues interactions."
+        # )
+
         self.logger.info("attempting to read ISSUES data from file")
+
+        if issues_interactions_file is None:
+            self.logger.info("Interactions file not supplied for ISSUES")
+            raise  # is this a good idea?
+
         # read issues data in from previously created file and subset to relevant repos:
         issues_interactions = read_interactions(
             interactions_file=issues_interactions_file,
             repo_list=repo_list,
             logger=self.logger,
-        )
-
-        self.logger.info(
-            "THIS IS WHERE ISSUES INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT IT'S GENERIC??"
-            # this code is assuming issues interaction processing was done previously in a different script, probably issues_workflow?
-            # self.get_issues_PRs_interactions(rawissuesdf=issues_interactions)
         )
 
         assert "datetime_day" in issues_interactions.columns, (
@@ -366,16 +405,54 @@ class PrepDataTimes(LocationSetup):
             logger=self.logger,
         )
 
+        # TODO: PER-FILE COMMITS DATA HARVESTING VIA GLOBS GOES HERE
+        self.logger.info(
+            "THIS IS WHERE COMMITS INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT IT'S GENERIC??"
+        )
+        # get all the processed-commits files from the folder:
+        commits_files_repolist = self.globber.multi_repo_filename_file_matcher(
+            list_of_repos_to_match=repo_list,
+            out_filename="processed-commits_",
+            matchstrings=[""],
+            file_extension=".csv",
+        )
+        self.logger.info(
+            f"List of repo_names COMMITS FILES of length {len(commits_files_repolist)} obtained via glob matcher"
+        )
+
+        # commits_interactions = pd.DataFrame()
+
+        # for file in commits_files_repolist:
+        #     # print(type(file)) <class 'pathlib.PosixPath'>
+        #     if file.exists():
+        #         try:
+        #             self.logger.debug(
+        #                 f"Running get_commit_interactions on file {file}."
+        #             )
+        #             commits_interactions_next = self.get_commit_interactions(file)
+        #             commits_interactions = pd.concat(
+        #                 [commits_interactions, commits_interactions_next]
+        #             )
+        #         except:
+        #             self.logger.error(
+        #                 "commits file read-in and/or get_commit_interactions() error for file {file}"
+        #             )
+        #             raise RuntimeError(
+        #                 f"Error reading in or handling commits interactions file {file}"
+        #             )
+        #     else:
+        #         self.logger.error(f"commits file read-in error for file {file}")
+
+        # self.logger.info(
+        #     f"Generated df of {len(commits_interactions)} commits interactions."
+        # )
+
         self.logger.info("attempting to read COMMITS data from file")
         # read commits data in from previously created file and subset to relevant repos:
         commits_interactions = read_interactions(
             interactions_file=commits_interactions_file,
             repo_list=repo_list,
             logger=self.logger,
-        )
-
-        self.logger.info(
-            "THIS IS WHERE COMMITS INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT IT'S GENERIC??"
         )
 
         assert "datetime_day" in commits_interactions.columns, (
@@ -684,22 +761,23 @@ if __name__ == "__main__":
         logger=logger,
     )
 
+    if commits_interactions_file is None:
+        raise Exception(
+            "There's something awful happening here. Commits file not supplied."
+        )  # TODO: adjust this, when the glob-based processed-commits file harvesting is implemented!
+
     issues_interactions_file = Path(issues_interactions_file)
     commits_interactions_file = Path(commits_interactions_file)
     reviews_interactions_file = Path(reviews_interactions_file)
 
     try:
-        all_interactions_data = (
-            prepdatatimes.interactions_data_workflow(  # <- start here :)
-                repo_list=repo_list,
-                issues_interactions_file=issues_interactions_file,
-                commits_interactions_file=commits_interactions_file,
-                reviews_interactions_file=reviews_interactions_file,
-                # discussions_interactions_file=discussions_interactions_file,
-                cutoff_date=pd.Timestamp(
-                    "2024-11-21"
-                ),  # HARDCODING THIS FOR REPLICATION
-            )
+        all_interactions_data = prepdatatimes.interactions_data_workflow(
+            repo_list=repo_list,
+            issues_interactions_file=issues_interactions_file,
+            commits_interactions_file=commits_interactions_file,
+            reviews_interactions_file=reviews_interactions_file,
+            # discussions_interactions_file=discussions_interactions_file,
+            cutoff_date=pd.Timestamp("2024-11-21"),  # HARDCODING THIS FOR REPLICATION
         )
     except Exception as e:
         logger.error(
