@@ -15,7 +15,7 @@ def single_repo_method(repo_name: str, logger: Logger) -> pd.DataFrame | None:
     runcommits = RunCommits(
         repo_name=repo_name,
         in_notebook=False,  # TODO
-        config_path="githubanalysis/config.cfg",  # TODO make this editable and useful
+        config_path="githubanalysis/config.cfg",
     )
     try:
         return runcommits.do_it_all()
