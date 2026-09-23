@@ -347,7 +347,7 @@ class RunCommits(LocationSetup):
 
         # file 2: f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}_{self.current_date_info}.csv"
         commits_stats_file_name = (
-            f"{self.data_location}/out_filename_{self.sanitised_repo_name}*.csv"
+            f"{self.data_location}/commits_cats_stats_{self.sanitised_repo_name}*.csv"
         )
         # some magic glob match thing.
         commits_stats_file_name = _glob_handling(
