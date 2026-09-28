@@ -45,7 +45,6 @@ class Globber(LocationSetup):
     def multi_repo_filename_glob_maker(
         self, subset_repos: list[str], out_filename: str, matchstrings: list[str]
     ) -> list[str]:
-
         # for multiple repos:
 
         output_globs = []
@@ -113,6 +112,7 @@ class Globber(LocationSetup):
         matching_files = self.flatten(matching_files)
 
         self.logger.info(f"{len(multi_glob)} glob strings generated")
+        self.logger.debug(f"{multi_glob[0:5]} = ")
         self.logger.info(
             f"{len(matching_files)} matching files for {len(list_of_repos_to_match)} repos in list"
         )
