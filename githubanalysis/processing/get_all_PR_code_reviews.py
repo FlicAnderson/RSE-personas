@@ -89,7 +89,7 @@ class GetCodeReviews(Discussions):
         self.logger.info(f"getting json via request url {reviews_qry}.")
         try:
             main_reviews_json = self.get_all_pages(query=reviews_qry)
-            return main_reviews_json
+            return main_reviews_json  # TODO: handle whether None can/should be validly returned here, and adjust type hints and handling as required
         except Exception as e:
             self.logger.error(
                 f"Error in getting PR reviews for PR {PR_num} for repo name {repo_name} with query {reviews_qry}: {e}."
