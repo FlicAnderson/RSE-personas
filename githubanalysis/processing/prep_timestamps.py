@@ -96,7 +96,7 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(
             f"There are {reviews_interactions.subsequent_author_review_date.notna().sum()} NON-empty fields for subsequent_author_review_date."
         )  # for Set1 this is ~1.7M
-        # TODO: this is a LOT of subsequent interactions which could be pulled out as a separate interaction event
+        # TODO: ADD FEATURE (low priority): this is a LOT of subsequent interactions which could be pulled out as a separate interaction event
         self.logger.debug(reviews_interactions.columns)
 
         # remove unwanted columns:
@@ -351,6 +351,9 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(
             f"List of repo_names ISSUES FILES of length {len(issues_files_repolist)} obtained via glob matcher"
         )
+        self.logger.info(
+            f"{issues_files_repolist = }"
+        )  # TODO: remove this temporary print when going above 18repos testing amounts!
 
         # issues_interactions = pd.DataFrame()
 
@@ -419,6 +422,9 @@ class PrepDataTimes(LocationSetup):
         self.logger.info(
             f"List of repo_names COMMITS FILES of length {len(commits_files_repolist)} obtained via glob matcher"
         )
+        self.logger.info(
+            f"{commits_files_repolist = }"
+        )  # TODO: remove this temporary print when going above 18repos testing amounts!
 
         # commits_interactions = pd.DataFrame()
 
@@ -470,6 +476,27 @@ class PrepDataTimes(LocationSetup):
         )
 
         self.logger.info("attempting to read REVIEWS data from file")
+
+        # TODO: PER-FILE PRCR(REVIEWS) DATA HARVESTING VIA GLOBS GOES HERE
+        self.logger.info(
+            "THIS IS WHERE PR Code Reviews INTERACTION PROCESSING SHOULD PROPERLY HAPPEN, BUT NOT IMPLEMENTED YET: TODO"
+        )
+        # get all the processed-commits files from the folder:
+        reviews_files_repolist = self.globber.multi_repo_filename_file_matcher(
+            # TODO: needs to handle `processed-PR-reviews_` 'main', 'sub' and 'discussions' separately as there's not a combined interactions file per repo
+            # (future feature idea:) can take "review_type" column as this will contain info on whether main/sub/discussion if further details required.
+            list_of_repos_to_match=repo_list,
+            out_filename="processed-PR-reviews_",
+            matchstrings=["main_", "sub_", "discussions_"],
+            file_extension=".csv",
+        )
+        self.logger.info(
+            f"List of repo_names REVIEWS FILES of length {len(reviews_files_repolist)} obtained via glob matcher"
+        )
+        self.logger.info(
+            f"{reviews_files_repolist = }"
+        )  # TODO: remove this temporary print when going above 18repos testing amounts!
+
         # read in and subset the large collated reviews data file to the specified repos only
         reviews_interactions = read_interactions(
             interactions_file=reviews_interactions_file,
@@ -693,6 +720,8 @@ if __name__ == "__main__":
     """
     TEST REPOS: Run from commandline as this: 
     # NOTE: DO NOT RUN THIS LOCALLY!!!! (insufficient memory, will break your terminal.)
+    $ time python githubanalysis/processing/prep_timestamps.py -f code_review_subset_2026-07-26_x17.txt -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv -i data/issues_interactions_x3380102_2025-04-18.csv -r data/merged_reviews_data_all_types_x2981repos_x5881353reviews_x8578reviewfiles_2026-09-21.csv
+
     $ time python githubanalysis/processing/prep_timestamps.py 
     -f code_review_subset_2026-07-26_x17.txt 
     -c data/commits-interactions_x5852853_x2403-repos_2025-05-10.csv 
