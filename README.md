@@ -23,11 +23,6 @@ This repository supports the PhD thesis work of me ([@FlicAnderson](https://gith
 
 The project began in 2022 and is expected to complete by the end of 2027. 
 
-## Roadmap & Milestones
-
-- **Goals:** Clear overview of overarching and short-term goals.
-- **Outcomes:** Description of expected results and deliverables.
-
 ## The Team
 
 Currently just me, but I hope that anyone who finds my research helpful will be able to make use of some of the ideas, code or data I've produced on this project. 
