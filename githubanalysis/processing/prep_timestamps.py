@@ -355,44 +355,46 @@ class PrepDataTimes(LocationSetup):
             f"{issues_files_repolist = }"
         )  # TODO: remove this temporary print when going above 18repos testing amounts!
 
-        # issues_interactions = pd.DataFrame()
+        issues_interactions = pd.DataFrame()
 
-        # for file in issues_files_repolist:
-        #     if file.exists():
-        #         try:
-        #             self.logger.debug(
-        #                 f"Running get_issues_PRs_interactions on file {file}."
-        #             )
-        #             issues_interactions_next = self.get_issues_PRs_interactions(file)
-        #             issues_interactions = pd.concat(
-        #                 [issues_interactions, issues_interactions_next]
-        #             )
-        #         except:
-        #             self.logger.error(
-        #                 "commits file read-inand/or get_commit_interactions() error for file {file}"
-        #             )
-        #             raise RuntimeError(
-        #                 f"Error reading in or handling commits interactions file {file}"
-        #             )
-        #     else:
-        #         print(f"commits file read-in error for file {file}")
+        for file in issues_files_repolist:
+            if file.exists():
+                try:
+                    self.logger.debug(
+                        f"Running get_issues_PRs_interactions on file {file}."
+                    )
+                    issues_interactions_next = self.get_issues_PRs_interactions(file)
+                    self.logger.info(f"length Before: {len(issues_interactions)} for file {file}")
+                    issues_interactions = pd.concat(
+                        [issues_interactions, issues_interactions_next]
+                    )
+                    self.logger.info(f"length After: {len(issues_interactions)} for file {file}")
+                except:
+                    self.logger.error(
+                        "commits file read-inand/or get_commit_interactions() error for file {file}"
+                    )
+                    raise RuntimeError(
+                        f"Error reading in or handling commits interactions file {file}"
+                    )
+            else:
+                self.logger.error(f"commits file read-in error for file {file}")
 
-        # self.logger.info(
-        #     f"Generated df of {len(issues_interactions)} issues interactions."
-        # )
-
-        self.logger.info("attempting to read ISSUES data from file")
-
-        if issues_interactions_file is None:
-            self.logger.info("Interactions file not supplied for ISSUES")
-            raise  # is this a good idea?
-
-        # read issues data in from previously created file and subset to relevant repos:
-        issues_interactions = read_interactions(
-            interactions_file=issues_interactions_file,
-            repo_list=repo_list,
-            logger=self.logger,
+        self.logger.info(
+            f"Generated df of {len(issues_interactions)} issues interactions."
         )
+
+        #self.logger.info("attempting to read ISSUES data from file")
+
+        # if issues_interactions_file is None:
+        #     self.logger.info("Interactions file not supplied for ISSUES")
+        #     raise  # is this a good idea?
+
+        # # read issues data in from previously created file and subset to relevant repos:
+        # issues_interactions = read_interactions(
+        #     interactions_file=issues_interactions_file,
+        #     repo_list=repo_list,
+        #     logger=self.logger,
+        # )
 
         assert "datetime_day" in issues_interactions.columns, (
             f"issues_interactions df from file {issues_interactions_file} is missing column 'datetime_day'; columns are: {issues_interactions.columns}."
